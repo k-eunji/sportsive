@@ -2,33 +2,30 @@
 
 import "server-only";
 import admin from "firebase-admin";
-import fs from "fs";
-import path from "path";
 
-// ---- Firebase Admin 초기화 (싱글톤) ----
+// 이미 초기화된 경우 재사용
 if (!admin.apps.length) {
-  let serviceAccountPath =
-    process.env.FIREBASE_SERVICE_ACCOUNT_PATH || "./serviceAccountKey.json";
-
-  const fullPath = path.resolve(process.cwd(), serviceAccountPath);
-
-  if (!fs.existsSync(fullPath)) {
-    throw new Error(`🚫 Firebase service account file not found: ${fullPath}`);
+  if (!process.env.FIREBASE_PRIVATE_KEY_B64) {
+    console.error("❌ Missing FIREBASE_PRIVATE_KEY_B64");
   }
 
-  const serviceAccount = JSON.parse(fs.readFileSync(fullPath, "utf8"));
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY_B64
+    ? Buffer.from(process.env.FIREBASE_PRIVATE_KEY_B64, "base64").toString("utf8")
+    : undefined;
 
   admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
+    credential: admin.credential.cert({
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey,
+    }),
     storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
   });
 
-  console.log("🔥 Firebase Admin initialized"); // ← 이제 딱 한 번만 찍힘
-} else {
-  console.log("♻️ Firebase Admin reused from admin.apps");
+  console.log("🔥 Firebase Admin initialized on Vercel");
 }
 
-// ---- 기존 export 패턴 유지 (절대 삭제 금지) ----
+// ---- 기존 export 유지 ----
 export const adminDb = admin.firestore();
 export const db = adminDb;
 export const adminDB = adminDb;
