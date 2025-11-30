@@ -1,0 +1,19 @@
+//funtions/tsconfig.json
+
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "esModuleInterop": true,
+    "moduleResolution": "node",
+    "noImplicitReturns": false,   // ✅ false로 변경
+    "noUnusedLocals": false,      // ✅ false로 변경
+    "outDir": "lib",
+    "sourceMap": true,
+    "strict": true,
+    "target": "es2017"
+  },
+  "compileOnSave": true,
+  "include": [
+    "src"
+  ]
+}

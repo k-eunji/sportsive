@@ -1,0 +1,163 @@
+// src/components/layout/Header.tsx
+
+'use client';
+
+import Link from 'next/link';
+import NotificationBell from '@/components/Notification/NotificationBell';
+import { MessageSquare } from 'lucide-react';
+import { useMessagePopup } from '@/context/MessagePopupContext';
+import { useUser } from '@/context/UserContext';
+import { motion } from 'framer-motion';
+import { useEffect, useRef, useState } from 'react';
+import useScrollDirection from "@/hooks/useScrollDirection";
+import { usePathname } from "next/navigation";
+
+export default function Header({ showLogo = false, disableHide = false }) {
+  const { user } = useUser();
+  const { open: openPopup } = useMessagePopup();
+
+  const rightRef = useRef<HTMLDivElement>(null);
+  const [rightWidth, setRightWidth] = useState(40);
+  const direction = useScrollDirection();
+
+  const pathname = usePathname() || "";
+  const segments = pathname.split("/");
+  const isLiveChatRoom = segments.length === 4 && segments[1] === "live";
+  const shouldHide = !disableHide && direction === "down";
+
+  if (isLiveChatRoom) return null;
+
+  useEffect(() => {
+    if (rightRef.current) setRightWidth(rightRef.current.offsetWidth);
+  }, [user]);
+
+  return (
+    <header
+      className={`
+        fixed top-0 inset-x-0 z-50
+        h-[50px]
+        flex items-center justify-between
+        px-4
+        bg-[var(--background)]
+        border-b border-[var(--border)]
+        transition-transform duration-300
+        ${shouldHide ? "-translate-y-full" : "translate-y-0"}
+      `}
+    >
+
+      {/* LEFT + MENU */}
+      <div style={{ width: rightWidth }} className="flex items-center">
+        <PlusMenu />
+      </div>
+
+      {/* CENTER LOGO */}
+      <Link href="/" className="flex items-center select-none">
+        {showLogo && (
+          <motion.span
+            layoutId="header-logo"
+            className="font-extrabold text-[1.55rem] leading-none text-black dark:text-white"
+          >
+            sp
+            <span className="inline-block bg-gradient-to-r from-red-500 via-yellow-400 via-green-500 to-blue-500 text-transparent bg-clip-text">
+              o
+            </span>
+            rtsive
+          </motion.span>
+        )}
+      </Link>
+
+      {/* RIGHT BUTTONS */}
+      <div ref={rightRef} className="flex items-center gap-2">
+        {user && <NotificationBell />}
+
+        {user && (
+          <button
+            onClick={() => openPopup()}
+            className="
+              relative p-2 rounded-full
+              text-[var(--foreground)] hover:text-[var(--primary)]
+              transition-colors
+            "
+          >
+            <MessageSquare className="w-[19px] h-[19px]" />
+          </button>
+        )}
+      </div>
+    </header>
+  );
+}
+
+
+/* --------------------------------------------------------- */
+/*                       + MENU COMPONENT                    */
+/* --------------------------------------------------------- */
+
+function PlusMenu() {
+  const { user } = useUser();
+  const [open, setOpen] = useState(false);
+
+  const toggle = () => setOpen(!open);
+
+  return (
+    <div className="relative">
+      {/* + BUTTON */}
+      <button
+        onClick={toggle}
+        className="
+          w-7 h-7 flex items-center justify-center 
+          text-xl font-bold rounded-md
+          hover:bg-gray-200 dark:hover:bg-gray-700
+          transition
+        "
+      >
+        +
+      </button>
+
+      {/* DROPDOWN */}
+      {open && (
+        <div
+          className="
+            absolute left-0 mt-2 w-36
+            bg-white dark:bg-gray-900 
+            border border-border rounded-lg shadow-lg
+            py-2 z-50
+          "
+        >
+          {/* ─────────────────────────────────────────────── */}
+          {/* 로그인하지 않은 경우: Login / Register */}
+          {!user && (
+            <>
+              <Link
+                href="/auth/login"
+                className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800"
+                onClick={() => setOpen(false)}
+              >
+                Login
+              </Link>
+
+              <Link
+                href="/auth/register"
+                className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800"
+                onClick={() => setOpen(false)}
+              >
+                Register
+              </Link>
+            </>
+          )}
+
+          {/* ─────────────────────────────────────────────── */}
+          {/* 로그인한 경우: My Page */}
+          {user && (
+            <Link
+              href={`/profile/${user.uid}`}
+              className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800"
+              onClick={() => setOpen(false)}
+            >
+              My Page
+            </Link>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

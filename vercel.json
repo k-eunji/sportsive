@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/teams/chelsea/momvote/cron",
+      "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/teams/tottenham/momvote/cron",
+      "schedule": "*/10 * * * *"
+    }
+  ]
+}

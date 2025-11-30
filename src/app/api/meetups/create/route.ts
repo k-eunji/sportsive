@@ -1,0 +1,80 @@
+// ✅ src/app/api/meetups/create/route.ts
+import { NextResponse } from "next/server";
+import { createMeetupServer } from "@/lib/meetups.server";
+import { adminAuth } from "@/lib/firebaseAdmin";
+
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
+    const authHeader = req.headers.get("authorization");
+
+    if (!authHeader?.startsWith("Bearer ")) {
+      console.error("🚫 Unauthorized request — no Bearer token");
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const idToken = authHeader.split(" ")[1];
+    const decodedToken = await adminAuth.verifyIdToken(idToken);
+    const hostId = decodedToken.uid;
+
+    console.log("👤 Host authenticated:", hostId);
+
+    const meetupData: any = {
+      ...body,
+      hostId,
+      status: "pending", // ✅ 기본 상태: 아직 성사 안 됨
+      purpose: body.purpose ?? "",
+      details: body.details ?? "",
+      authorNickname: body.authorNickname ?? "Unknown",
+      teamType: body.teamType ?? "neutral",
+      teamId: body.teamId ?? null,
+      participants: [],
+      maxParticipants: body.maxParticipants ?? 10,
+      imageUrl: body.imageUrl || null,
+      location:
+        body.type === "online_game"
+          ? { name: "Online", address: "", lat: 0, lng: 0 }
+          : body.venue
+          ? {
+              name: body.venue.name || "",
+              address: body.venue.name || "",
+              lat: body.venue.lat || 0,
+              lng: body.venue.lng || 0,
+            }
+          : { name: "", address: "", lat: 0, lng: 0 },
+      reviewsOpen: false,
+      createdAt: new Date().toISOString(),
+    };
+
+    if (body.type === "online_game") {
+      meetupData.onlineLink = body.onlineLink ?? "";
+      meetupData.onlineGameName = body.onlineGameName ?? "";
+    }
+
+    if (body.selectedEvent) {
+      meetupData.event = body.selectedEvent;
+      meetupData.eventId = body.selectedEvent.id;
+    } else if (body.selectedEventId) {
+      meetupData.eventId = body.selectedEventId;
+    }
+
+    if (body.applicationDeadline && body.applicationDeadline !== "") {
+      meetupData.applicationDeadline = new Date(
+        body.applicationDeadline
+      ).toISOString();
+    }
+
+    console.log("🛠️ Creating meetup with data:", JSON.stringify(meetupData, null, 2));
+
+    const meetupId = await createMeetupServer(meetupData);
+    console.log("✅ Meetup created successfully:", meetupId);
+
+    return NextResponse.json({ meetupId, status: "pending" });
+  } catch (err: any) {
+    console.error("🔥 Meetup creation failed:", err);
+    return NextResponse.json(
+      { error: err.message || "Failed to create meetup" },
+      { status: 500 }
+    );
+  }
+}

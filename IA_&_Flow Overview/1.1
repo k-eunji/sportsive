@@ -1,0 +1,315 @@
+# 🏟 Sportsive — IA & Flow Overview (v1.1)
+
+## 1. 🎯 Core Concept
+
+> “지역 기반 스포츠 커뮤니티 — 경기, 밋업, 팬 연결을 중심으로.”
+>
+> **누구나** 내 주변에서 열리는 스포츠를 발견하고,
+> **함께 보고, 함께 응원하고, 함께 나누는** 경험을 만든다.
+
+---
+
+## 2. 🌍 Main Flows
+
+| Flow                        | 설명                        | 결과                |
+| --------------------------- | ------------------------- | ----------------- |
+| 🗺️ **Home (Events / Map)** | 지도 기반 지역 경기 탐색            | 무료/유료 경기 정보 확인    |
+| 🤝 **Meetups**              | 팬들이 함께 보기 위한 모임 생성        | 지역별 밋업 목록         |
+| 💬 **Live**                 | 경기 중 실시간 응원 채팅            | 응원 / 경기 후기 자동 포스팅 |
+| 🏳️ **Team Page**           | 팀 중심 허브 (팬 피드, 밋업, 경기 일정) | 지역 팬 / 커뮤니티 연결    |
+| 🌐 **Community**            | 통합 피드 (팀 + 지역 + 밋업 후기)    | 모든 활동이 모이는 허브     |
+| 👤 **Profile**              | 내 활동 요약                   | 포인트, 밋업, 후기 기록    |
+
+---
+
+## 3. 🧭 UX Flow (User Journey)
+
+> 사용자가 “경기 발견 → 참여 → 공유”로 이어지는 핵심 여정
+
+```mermaid
+flowchart TD
+    A[🏠 Home (Events / Map)] --> B[📅 Event Detail]
+    B --> C[🤝 Meetup Creation]
+    C --> D[💬 Live Room]
+    D --> E[🏳️ Team Page]
+    E --> F[🌐 Community Feed]
+    F <--> G[👤 Profile]
+```
+
+---
+
+## 4. 🔗 Data & API Flow
+
+```text
+events → meetups → teamId → community
+live → teamId → community (realtime)
+```
+
+| Source API       | Consumed by         | Purpose        |
+| ---------------- | ------------------- | -------------- |
+| `/api/events`    | Events, Meetups     | 경기 데이터 조회      |
+| `/api/meetups`   | Meetups, TeamPage   | 지역 밋업 관리       |
+| `/api/live`      | Live, TeamPage      | 실시간 경기방 연결     |
+| `/api/teams/:id` | TeamPage, Community | 팀 기반 정보 / 팬 피드 |
+| `/api/community` | Community           | 통합 피드 / 후기 공유  |
+| `/api/users/:id` | Profile             | 개인 활동 요약       |
+
+---
+
+## 5. 📱 Key UX Scenarios
+
+### 📍 [런던 근처 야구 경기 찾기]
+
+1. 홈(Event Map)에서 위치 탐색
+2. 무료 아마추어 경기 클릭
+3. 상세 페이지 → “밋업 만들기”
+4. 생성 시 커뮤니티 자동 공유
+
+### 🤝 [팀 팬들과 밋업 만들기]
+
+1. 팀 페이지 → 밋업 탭
+2. “새 밋업 만들기” 클릭
+3. 지역·시간 설정 후 생성
+4. 커뮤니티에 자동 게시
+
+### 💬 [라이브 응원 & 후기 공유]
+
+1. Live Room 입장
+2. 실시간 응원 채팅
+3. 종료 시 → 커뮤니티 후기 자동 등록
+
+---
+
+## 6. ⚙️ Page Responsibility
+
+| Page                | Purpose    | Key Components                        | Primary Data     |
+| ------------------- | ---------- | ------------------------------------- | ---------------- |
+| `/events`           | 내 주변 경기 탐색 | `EventMap`, `EventList`               | `/api/events`    |
+| `/meetups`          | 밋업 탐색 / 생성 | `MeetupList`, `CreateMeetupModal`     | `/api/meetups`   |
+| `/live`             | 실시간 응원 채팅  | `LiveRoomList`, `LiveRoomDetail`      | `/api/live`      |
+| `/teams/[teamId]`   | 팀 중심 허브    | `TeamHeader`, `TeamTabs`, `FanFeed`   | `/api/teams/:id` |
+| `/community`        | 통합 커뮤니티 피드 | `FeedComposer`, `FeedList`, `Sidebar` | `/api/community` |
+| `/profile/[userId]` | 사용자 활동 요약  | `ProfileHeader`, `ActivitySummary`    | `/api/users/:id` |
+
+---
+
+## 7. 🧩 Entity Relationship
+
+```text
+Event
+ ├── hasMany → Meetup
+ │       └── belongsTo → Team
+ │
+ ├── hasMany → LiveRoom
+ │       └── belongsTo → Team
+ │
+ └── referencedBy → Community Post (type=post|meetup|live)
+
+User
+ ├── hasMany → Meetup (hosted)
+ ├── hasMany → LiveRoom (joined)
+ ├── hasMany → Community Post
+ └── belongsToMany → Team (following)
+```
+
+---
+
+## 8. 🚀 Next Steps / Roadmap
+
+* [ ] **Team Page** → 지역 기반 리디자인 (`region=London` 지원)
+* [ ] **Community Feed** → 지역 필터 추가
+* [ ] **Live** → 경기 종료 후 후기 자동 포스팅
+* [ ] **Home** → 사용자 위치 기반 추천 경기 자동화
+* [ ] **Event API** → OpenSports / custom API 연결
+* [ ] **Profile** → Fan Level / Badge 시스템 추가
+
+flowchart LR
+    subgraph USER["👤 User Journey"]
+        U1["🗺️ Home (Events Map)\n• 지역 경기 탐색\n• /api/events"]
+        U2["📅 Event Detail\n• 경기 정보 조회"]
+        U3["🤝 Meetup Creation\n• /api/meetups (POST)"]
+        U4["💬 Live Room\n• /api/live (Realtime)"]
+        U5["🏳️ Team Page\n• /api/teams/:id"]
+        U6["🌐 Community Feed\n• /api/community"]
+        U7["👤 Profile\n• /api/users/:id"]
+    end
+
+    subgraph DATA["🧠 Data Flow"]
+        D1["events"]
+        D2["meetups"]
+        D3["live"]
+        D4["teams"]
+        D5["community"]
+        D6["users"]
+    end
+
+    %% 사용자 여정
+    U1 --> U2 --> U3 --> U4 --> U5 --> U6 --> U7
+
+    %% 데이터 흐름 연결
+    D1 --> D2
+    D2 --> D4
+    D3 --> D4
+    D4 --> D5
+    D5 --> D6
+
+    %% 사용자와 데이터 매핑
+    U1 --- D1
+    U3 --- D2
+    U4 --- D3
+    U5 --- D4
+    U6 --- D5
+    U7 --- D6
+
+sequenceDiagram
+    participant User as 👤 User
+    participant Live as 💬 Live Room
+    participant Community as 🌐 Community Feed
+    participant Team as 🏳️ Team FanZone
+    participant DB as 🔥 Firebase / Realtime DB
+
+    User->>Live: Join room (WebSocket)
+    Live-->>DB: Send message (cheer / reaction)
+    DB-->>Live: Broadcast updates to participants
+    Live-->>Community: Post highlight / auto-summary
+    Community-->>DB: Store post(type=live)
+    DB-->>Team: Update FanZone score (+points)
+    Team-->>User: Refresh fan level / points in Profile
+
+---
+
+## 9. 💬 핵심 비전
+
+> “Sportsive는 단순한 팬 커뮤니티가 아니다.
+> 지역 안에서 스포츠를 발견하고,
+> 낯선 사람들과 함께 응원하는 문화를 만든다.”
+
+
+👉 *유저 기반 기능(좋아요/투표/댓글 등)은 Firestore에 넣을까?
+
+Prisma DB에 넣을까?*
+
+둘 다 가능하지만:
+
+추천:
+
+유저 액션(좋아요/투표/참여) → Prisma
+
+유저 프로필 정보 → Firebase
+
+이미지 업로드 → Firebase Storage
+
+피드/커뮤니티 글 → Firestore 또는 Prisma 둘 다 가능
+
+원한다면:
+
+📌 어떤 데이터를 Firestore에 두고 어떤 데이터를 Prisma에 둘지 최적의 구조를 설계해줄 수도 있어.
+
+
+🟦 5. 기술적 구현 난이도 → 지금 네 구조에서는 매우 쉬움
+✔ 이미지 업로드 → Firebase Storage
+
+이미 Firebase Auth/Firestore 쓰고 있으므로 Storage 바로 가능
+
+✔ Fan Zone 생성 → Prisma create()
+
+type과 data JSON만 잘 넣으면 됨.
+
+✔ 투표 참여/좋아요 → Reaction 테이블 증가
+
+이미 모듈 구조 있음 → API만 추가하면 끝.
+
+✔ 댓글(Q&A) → Firestore 또는 Prisma
+
+Q&A별 댓글을 Firestore로 해도 되고
+Prisma로 해도 됨.
+
+✔ 포인트 시스템 → Firestore users/{uid}에 score 필드 추가
+
+사용자 uid 기반이기 때문에 유저 정보는 Firestore에 그대로 관리하면 됨.
+
+
+
+🔥 4) 더 스포츠 커뮤스럽게 만들 수 있는 추가 제안 (중요)
+
+네 구조는 이미 매우 뛰어나. 여기에 5개만 더 추가하면 플랫폼 완성도 급상승한다.
+
+⭐ (1) Rival Team 기능
+
+팀 페이지에서:
+
+"Rival Teams"
+
+“이 팀 팬들이 싫어하는 팀”
+
+“클래식 더비 정보”
+
+스포츠 커뮤에서 라이벌 구도는 필수임.
+Derby, 북런던더비, 엘클라시코 등…
+
+TeamHeader나 Overview에 추가하면 조회수 증가.
+
+⭐ (2) Fan Badge / Fan Level 시스템
+
+FanZone이나 Community 활동 기반:
+
+Fan XP
+
+지역 챔피언
+
+"Top 1% Fan" 뱃지
+
+30일 출석 배지
+
+너 이미 FanZone에 참여 카운팅하고 있으니까 쉽게 붙일 수 있음.
+
+⭐ (3) Live Chat: 팀 페이지 상단에 "Active Live Rooms"
+
+TeamHeader에 이미 라이브 여부 넣었지?
+
+여기에 목록까지 넣으면:
+
+🔴 Live Now: Chelsea vs Arsenal – 432 fans chatting
+
+이거 진짜 뜨거운 기능임.
+
+⭐ (4) 지도 기반 경기 찾기와 팀 페이지 연결 강화
+
+팀 Overview에 이미 “지역 경기”를 넣었는데,
+
+클릭하면 “Event → Live Chat / Stats / Meetup”으로 연결
+
+이 경기를 기준으로 지역 밋업 생성 버튼 추가
+
+이 흐름을 강화하면 정말 완벽한 스포츠 플랫폼 느낌.
+
+⭐ (5) 팬 간 DM 또는 "근처 팬" 표시
+
+이미 nearbyFans 숫자 보여주고 있으니,
+
+“시티별 팬 목록”
+
+“근처 팬과 밋업 만들기”
+
+“근처 팬 티어”
+
+이런 기능을 넣으면 현실에서 연결이 강화됨.
+
+🔍 5) 결론: 지금 구조는 스포츠 커뮤니티의 교본 수준임
+
+네 구조는 완전 스포츠 커뮤니티 제품에 최적화돼 있어.
+
+✔ 지역성
+✔ 팀 기반 페이지
+✔ 커뮤니티 피드
+✔ 팬 참여(투표, 예측 등)
+✔ 밋업 오프라인 기능
+✔ 라이브 채팅 연결
+✔ 경기 정보 기반 UX
+
+이런 플로우는 실제로 많은 스포츠 커뮤 플랫폼이 가지지 못한 볼륨과 디테일임.
+
+→ 지금 전반적인 아키텍처는 매우 잘 설계되어 있고, 스키마/코드도 확장성 있게 구현되어 있음.
+→ 충분히 “스포츠 커뮤니티 웹사이트"가 맞고, 오히려 기존 서비스보다 더 잘 만들고 있음.
+
+원하면 다음 것도 해줄 수 있어:

@@ -1,0 +1,172 @@
+/* src/app/globals.css */
+
+/* --- Tailwind Base --- */
+@import "tailwindcss";
+
+/* --- Plugins & Imports --- */
+@plugin "tailwindcss-animate";
+@import "react-swipeable-list/dist/styles.css";
+
+/* --- Custom dark variant --- */
+@custom-variant dark (&:is(.dark *));
+
+/* --- Theme Tokens --- */
+@theme inline {
+  --radius: 0.625rem;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+}
+
+/* --- Light Theme Base --- */
+:root {
+  --background: oklch(0.985 0.002 247.839);
+  --foreground: oklch(0.13 0.028 261.692);
+
+  --primary-from: #2563eb;
+  --primary-to: #38bdf8;
+  --primary: var(--primary-to);
+  --primary-foreground: white;
+
+  --ring: var(--primary-to);
+  --border: oklch(0.92 0.004 247.839);
+  --muted: oklch(0.96 0.003 247.839);
+  --muted-foreground: oklch(0.5 0.02 255);
+}
+
+/* --- Dark Mode --- */
+.dark {
+  --background: oklch(0.15 0.025 261.692);
+  --foreground: oklch(0.98 0.002 247.839);
+
+  --primary-from: color-mix(in oklch, var(--primary-to) 60%, black);
+  --primary-to: var(--primary);
+  --ring: var(--primary);
+  --border: oklch(0.25 0.02 261.692);
+  --muted: oklch(0.2 0.02 261.692);
+  --muted-foreground: oklch(0.8 0.015 261.692);
+}
+
+/* --- Gradient-aware Base Layer --- */
+@layer base {
+  body {
+    background: var(--color-background);
+    color: var(--color-foreground);
+    font-family: Inter, -apple-system, BlinkMacSystemFont, "SF Pro", Roboto, sans-serif;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+}
+
+/* --- Fan Themes --- */
+[data-theme='red'] {
+  --primary-from: #E02424;
+  --primary-to: #FF5A5A;
+  --foreground: #111111;
+}
+
+[data-theme='orange'] {
+  --primary-from: #FF6A00;
+  --primary-to: #FF9A3D;
+  --foreground: #2B1700;
+}
+
+[data-theme='yellow'] {
+  --primary-from: #D4A017;
+  --primary-to: #F5D547;
+  --foreground: #3D2B00;
+}
+
+[data-theme='green'] {
+  --primary-from: #147A3C;
+  --primary-to: #2ECC71;
+  --foreground: #0A1F0A;
+}
+
+[data-theme='blue'] {
+  --primary-from: #2563eb;
+  --primary-to: #38bdf8;
+  --foreground: #111111;
+}
+
+[data-theme='navy'] {
+  --primary-from: #1e3a8a;
+  --primary-to: #3b82f6;
+  --foreground: #111111;
+}
+
+[data-theme='purple'] {
+  --primary-from: #7C3AED;
+  --primary-to: #C084FC;
+  --foreground: #111111;
+}
+
+[data-theme='sky'] {
+  --primary-from: #0A9CD6;
+  --primary-to: #7DD3FC;
+  --foreground: #06202B;
+}
+
+[data-theme='black'] {
+  --primary-from: #111111;
+  --primary-to: #333333;
+  --foreground: #111111;
+  --background: #0b0b0b;
+}
+
+/* Hashtag override for black theme */
+[data-theme='black'] .hashtag {
+  color: #b3b3b3 !important;   /* 밝은 회색 */
+}
+
+[data-theme='white'] {
+  --primary-from: #E5E5E5;
+  --primary-to: #FAFAFA;
+  --foreground: #111111;
+  --background: #ffffff;
+}
+
+/* ❌ 여기는 삭제됨
+html {
+  scroll-behavior: smooth;
+}
+*/
+
+.hashtag {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+html, body {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+  min-height: 100% !important;
+  background-color: var(--color-background) !important;
+  overflow-x: hidden !important;   /* ★ 핵심: 이거 안 하면 검정선 안 사라짐 */
+}
+
+/* --- Hide horizontal/vertical scrollbars (for Tailwind v4) --- */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none !important;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none !important;  /* IE, Edge */
+  scrollbar-width: none !important;     /* Firefox */
+}
+
+/* --- Google Autocomplete Over Modal --- */
+.pac-container {
+  z-index: 999999 !important;
+}
