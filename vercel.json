@@ -2,11 +2,11 @@
   "crons": [
     {
       "path": "/api/teams/chelsea/momvote/cron",
-      "schedule": "*/10 * * * *"
+      "schedule": "0 0 * * *"
     },
     {
       "path": "/api/teams/tottenham/momvote/cron",
-      "schedule": "*/10 * * * *"
+      "schedule": "0 0 * * *"
     }
   ]
 }
