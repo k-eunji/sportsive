@@ -1,35 +1,29 @@
-// src/lib/firebaseAdmin.ts
-
 import "server-only";
 import admin from "firebase-admin";
 
-// 이미 초기화된 경우 재사용
 if (!admin.apps.length) {
-  if (!process.env.FIREBASE_PRIVATE_KEY_B64) {
-    console.error("❌ Missing FIREBASE_PRIVATE_KEY_B64");
-  }
+  let serviceAccount: any = {};
 
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY_B64
-    ? Buffer.from(process.env.FIREBASE_PRIVATE_KEY_B64, "base64").toString("utf8")
-    : undefined;
+  if (process.env.FIREBASE_PRIVATE_KEY_B64) {
+    const decoded = Buffer.from(process.env.FIREBASE_PRIVATE_KEY_B64, "base64").toString("utf8");
+    serviceAccount = JSON.parse(decoded); // JSON 전체를 decode
+  }
 
   admin.initializeApp({
     credential: admin.credential.cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey,
+      projectId: serviceAccount.project_id ?? process.env.FIREBASE_PROJECT_ID,
+      clientEmail: serviceAccount.client_email ?? process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: serviceAccount.private_key, // ⬅ 여기!
     }),
     storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
   });
 
-  console.log("🔥 Firebase Admin initialized on Vercel");
+  console.log("🔥 Firebase Admin initialized");
 }
 
-// ---- 기존 export 유지 ----
 export const adminDb = admin.firestore();
 export const db = adminDb;
 export const adminDB = adminDb;
 export const adminAuth = admin.auth();
 
 export default admin;
-
