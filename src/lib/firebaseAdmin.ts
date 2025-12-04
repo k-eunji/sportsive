@@ -32,3 +32,4 @@ export const adminDB = adminDb;
 export const adminAuth = admin.auth();
 
 export default admin;
+
