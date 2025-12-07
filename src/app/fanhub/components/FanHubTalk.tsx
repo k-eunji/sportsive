@@ -1,18 +1,26 @@
-//src/app/fanhub/components/FanHubTalk.tsx
-
-//src/app/fanhub/components/FanHubTalk.tsx
+// src/app/fanhub/components/FanHubTalk.tsx
 
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import useFanHubTalk from "../hooks/useFanHubTalk";
 import FanHubTalkItem from "./FanHubTalkItem";
 import FanHubTalkInput from "./FanHubTalkInput";
 
 export default function FanHubTalk() {
-  const params = useSearchParams() as any;
-  const tag = params.get("tag") || "";
-  const sort = params.get("sort") || "latest";
+  const [tag, setTag] = useState("");
+  const [sort, setSort] = useState("latest");
+
+  // ✅ useSearchParams 제거 → window.location.search 사용
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+
+    const tagParam = params.get("tag") || "";
+    const sortParam = params.get("sort") || "latest";
+
+    setTag(tagParam);
+    setSort(sortParam);
+  }, []);
 
   const {
     messages,
@@ -32,7 +40,11 @@ export default function FanHubTalk() {
         {sort === "hot" ? "🔥" : sort === "trending" ? "📈" : "🕒"}
       </h2>
 
-      <FanHubTalkInput text={text} setText={setText} send={sendMessage} />
+      <FanHubTalkInput
+        text={text}
+        setText={setText}
+        send={sendMessage}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-4">
         {messages.map((msg) => (

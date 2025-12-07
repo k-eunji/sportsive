@@ -3,7 +3,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useSearchParams, usePathname } from "next/navigation"
+import { usePathname } from "next/navigation"   // ✅ useSearchParams 제거
 import LiveRoomItem from "./LiveRoomItem"
 import { groupByDate } from "@/lib/groupByDate"
 
@@ -11,7 +11,7 @@ interface LiveRoom {
   id: string
   eventId: string
   title: string
-  participants: number;
+  participants: number
   datetime: string
   homeTeamLogo?: string
   awayTeamLogo?: string
@@ -27,13 +27,17 @@ export default function LiveRooms() {
   const sport = segments[2]
 
   const [rooms, setRooms] = useState<LiveRoom[]>([])
-  const searchParams = useSearchParams()
-  const eventId = searchParams?.get("eventId") ?? null
+  const [eventId, setEventId] = useState<string | null>(null) // ✅ eventId 상태로 관리
+
+  // ✅ useSearchParams → window.location.search 대체
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    setEventId(params.get("eventId"))
+  }, [])
 
   useEffect(() => {
     async function fetchRooms() {
       try {
-        // 스포츠 탭에서는 무조건 sport 사용
         const url = `/api/live/rooms/${sport}${eventId ? `?eventId=${eventId}` : ""}`
 
         const res = await fetch(url, { cache: "no-store" })
@@ -72,14 +76,18 @@ export default function LiveRooms() {
   return (
     <main className="max-w-5xl mx-auto p-4 pt-4 space-y-10">
       <div className="space-y-1">
-        <h2 className="text-xl font-bold leading-tight">Feel the buzz with fellow fans</h2>
+        <h2 className="text-xl font-bold leading-tight">
+          Feel the buzz with fellow fans
+        </h2>
         <p className="text-sm text-muted-foreground">
           Join live chats before, during and after every match.
         </p>
       </div>
 
       {rooms.length === 0 ? (
-        <p className="text-center text-muted-foreground py-24">No live rooms available</p>
+        <p className="text-center text-muted-foreground py-24">
+          No live rooms available
+        </p>
       ) : (
         Object.entries(grouped).map(([date, matches]) => (
           <section key={date} className="space-y-3">

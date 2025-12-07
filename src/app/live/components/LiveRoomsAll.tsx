@@ -2,15 +2,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import LiveNowSection from "./all/LiveNowSection";
 import TrendingSection from "./all/TrendingSection";
 import UpcomingSection from "./all/UpcomingSection";
 
 export default function LiveRoomsAll() {
   const [rooms, setRooms] = useState([]);
-  const searchParams = useSearchParams();
-  const eventId = searchParams?.get("eventId");
+  const [eventId, setEventId] = useState<string | null>(null); // ✅ 상태로 관리
+
+  // ✅ useSearchParams 제거 → window.location.search 사용
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setEventId(params.get("eventId"));
+  }, []);
 
   useEffect(() => {
     async function fetchRooms() {
@@ -25,12 +29,12 @@ export default function LiveRoomsAll() {
         console.error("Failed to fetch ALL rooms:", err);
       }
     }
+
     fetchRooms();
   }, [eventId]);
 
   return (
     <main className="max-w-5xl mx-auto px-4 pt-8 pb-24 space-y-14 animate-fadeIn">
-
       {/* Hero */}
       <section className="space-y-2">
         <h1 className="text-[28px] font-extrabold leading-tight">

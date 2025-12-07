@@ -1,9 +1,7 @@
 // src/app/live/page.tsx
 
-'use client'
-
-import LiveRoomsAll from './components/LiveRoomsAll'
+import LivePageClient from "./LivePageClient";
 
 export default function LivePage() {
-  return <LiveRoomsAll />
+  return <LivePageClient />;
 }
