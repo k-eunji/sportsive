@@ -1,20 +1,20 @@
+// src/lib/firebaseAdmin.ts
+
 import "server-only";
 import admin from "firebase-admin";
 
+// ✅ Vercel + 로컬 공용: JSON 통째로 쓰는 방식
+if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
+  throw new Error("FIREBASE_SERVICE_ACCOUNT env var is missing");
+}
+
+const serviceAccount = JSON.parse(
+  process.env.FIREBASE_SERVICE_ACCOUNT
+);
+
 if (!admin.apps.length) {
-  let serviceAccount: any = {};
-
-  if (process.env.FIREBASE_PRIVATE_KEY_B64) {
-    const decoded = Buffer.from(process.env.FIREBASE_PRIVATE_KEY_B64, "base64").toString("utf8");
-    serviceAccount = JSON.parse(decoded); // JSON 전체를 decode
-  }
-
   admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId: serviceAccount.project_id ?? process.env.FIREBASE_PROJECT_ID,
-      clientEmail: serviceAccount.client_email ?? process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: serviceAccount.private_key, // ⬅ 여기!
-    }),
+    credential: admin.credential.cert(serviceAccount),
     storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
   });
 
