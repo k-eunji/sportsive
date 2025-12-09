@@ -1,5 +1,4 @@
 {
-  "rootDirectory": "sportsive",
   "crons": [
     {
       "path": "/api/teams/chelsea/momvote/cron",
