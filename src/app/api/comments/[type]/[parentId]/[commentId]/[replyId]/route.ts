@@ -1,7 +1,6 @@
 // src/app/api/comments/[type]/[parentId]/[commentId]/[replyId]/route.ts
 
 import { NextResponse } from "next/server";
-import { adminDB } from "@/lib/firebaseAdmin";
 
 interface Params {
   type: string;
@@ -10,8 +9,16 @@ interface Params {
   replyId: string;
 }
 
-/** getBaseRef 로컬 함수 */
-function getBaseRef(type: string, parentId: string) {
+/** Firebase Admin을 빌드 타임에 실행하지 않도록 동적 로드 */
+async function getAdminDB() {
+  const { adminDB } = await import("@/lib/firebaseAdmin");
+  return adminDB;
+}
+
+/** getBaseRef */
+async function getBaseRef(type: string, parentId: string) {
+  const adminDB = await getAdminDB();
+
   if (type === "fanhub") {
     return adminDB
       .collection("fanhub")
@@ -19,21 +26,22 @@ function getBaseRef(type: string, parentId: string) {
       .collection("messages")
       .doc(parentId);
   }
+
   return adminDB.collection(type).doc(parentId);
 }
 
 export async function PATCH(
   req: Request,
-  context: { params: Promise<Params> }   // ⬅️ MUST BE Promise
+  context: { params: Params }
 ) {
-  const { type, parentId, commentId, replyId } = await context.params; // ⬅️ MUST await
+  const { type, parentId, commentId, replyId } = context.params;
   const { text } = await req.json();
 
   if (!text?.trim()) {
     return NextResponse.json({ error: "Missing text" }, { status: 400 });
   }
 
-  const baseRef = getBaseRef(type, parentId);
+  const baseRef = await getBaseRef(type, parentId);
 
   await baseRef
     .collection("comments")
@@ -47,11 +55,11 @@ export async function PATCH(
 
 export async function DELETE(
   req: Request,
-  context: { params: Promise<Params> }   // ⬅️ MUST BE Promise
+  context: { params: Params }
 ) {
-  const { type, parentId, commentId, replyId } = await context.params; // ⬅️ MUST await
+  const { type, parentId, commentId, replyId } = context.params;
 
-  const baseRef = getBaseRef(type, parentId);
+  const baseRef = await getBaseRef(type, parentId);
 
   await baseRef
     .collection("comments")
