@@ -24,7 +24,7 @@ export default function LivePreview() {
   useEffect(() => {
     async function fetchRooms() {
       try {
-        const res = await fetch("/api/live/football/rooms?limit=3");
+        const res = await fetch("/api/live/rooms/football?limit=3");
         if (!res.ok) throw new Error("Failed to fetch live rooms");
         const data = await res.json();
         setRooms(data.rooms ?? []);
