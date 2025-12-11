@@ -1,75 +1,97 @@
-// ✅ src/app/api/users/[userId]/relationship/route.ts
-
-import { NextResponse } from "next/server";
+// src/app/api/users/[userId]/relationship/route.ts
+import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/firebaseAdmin";
 import { getRelationshipLabel } from "@/lib/relationships";
 
-export async function POST(
-  req: Request,
-  { params }: { params: { userId: string } }
-) {
-  const { userId: targetUserId } = params;
+interface RouteParams {
+  params: { userId: string };
+}
 
+export async function POST(req: NextRequest, { params }: RouteParams) {
   try {
+    const { userId: targetUserId } = params;
+
     const { myId, action } = await req.json();
-    if (!myId || !action)
-      return NextResponse.json({ error: "Missing parameters" }, { status: 400 });
+    if (!myId || !action) {
+      return NextResponse.json(
+        { error: "Missing parameters" },
+        { status: 400 }
+      );
+    }
 
     const myRef = db.collection("users").doc(myId);
     const targetRef = db.collection("users").doc(targetUserId);
-    const [mySnap, targetSnap] = await Promise.all([myRef.get(), targetRef.get()]);
 
-    if (!mySnap.exists || !targetSnap.exists)
+    const [mySnap, targetSnap] = await Promise.all([
+      myRef.get(),
+      targetRef.get(),
+    ]);
+
+    if (!mySnap.exists || !targetSnap.exists) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
 
-    const myData = mySnap.data() || {};
-    const targetData = targetSnap.data() || {};
+    const myData = mySnap.data() ?? {};
+    const targetData = targetSnap.data() ?? {};
 
-    const mySupports: string[] = myData.supporting || [];
-    const targetSupports: string[] = targetData.supporting || [];
+    const mySupports: string[] = myData.supporting ?? [];
+    const targetSupports: string[] = targetData.supporting ?? [];
 
-    let newStatus: "NONE" | "I_SUPPORT" | "MUTUAL" | "TEAMMATE" = "NONE";
-
-    // Support or Unsupport
+    // -------------------------------------
+    // 🔥 SUPPORT / UNSUPPORT 처리
+    // -------------------------------------
     if (action === "SUPPORT") {
-      if (!mySupports.includes(targetUserId)) mySupports.push(targetUserId);
+      if (!mySupports.includes(targetUserId)) {
+        mySupports.push(targetUserId);
+      }
     } else if (action === "UNSUPPORT") {
       const idx = mySupports.indexOf(targetUserId);
-      if (idx > -1) mySupports.splice(idx, 1);
+      if (idx >= 0) mySupports.splice(idx, 1);
     } else {
       return NextResponse.json({ error: "Invalid action" }, { status: 400 });
     }
 
-    // Relationship status
+    // -------------------------------------
+    // 🔥 관계 계산
+    // -------------------------------------
+    let newStatus: "NONE" | "I_SUPPORT" | "MUTUAL" | "TEAMMATE" = "NONE";
+
     const iSupport = mySupports.includes(targetUserId);
     const theySupport = targetSupports.includes(myId);
 
     if (iSupport && theySupport) {
       newStatus = "MUTUAL";
 
-      // check shared meetups for teammate status
-      const meetupsRef = db.collection("meetups");
-      const myMeetupsSnap = await meetupsRef
+      // 서로 응원 + 공동 밋업 → TEAMMATE
+      const meetupsSnap = await db
+        .collection("meetups")
         .where("participants", "array-contains", myId)
         .get();
 
-      let sharedCount = 0;
-      for (const doc of myMeetupsSnap.docs) {
-        const data = doc.data();
-        if (data.participants?.includes(targetUserId)) sharedCount++;
+      let shared = 0;
+
+      for (const d of meetupsSnap.docs) {
+        const participants = d.data().participants || [];
+        if (participants.includes(targetUserId)) shared++;
       }
 
-      if (sharedCount >= 1) newStatus = "TEAMMATE";
+      if (shared >= 1) {
+        newStatus = "TEAMMATE";
+      }
     } else if (iSupport) {
       newStatus = "I_SUPPORT";
     }
 
+    // -------------------------------------
+    // 🔥 UPDATE
+    // -------------------------------------
     await myRef.update({
       supporting: mySupports,
       updatedAt: new Date().toISOString(),
     });
 
     const relInfo = getRelationshipLabel(newStatus);
+
     return NextResponse.json({
       success: true,
       relationship: newStatus,

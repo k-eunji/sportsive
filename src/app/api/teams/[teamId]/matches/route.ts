@@ -1,6 +1,5 @@
 // src/app/api/teams/[teamId]/matches/route.ts
-
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import sqlite3 from "sqlite3";
 import { open } from "sqlite";
 import path from "path";
@@ -14,13 +13,14 @@ function cleanTeamName(name: string | null | undefined) {
     .trim();
 }
 
-export async function GET(
-  _req: Request,
-  { params }: { params: Promise<{ teamId: string }> }
-) {
-  const { teamId } = await params;
+interface RouteParams {
+  params: { teamId: string };
+}
 
-  let db;
+export async function GET(_req: NextRequest, { params }: RouteParams) {
+  const { teamId } = params;
+
+  let db: any;
 
   try {
     db = await open({
@@ -28,7 +28,9 @@ export async function GET(
       driver: sqlite3.Database,
     });
 
-    // ⚽ 과거 경기 1개 (가장 최근 경기)
+    // -----------------------------------------
+    // 🔽 과거 경기 (최근 경기부터 4개)
+    // -----------------------------------------
     const pastMatches = await db.all(
       `
       SELECT 
@@ -44,10 +46,8 @@ export async function GET(
         ht.city AS city,
         ht.homepage_url AS homepageUrl
       FROM "2526_england_pl_football_matches" m
-      JOIN "2526_england_pl_football_teams" ht 
-        ON m.home_team_id = ht.id
-      JOIN "2526_england_pl_football_teams" at 
-        ON m.away_team_id = at.id
+      JOIN "2526_england_pl_football_teams" ht ON m.home_team_id = ht.id
+      JOIN "2526_england_pl_football_teams" at ON m.away_team_id = at.id
       WHERE (m.home_team_id = ? OR m.away_team_id = ?)
         AND datetime(m.date) < datetime('now')
       ORDER BY datetime(m.date) DESC
@@ -56,7 +56,9 @@ export async function GET(
       [teamId, teamId]
     );
 
-    // ⚽ 업커밍 5경기
+    // -----------------------------------------
+    // 🔼 다가오는 경기 (5개)
+    // -----------------------------------------
     const upcomingMatches = await db.all(
       `
       SELECT 
@@ -72,10 +74,8 @@ export async function GET(
         ht.city AS city,
         ht.homepage_url AS homepageUrl
       FROM "2526_england_pl_football_matches" m
-      JOIN "2526_england_pl_football_teams" ht 
-        ON m.home_team_id = ht.id
-      JOIN "2526_england_pl_football_teams" at 
-        ON m.away_team_id = at.id
+      JOIN "2526_england_pl_football_teams" ht ON m.home_team_id = ht.id
+      JOIN "2526_england_pl_football_teams" at ON m.away_team_id = at.id
       WHERE (m.home_team_id = ? OR m.away_team_id = ?)
         AND datetime(m.date) >= datetime('now')
       ORDER BY datetime(m.date) ASC
@@ -84,13 +84,13 @@ export async function GET(
       [teamId, teamId]
     );
 
-    // 🔥 past[0]은 DESC로 가져왔으니 자동적으로 "가장 최근 경기"
-    // 🔥 upcoming은 ASC → nextMatch가 upcoming[0]
+    // -----------------------------------------
+    // 🔄 합치기
+    // -----------------------------------------
+    const combined = [...pastMatches, ...upcomingMatches];
 
-    const final = [...pastMatches, ...upcomingMatches];
-
-    const formatted = final.map((m: any) => ({
-      id: m.id.toString(),
+    const formatted = combined.map((m: any) => ({
+      id: m.id?.toString(),
       date: m.date,
       status: m.status,
       competition: m.competition,
@@ -103,9 +103,7 @@ export async function GET(
       region: m.region,
       location: { lat: m.lat, lng: m.lng },
       homepageUrl: m.homepageUrl,
-      title: `${cleanTeamName(m.homeTeamName)} vs ${cleanTeamName(
-        m.awayTeamName
-      )}`,
+      title: `${cleanTeamName(m.homeTeamName)} vs ${cleanTeamName(m.awayTeamName)}`,
     }));
 
     return NextResponse.json({ matches: formatted });

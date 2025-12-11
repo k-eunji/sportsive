@@ -1,13 +1,18 @@
 // src/app/api/messages/[conversationId]/route.ts
-
-import { NextResponse, type NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/firebaseAdmin";
 import { getCurrentUserId } from "@/lib/getCurrentUser";
 
-// ✅ 타입 지정 없이 context 그대로 받기
-export async function GET(req: NextRequest, context: any) {
+interface RouteParams {
+  params: { conversationId: string };
+}
+
+// ------------------------------------------------------------
+// 🔹 GET → 대화 상세 조회 + 메시지 목록 반환
+// ------------------------------------------------------------
+export async function GET(req: NextRequest, { params }: RouteParams) {
   try {
-    const { conversationId } = context.params;
+    const { conversationId } = params;
     const uid = await getCurrentUserId(req);
 
     if (!uid) {
@@ -22,6 +27,7 @@ export async function GET(req: NextRequest, context: any) {
     }
 
     const convData = convSnap.data() as any;
+
     if (!convData.participants.includes(uid)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
@@ -31,10 +37,10 @@ export async function GET(req: NextRequest, context: any) {
       .orderBy("createdAt", "asc")
       .get();
 
-    const messages = messagesSnap.docs.map((d) => {
-      const data = d.data() as any;
+    const messages = messagesSnap.docs.map((doc) => {
+      const data = doc.data() as any;
       return {
-        id: d.id,
+        id: doc.id,
         text: data.text,
         from: data.from,
         to: data.to,
@@ -45,14 +51,20 @@ export async function GET(req: NextRequest, context: any) {
 
     return NextResponse.json(messages);
   } catch (err) {
-    console.error("❌ GET /api/messages/[conversationId]:", err);
-    return NextResponse.json({ error: "Failed to fetch messages" }, { status: 500 });
+    console.error("❌ GET /messages/[conversationId]:", err);
+    return NextResponse.json(
+      { error: "Failed to fetch messages" },
+      { status: 500 }
+    );
   }
 }
 
-export async function DELETE(req: NextRequest, context: any) {
+// ------------------------------------------------------------
+// 🔹 DELETE → 대화 + 메시지 전체 삭제
+// ------------------------------------------------------------
+export async function DELETE(req: NextRequest, { params }: RouteParams) {
   try {
-    const { conversationId } = context.params;
+    const { conversationId } = params;
     const uid = await getCurrentUserId(req);
 
     if (!uid) {
@@ -67,19 +79,25 @@ export async function DELETE(req: NextRequest, context: any) {
     }
 
     const convData = convSnap.data() as any;
+
     if (!convData.participants.includes(uid)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const msgsSnap = await convRef.collection("messages").get();
     const batch = db.batch();
+
     msgsSnap.forEach((doc) => batch.delete(doc.ref));
     batch.delete(convRef);
+
     await batch.commit();
 
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error("❌ DELETE /api/messages/[conversationId]:", err);
-    return NextResponse.json({ error: "Failed to delete conversation" }, { status: 500 });
+    console.error("❌ DELETE /messages/[conversationId]:", err);
+    return NextResponse.json(
+      { error: "Failed to delete conversation" },
+      { status: 500 }
+    );
   }
 }

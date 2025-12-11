@@ -4,14 +4,11 @@ import { NextResponse } from "next/server";
 import { adminDB } from "@/lib/firebaseAdmin";
 import { FieldValue } from "firebase-admin/firestore";
 
-
-// GET: 댓글 가져오기
 export async function GET(
   _req: Request,
   context: { params: Promise<{ teamId: string; qaId: string }> }
 ) {
-  const { teamId, qaId } = await context.params; // ⬅️ 반드시 await
-
+  const { teamId, qaId } = await context.params;
 
   const snap = await adminDB
     .collection("teams")
@@ -26,12 +23,11 @@ export async function GET(
   return NextResponse.json(list);
 }
 
-// POST: 댓글 작성
 export async function POST(
   req: Request,
   context: { params: Promise<{ teamId: string; qaId: string }> }
 ) {
-  const { teamId, qaId } = await context.params; // ⬅️ 반드시 await
+  const { teamId, qaId } = await context.params;
 
   const body = await req.json();
 
@@ -43,7 +39,6 @@ export async function POST(
     .collection("comments")
     .doc();
 
-  // 댓글 저장
   await ref.set({
     id: ref.id,
     text: body.text,
@@ -52,7 +47,6 @@ export async function POST(
     createdAt: Date.now(),
   });
 
-  // 🔥 댓글 수(answerCount) 증가시키기
   await adminDB
     .collection("teams")
     .doc(teamId)

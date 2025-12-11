@@ -1,4 +1,5 @@
 // src/app/api/events/[eventId]/[sport]/route.ts
+
 import { NextResponse } from "next/server";
 import sqlite3 from "sqlite3";
 import { open } from "sqlite";
@@ -6,7 +7,6 @@ import path from "path";
 
 const DB_FILE = path.join(process.cwd(), "sportsive.db");
 
-// ✅ 동적으로 테이블 이름 생성
 function getTableName(region: string, sport: string) {
   const normalizedRegion = region.toLowerCase();
   const normalizedSport = sport.toLowerCase();
@@ -15,15 +15,16 @@ function getTableName(region: string, sport: string) {
 
 export async function GET(
   _req: Request,
-  { params }: { params: Promise<{ eventId: string; sport: string }> }
+  context: { params: Promise<{ eventId: string; sport: string }> }
 ) {
-  const { eventId, sport } = await params;
+  const { eventId, sport } = await context.params;
 
-  const region = eventId; // ← 이게 정답
+  const region = eventId;
   const TABLE_MATCHES = getTableName(region, sport);
   const TABLE_TEAMS = TABLE_MATCHES.replace("_matches", "_teams");
 
-  let db;
+  let db: any;
+
   try {
     db = await open({ filename: DB_FILE, driver: sqlite3.Database });
 
@@ -62,7 +63,9 @@ export async function GET(
       location: { lat: m.lat, lng: m.lng },
       homepageUrl: m.homepageUrl,
       isPaid: m.is_paid === 1,
-      title: `${cleanName(m.homeTeamName)} vs ${cleanName(m.awayTeamName)}`,
+      title: `${cleanName(m.homeTeamName)} vs ${cleanName(
+        m.awayTeamName
+      )}`,
     }));
 
     return NextResponse.json({ matches: formattedMatches });

@@ -1,15 +1,14 @@
 // src/app/api/meetups/[meetupId]/join/route.ts
 
 import { NextResponse } from "next/server";
-import { db } from "@/lib/firebaseAdmin";
+import { adminDB } from "@/lib/firebaseAdmin";
 import { sendNotification } from "@/lib/sendNotification";
 
-// ✅ POST — 밋업 참가 요청
 export async function POST(
   req: Request,
-  context: { params: Promise<{ meetupId: string }> } // ✅ Promise 타입으로 변경
+  context: { params: Promise<{ meetupId: string }> }
 ) {
-  const { meetupId } = await context.params; // ✅ await 필요
+  const { meetupId } = await context.params; // ⬅️ Next.js 16 필수 await
 
   try {
     const body = await req.json();
@@ -19,7 +18,7 @@ export async function POST(
       return NextResponse.json({ error: "Missing userId" }, { status: 400 });
     }
 
-    const meetupRef = db.collection("meetups").doc(meetupId);
+    const meetupRef = adminDB.collection("meetups").doc(meetupId);
     const docSnap = await meetupRef.get();
 
     if (!docSnap.exists) {
@@ -28,10 +27,8 @@ export async function POST(
 
     const data = docSnap.data()!;
     const participants = new Set<string>(data.participants || []);
-    const alreadyJoined = participants.has(userId);
 
-    // ✅ 이미 참가한 경우
-    if (alreadyJoined) {
+    if (participants.has(userId)) {
       return NextResponse.json({
         ok: true,
         message: "Already joined",
@@ -48,7 +45,7 @@ export async function POST(
 
     console.log(`✅ User ${userId} joined meetup ${meetupId}`);
 
-    // ✅ 호스트에게 알림 (본인 아닐 때만)
+    // 호스트에게 알림 (본인이 아닐 때)
     if (data.hostId && userId !== data.hostId) {
       await sendNotification({
         userId: data.hostId,

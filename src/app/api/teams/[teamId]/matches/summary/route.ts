@@ -1,6 +1,5 @@
-//src/app/api/teams/[teamId]/matches/summary/route.ts
-
-import { NextResponse } from "next/server";
+// src/app/api/teams/[teamId]/matches/summary/route.ts
+import { NextRequest, NextResponse } from "next/server";
 import sqlite3 from "sqlite3";
 import { open } from "sqlite";
 import path from "path";
@@ -14,20 +13,21 @@ function cleanTeamName(name: string | null | undefined) {
     .trim();
 }
 
-export async function GET(
-  _req: Request,
-  { params }: { params: Promise<{ teamId: string }> }
-) {
-  const { teamId } = await params;
+interface RouteParams {
+  params: { teamId: string };
+}
 
-  let db;
+export async function GET(_req: NextRequest, { params }: RouteParams) {
+  const { teamId } = params;
+
+  let db: any;
 
   try {
     db = await open({ filename: DB_FILE, driver: sqlite3.Database });
 
-    const todayStr = new Date().toISOString().slice(0, 10);
+    const today = new Date().toISOString().slice(0, 10);
 
-    // ⬇ 오늘 경기 가져오기
+    // 🔻 오늘 경기
     const todayMatch = await db.get(
       `
       SELECT 
@@ -42,10 +42,10 @@ export async function GET(
         AND date(m.date) = date(?)
       LIMIT 1
       `,
-      [teamId, teamId, todayStr]
+      [teamId, teamId, today]
     );
 
-    // ⬇ 다음 경기 (오늘 이후)
+    // 🔻 다음 경기
     const nextMatch = await db.get(
       `
       SELECT 
@@ -61,7 +61,7 @@ export async function GET(
       ORDER BY m.date ASC
       LIMIT 1
       `,
-      [teamId, teamId, todayStr]
+      [teamId, teamId, today]
     );
 
     return NextResponse.json({
@@ -82,9 +82,9 @@ export async function GET(
         : null,
     });
   } catch (err) {
-    console.error("❌ Error fetching summary:", err);
+    console.error("❌ Error fetching match summary:", err);
     return NextResponse.json(
-      { todayMatch: null, nextMatch: null },
+      { todayMatch: null, nextMatch: null, error: "Summary failed" },
       { status: 500 }
     );
   } finally {

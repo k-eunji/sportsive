@@ -1,23 +1,37 @@
 // src/app/api/notifications/[notificationId]/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/firebaseAdmin";
 
-export async function PATCH(req: Request, { params }: { params: { notificationId: string } }) {
+interface RouteParams {
+  params: { notificationId: string };
+}
+
+export async function PATCH(_req: NextRequest, { params }: RouteParams) {
   try {
-    await db.collection("notifications").doc(params.notificationId).update({ read: true });
+    await db.collection("notifications").doc(params.notificationId).update({
+      read: true,
+    });
+
     return NextResponse.json({ ok: true });
   } catch (err: any) {
-    console.error("❌ Error marking notification read:", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    console.error("❌ PATCH /notifications/[id] error:", err);
+    return NextResponse.json(
+      { error: err.message ?? "Failed to update notification" },
+      { status: 500 }
+    );
   }
 }
 
-export async function DELETE(req: Request, { params }: { params: { notificationId: string } }) {
+export async function DELETE(_req: NextRequest, { params }: RouteParams) {
   try {
     await db.collection("notifications").doc(params.notificationId).delete();
+
     return NextResponse.json({ ok: true });
   } catch (err: any) {
-    console.error("❌ Error deleting notification:", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    console.error("❌ DELETE /notifications/[id] error:", err);
+    return NextResponse.json(
+      { error: err.message ?? "Failed to delete notification" },
+      { status: 500 }
+    );
   }
 }

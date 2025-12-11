@@ -3,12 +3,16 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
-    // /api/live/all/rooms 을 Proxy 해줌
-    const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/live/all/rooms`, {
-      cache: "no-store",
-    });
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_BASE_URL}/api/live/all/rooms`,
+      { cache: "no-store" }
+    );
 
-    const data = await res.json();
+    if (!response.ok) {
+      throw new Error(`Fetch failed: ${response.status}`);
+    }
+
+    const data = await response.json();
 
     return NextResponse.json({
       rooms: data?.rooms ?? [],

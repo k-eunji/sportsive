@@ -1,6 +1,7 @@
 // src/app/api/meetups/[meetupId]/attendees/route.ts
+
 import { NextResponse } from "next/server";
-import { db } from "@/lib/firebaseAdmin";
+import { adminDB } from "@/lib/firebaseAdmin";
 import { sendNotification } from "@/lib/sendNotification";
 
 export async function POST(req: Request, { params }: { params: { meetupId: string } }) {
@@ -8,7 +9,7 @@ export async function POST(req: Request, { params }: { params: { meetupId: strin
   const { userId } = await req.json();
 
   try {
-    const ref = db.collection("meetups").doc(meetupId);
+    const ref = adminDB.collection("meetups").doc(meetupId);
     const snap = await ref.get();
 
     if (!snap.exists) {
@@ -23,18 +24,16 @@ export async function POST(req: Request, { params }: { params: { meetupId: strin
     }
 
     const updatedParticipants = [...participants, userId];
+
     await ref.update({
       participants: updatedParticipants,
       participantsCount: updatedParticipants.length,
       updatedAt: new Date().toISOString(),
     });
 
-    console.log(`✅ User ${userId} joined meetup ${meetupId}`);
-
-    // ✅ 이 위치에서 join 알림 전송!
     await sendNotification({
-      userId: meetup.hostId, // 알림 받는 사람 = 호스트
-      fromUserId: userId,    // 알림 보낸 사람 = 참가자
+      userId: meetup.hostId,
+      fromUserId: userId,
       meetupId,
       message: "joined your meetup!",
       type: "join",

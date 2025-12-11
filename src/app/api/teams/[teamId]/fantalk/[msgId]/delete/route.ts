@@ -1,17 +1,28 @@
-//api/teams/[teamId]/fantalk/[msgId]/delete/route.ts
-
+// src/app/api/teams/[teamId]/fantalk/[msgId]/delete/route.ts
 import { db } from "@/lib/firebaseAdmin";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function POST(req: Request, { params }: any) {
+interface RouteParams {
+  params: { teamId: string; msgId: string };
+}
+
+export async function POST(_req: NextRequest, { params }: RouteParams) {
   const { teamId, msgId } = params;
 
-  await db
-    .collection("teams")
-    .doc(teamId)
-    .collection("fantalk")
-    .doc(msgId)
-    .delete();
+  try {
+    await db
+      .collection("teams")
+      .doc(teamId)
+      .collection("fantalk")
+      .doc(msgId)
+      .delete();
 
-  return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error("❌ fantalk delete failed:", err);
+    return NextResponse.json(
+      { success: false, error: "Failed to delete message" },
+      { status: 500 }
+    );
+  }
 }

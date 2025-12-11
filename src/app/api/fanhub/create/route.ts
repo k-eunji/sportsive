@@ -2,30 +2,31 @@
 
 import { db } from "@/lib/firebaseAdmin";
 import { NextResponse } from "next/server";
+import { FieldValue } from "firebase-admin/firestore";   // ★ 추가됨
 
 export async function POST(req: Request) {
   const { text, mediaUrl, mediaType, userId, authorNickname, tags = [] } =
     await req.json();
 
-  // 1) 먼저 doc id 생성
+  // 1) 문서 ID 먼저 생성
   const ref = db
     .collection("fanhub")
     .doc("global")
     .collection("messages")
     .doc();
 
-  // 2) set()은 절대 "빈 문서" 상태로 남지 않음
+  // 2) Firestore에 정상 저장
   await ref.set({
-    id: ref.id,  // ★ 명시적으로 저장 (나중에 FE/BE에서 혼동 없음)
+    id: ref.id,
     text,
     mediaUrl,
     mediaType,
     userId,
     authorNickname,
     tags,
-    createdAt: new Date().toISOString(),
+    createdAt: FieldValue.serverTimestamp(),   // ★ 여기만 변경됨!
   });
 
-  // 3) FE로 문서 id 반환
+  // 3) FE로 문서 ID 반환
   return NextResponse.json({ success: true, id: ref.id });
 }

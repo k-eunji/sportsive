@@ -1,6 +1,5 @@
 // src/app/api/trending/local/teams/route.ts
-
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import sqlite3 from "sqlite3";
 import { open } from "sqlite";
 import path from "path";
@@ -15,13 +14,20 @@ function clean(str: string | null | undefined) {
     .toLowerCase();
 }
 
-export async function GET(req: Request) {
-  const url = new URL(req.url);
-  const city = clean(url.searchParams.get("city"));
+// 🟢 타입 명시
+interface Team {
+  id: string;
+  name: string;
+  logo: string | null;
+  city: string;
+}
 
+export async function GET(req: NextRequest) {
+  const city = clean(req.nextUrl.searchParams.get("city"));
   if (!city) return NextResponse.json([], { status: 400 });
 
-  let db;
+  let db: any;
+
   try {
     db = await open({ filename: DB_FILE, driver: sqlite3.Database });
 
@@ -34,18 +40,22 @@ export async function GET(req: Request) {
       FROM "2526_england_pl_football_teams"
     `);
 
-    const teams = rawTeams.map((t: any) => ({
+    // 🟢 배열의 Element 타입 지정
+    const teams: Team[] = rawTeams.map((t: any) => ({
       id: String(t.id),
       name: t.name,
-      logo: t.logo || null,
+      logo: t.logo ?? null,
       city: clean(t.city),
     }));
 
+    // 🟢 타입 에러 없음
     const filtered = teams.filter((t) => t.city === city);
 
     return NextResponse.json(filtered);
-  } catch (e) {
-    console.error("local trending error:", e);
+  } catch (err) {
+    console.error("❌ Local trending teams error:", err);
     return NextResponse.json([], { status: 500 });
+  } finally {
+    if (db) await db.close();
   }
 }

@@ -1,13 +1,14 @@
-import { NextResponse } from "next/server";
+// src/app/api/teams/[teamId]/live/route.ts
+import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(
-  _req: Request,
-  { params }: { params: Promise<{ teamId: string }> }
-) {
-  // ✅ params를 언래핑
-  const { teamId } = await params;
+interface RouteParams {
+  params: { teamId: string };
+}
 
-  // 예시 데이터 — 실제에선 DB에서 teamId 기반 조회
+export async function GET(_req: NextRequest, { params }: RouteParams) {
+  const { teamId } = params;
+
+  // TODO: 실제 DB에서 teamId 기반 라이브 채팅방 조회
   const rooms = [
     {
       id: "abc123",

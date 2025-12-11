@@ -1,9 +1,9 @@
-// ✅ src/app/api/meetups/create/route.ts
-import { NextResponse } from "next/server";
+// src/app/api/meetups/create/route.ts
+import { NextRequest, NextResponse } from "next/server";
 import { createMeetupServer } from "@/lib/meetups.server";
 import { adminAuth } from "@/lib/firebaseAdmin";
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const authHeader = req.headers.get("authorization");
@@ -19,10 +19,11 @@ export async function POST(req: Request) {
 
     console.log("👤 Host authenticated:", hostId);
 
+    // ---------- 기본 Meetup 데이터 구성 ----------
     const meetupData: any = {
       ...body,
       hostId,
-      status: "pending", // ✅ 기본 상태: 아직 성사 안 됨
+      status: "pending",
       purpose: body.purpose ?? "",
       details: body.details ?? "",
       authorNickname: body.authorNickname ?? "Unknown",
@@ -31,26 +32,31 @@ export async function POST(req: Request) {
       participants: [],
       maxParticipants: body.maxParticipants ?? 10,
       imageUrl: body.imageUrl || null,
-      location:
-        body.type === "online_game"
-          ? { name: "Online", address: "", lat: 0, lng: 0 }
-          : body.venue
-          ? {
-              name: body.venue.name || "",
-              address: body.venue.name || "",
-              lat: body.venue.lat || 0,
-              lng: body.venue.lng || 0,
-            }
-          : { name: "", address: "", lat: 0, lng: 0 },
       reviewsOpen: false,
       createdAt: new Date().toISOString(),
     };
 
+    // ---------- 위치 처리 ----------
+    if (body.type === "online_game") {
+      meetupData.location = { name: "Online", address: "", lat: 0, lng: 0 };
+    } else if (body.venue) {
+      meetupData.location = {
+        name: body.venue.name || "",
+        address: body.venue.address || body.venue.name || "",
+        lat: body.venue.lat || 0,
+        lng: body.venue.lng || 0,
+      };
+    } else {
+      meetupData.location = { name: "", address: "", lat: 0, lng: 0 };
+    }
+
+    // ---------- 온라인 게임 옵션 ----------
     if (body.type === "online_game") {
       meetupData.onlineLink = body.onlineLink ?? "";
       meetupData.onlineGameName = body.onlineGameName ?? "";
     }
 
+    // ---------- 이벤트 처리 ----------
     if (body.selectedEvent) {
       meetupData.event = body.selectedEvent;
       meetupData.eventId = body.selectedEvent.id;
@@ -58,6 +64,7 @@ export async function POST(req: Request) {
       meetupData.eventId = body.selectedEventId;
     }
 
+    // ---------- 모집 마감일 ----------
     if (body.applicationDeadline && body.applicationDeadline !== "") {
       meetupData.applicationDeadline = new Date(
         body.applicationDeadline
@@ -67,6 +74,7 @@ export async function POST(req: Request) {
     console.log("🛠️ Creating meetup with data:", JSON.stringify(meetupData, null, 2));
 
     const meetupId = await createMeetupServer(meetupData);
+
     console.log("✅ Meetup created successfully:", meetupId);
 
     return NextResponse.json({ meetupId, status: "pending" });

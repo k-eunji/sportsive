@@ -1,18 +1,22 @@
-// app/api/matches/[matchId]/route.ts
+// app/api/matches/route.ts
+
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db.mock";
+import { adminDB } from "@/lib/firebaseAdmin";
 
 export async function GET(
   req: Request,
-  context: { params: Promise<{ matchId: string }> } // ✅ Promise로 변경
+  context: { params: Promise<{ matchId: string }> }
 ) {
-  const { matchId } = await context.params; // ✅ 이제 정상적으로 await 가능
+  const { matchId } = await context.params;
 
   try {
-    const docSnap = await db.collection("matches").doc(matchId).get();
+    const docSnap = await adminDB.collection("matches").doc(matchId).get();
 
     if (!docSnap.exists) {
-      return NextResponse.json({ error: "Match not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Match not found" },
+        { status: 404 }
+      );
     }
 
     return NextResponse.json({ id: docSnap.id, ...docSnap.data() });

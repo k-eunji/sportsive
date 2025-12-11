@@ -1,5 +1,7 @@
 // src/app/api/explore/route.ts
 
+// src/app/api/explore/route.ts
+
 import { NextRequest, NextResponse } from "next/server";
 import sqlite3 from "sqlite3";
 import { open } from "sqlite";
@@ -7,9 +9,10 @@ import path from "path";
 
 const DB_FILE = path.join(process.cwd(), "sportsive.db");
 
-// Haversine 거리 계산 (km)
-function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
-  if (!lat2 || !lon2) return Infinity;
+// ✅ Haversine 거리 계산 (km)
+function getDistance(lat1: number, lon1: number, lat2?: number, lon2?: number) {
+  if (lat2 == null || lon2 == null) return Infinity;
+
   const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLon = ((lon2 - lon1) * Math.PI) / 180;
@@ -27,17 +30,22 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
 
   const q = searchParams.get("q")?.toLowerCase() || "";
-  const lat = Number(searchParams.get("lat"));
-  const lng = Number(searchParams.get("lng"));
 
-  const hasLocation = !isNaN(lat) && !isNaN(lng);
+  const latParam = searchParams.get("lat");
+  const lngParam = searchParams.get("lng");
+
+  const lat = latParam ? Number(latParam) : null;
+  const lng = lngParam ? Number(lngParam) : null;
+
+  const hasLocation = lat !== null && lng !== null && !isNaN(lat) && !isNaN(lng);
 
   let db;
+
   try {
     db = await open({ filename: DB_FILE, driver: sqlite3.Database });
 
     // ──────────────────────────
-    // 1) 최신 FanHub Posts
+    // 1) Latest FanHub Posts
     // ──────────────────────────
     const fanhubPosts = await db.all(`
       SELECT id, text, author_nickname as authorNickname, created_at
@@ -58,7 +66,7 @@ export async function GET(req: NextRequest) {
     `);
 
     // ──────────────────────────
-    // 3) Popular Teams (랜덤)
+    // 3) Popular Teams
     // ──────────────────────────
     const teams = await db.all(`
       SELECT id, name, city, region, logo_url AS logo
@@ -68,37 +76,42 @@ export async function GET(req: NextRequest) {
     `);
 
     // ──────────────────────────
-    // 4) Events (전체)
+    // 4) Events (존재 안 해도 빌드 안 깨지게)
     // ──────────────────────────
-    const rawEvents = await db.all(`
-      SELECT id, home_team, away_team, date, venue, city, region, lat, lng
-      FROM events
-      ORDER BY date ASC
-    `);
+    let rawEvents: any[] = [];
+
+    try {
+      rawEvents = await db.all(`
+        SELECT id, home_team, away_team, date, venue, city, region, lat, lng
+        FROM events
+        ORDER BY date ASC
+      `);
+    } catch {
+      rawEvents = [];
+    }
 
     // ──────────────────────────
-    // 5) Nearby Events (사용자 위치 기반)
+    // 5) Nearby Events
     // ──────────────────────────
-    let nearbyEvents = [];
+    let nearbyEvents: any[] = [];
 
-    if (hasLocation) {
+    if (hasLocation && lat !== null && lng !== null) {
       nearbyEvents = rawEvents
         .map(e => ({
           ...e,
           distance: getDistance(lat, lng, e.lat, e.lng),
         }))
-        .filter(e => e.distance < 80) // 80km 내 경기
+        .filter(e => e.distance < 80)
         .sort((a, b) => a.distance - b.distance)
         .slice(0, 7);
     } else {
-      // fallback: 런던 중심
       nearbyEvents = rawEvents
         .filter(e => e.city?.toLowerCase() === "london")
         .slice(0, 7);
     }
 
     // ──────────────────────────
-    // 6) Search 기능 (q 있을 때만)
+    // 6) Search
     // ──────────────────────────
     let searchResults = null;
 
@@ -107,10 +120,12 @@ export async function GET(req: NextRequest) {
         teams: teams.filter(t => t.name.toLowerCase().includes(q)),
         events: rawEvents.filter(
           e =>
-            e.home_team.toLowerCase().includes(q) ||
-            e.away_team.toLowerCase().includes(q)
+            e.home_team?.toLowerCase().includes(q) ||
+            e.away_team?.toLowerCase().includes(q)
         ),
-        posts: fanhubPosts.filter(p => p.text.toLowerCase().includes(q)),
+        posts: fanhubPosts.filter(p =>
+          p.text?.toLowerCase().includes(q)
+        ),
       };
     }
 

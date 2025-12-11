@@ -11,7 +11,7 @@ export async function GET(
   _req: Request,
   { params }: { params: Promise<EventParams> }
 ) {
-  const { eventId } = await params;  // ★ 반드시 await 필요!
+  const { eventId } = await params;
 
   try {
     const event = await getEventById(eventId);

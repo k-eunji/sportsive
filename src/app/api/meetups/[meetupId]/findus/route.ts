@@ -1,5 +1,4 @@
 // src/app/api/meetups/[meetupId]/findus/route.ts
-
 import { NextResponse } from "next/server";
 import { adminDB } from "@/lib/firebaseAdmin";
 
@@ -7,7 +6,6 @@ interface MeetupParams {
   meetupId: string;
 }
 
-// ✅ PATCH — 밋업의 "findUsNote" 업데이트
 export async function PATCH(
   req: Request,
   { params }: { params: MeetupParams }

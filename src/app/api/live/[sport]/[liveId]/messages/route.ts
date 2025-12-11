@@ -5,12 +5,14 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { db as adminDb } from "@/lib/firebaseAdmin";
 
-// GET 메시지 가져오기
+// ---------------------
+// GET 메시지 목록
+// ---------------------
 export async function GET(
   req: Request,
-  context: { params: Promise<{ sport: string; liveId: string }> }
+  { params }: { params: Promise<{ sport: string; liveId: string }> }
 ) {
-  const { sport, liveId } = await context.params;
+  const { sport, liveId } = await params;
 
   try {
     const snapshot = await adminDb
@@ -34,17 +36,17 @@ export async function GET(
   }
 }
 
-
-// POST 메시지 생성
+// ---------------------
+// POST 메시지 추가
+// ---------------------
 export async function POST(
   req: Request,
-  context: { params: Promise<{ sport: string; liveId: string }> }
+  { params }: { params: Promise<{ sport: string; liveId: string }> }
 ) {
-  const { sport, liveId } = await context.params;
+  const { sport, liveId } = await params;
 
   try {
-    const body = await req.json();
-    const { user, text } = body;
+    const { user, text } = await req.json();
 
     if (!user?.trim() || !text?.trim()) {
       return NextResponse.json(

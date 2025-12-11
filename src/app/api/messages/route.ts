@@ -1,19 +1,28 @@
 // src/app/api/messages/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/firebaseAdmin";
 import { getCurrentUserId } from "@/lib/getCurrentUser";
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const senderId = await getCurrentUserId(req);
-    if (!senderId)
+
+    if (!senderId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     const { to, text, conversationId } = await req.json();
-    if (!to || !text)
-      return NextResponse.json({ error: "Missing params" }, { status: 400 });
 
-    // ✅ 블락 여부 확인 (양방향)
+    if (!to || !text) {
+      return NextResponse.json(
+        { error: "Missing params" },
+        { status: 400 }
+      );
+    }
+
+    // ---------------------------------------------------
+    // 🔒 양방향 블락 상태 확인
+    // ---------------------------------------------------
     const [senderBlockedDoc, receiverBlockedDoc] = await Promise.all([
       db.collection("users").doc(senderId).collection("blocked").doc(to).get(),
       db.collection("users").doc(to).collection("blocked").doc(senderId).get(),
@@ -33,12 +42,15 @@ export async function POST(req: Request) {
       );
     }
 
-    // ✅ 기존 대화 확인 및 생성
+    // ---------------------------------------------------
+    // 🧩 기존 대화 찾기 또는 생성
+    // ---------------------------------------------------
     let convId = conversationId;
     const participants = [senderId, to].sort();
     const participantsKey = participants.join("_");
 
     if (!convId) {
+      // 🔹 기존 DM이 있는지 확인
       const existing = await db
         .collection("conversations")
         .where("participantsKey", "==", participantsKey)
@@ -46,18 +58,22 @@ export async function POST(req: Request) {
         .get();
 
       if (existing.empty) {
+        // 🔹 새 대화 생성
         const newConv = await db.collection("conversations").add({
           participants,
           participantsKey,
-          lastMessage: text,
           type: "dm",
+          lastMessage: text,
           lastSender: senderId,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         });
+
         convId = newConv.id;
       } else {
+        // 🔹 기존 대화 업데이트
         convId = existing.docs[0].id;
+
         await db.collection("conversations").doc(convId).update({
           lastMessage: text,
           lastSender: senderId,
@@ -66,7 +82,9 @@ export async function POST(req: Request) {
       }
     }
 
-    // ✅ 메시지 저장
+    // ---------------------------------------------------
+    // 💬 메시지 저장
+    // ---------------------------------------------------
     const msgRef = await db
       .collection("conversations")
       .doc(convId)

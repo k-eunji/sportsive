@@ -1,31 +1,28 @@
 // src/app/api/trending/local/leagues/route.ts
-
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 function normalize(str?: string | null) {
-  if (!str) return "";
-  return str.toLowerCase();
+  return (str ?? "").toLowerCase().trim();
 }
 
-export async function GET(req: Request) {
-  const url = new URL(req.url);
-  const city = url.searchParams.get("city");
+export async function GET(req: NextRequest) {
+  const city = req.nextUrl.searchParams.get("city");
   if (!city) return NextResponse.json([], { status: 400 });
 
   try {
-    // 1) 경기 정보 가져오기
-    const matchesRes = await fetch(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/api/events/england/football`,
-      { cache: "no-store" }
-    );
+    const base = process.env.NEXT_PUBLIC_BASE_URL;
+
+    // 1) 경기 정보
+    const matchesRes = await fetch(`${base}/api/events/england/football`, {
+      cache: "no-store",
+    });
     const matchesJson = await matchesRes.json();
     const matches = matchesJson.matches ?? [];
 
-    // 2) FanHub 게시글 가져오기
-    const postsRes = await fetch(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/api/fanhub/list?sort=latest`,
-      { cache: "no-store" }
-    );
+    // 2) FanHub 게시글
+    const postsRes = await fetch(`${base}/api/fanhub/list?sort=latest`, {
+      cache: "no-store",
+    });
     const posts = await postsRes.json();
 
     const scores: Record<string, number> = {};
@@ -35,24 +32,24 @@ export async function GET(req: Request) {
       scores[league] += amount;
     };
 
-    // A. 해당 city에서 열린 경기 → 리그 점수
+    const normCity = normalize(city);
+
+    // A. 해당 도시에서 개최된 경기 → 리그 점수 증가
     for (const m of matches) {
-      if (normalize(m.city) === normalize(city)) {
+      if (normalize(m.city) === normCity) {
         add(m.competition, 5);
       }
     }
 
-    // B. 해당 city의 fanhub 게시글에서 리그 언급하면 점수
+    // B. 해당 도시 사용자 FanHub 게시글 → 태그 기반 점수
     const localPosts = posts.filter(
-      (p: any) => normalize(p.authorCity) === normalize(city)
+      (p: any) => normalize(p.authorCity) === normCity
     );
 
     for (const p of localPosts) {
       if (!Array.isArray(p.tags)) continue;
-
-      for (const t of p.tags) {
-        // PL 같은 리그 태그가 있으면 점수 부여
-        add(t, 3);
+      for (const tag of p.tags) {
+        add(tag, 3);
       }
     }
 
@@ -63,7 +60,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json(trending);
   } catch (err) {
-    console.error("Local trending leagues error:", err);
+    console.error("❌ Local trending leagues error:", err);
     return NextResponse.json([], { status: 500 });
   }
 }

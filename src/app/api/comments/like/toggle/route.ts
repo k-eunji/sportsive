@@ -10,12 +10,21 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
 
-  const base = type === "fanhub"
-    ? adminDB.collection("fanhub").doc("global").collection("messages").doc(parentId)
-    : adminDB.collection(type).doc(parentId);
+  const base =
+    type === "fanhub"
+      ? adminDB
+          .collection("fanhub")
+          .doc("global")
+          .collection("messages")
+          .doc(parentId)
+      : adminDB.collection(type).doc(parentId);
 
   const targetRef = replyId
-    ? base.collection("comments").doc(commentId).collection("replies").doc(replyId)
+    ? base
+        .collection("comments")
+        .doc(commentId)
+        .collection("replies")
+        .doc(replyId)
     : base.collection("comments").doc(commentId);
 
   const likeRef = targetRef.collection("likes").doc(userId);

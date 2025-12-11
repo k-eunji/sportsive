@@ -1,7 +1,7 @@
 // src/app/api/meetups/[meetupId]/attendees/[userId]/route.ts
 
 import { NextResponse } from "next/server";
-import { db } from "@/lib/firebaseAdmin";
+import { adminDB } from "@/lib/firebaseAdmin";
 import { sendNotification } from "@/lib/sendNotification";
 
 interface MeetupParams {
@@ -9,15 +9,14 @@ interface MeetupParams {
   userId: string;
 }
 
-// ✅ DELETE — 사용자가 밋업에서 나가기 / 호스트가 참석자 강퇴
 export async function DELETE(
   req: Request,
-  { params }: { params: { meetupId: string; userId: string } } // ✅ Promise ❌, 그냥 객체 ✅
+  { params }: { params: MeetupParams }
 ) {
-  const { meetupId, userId } = params as { meetupId: string; userId: string }; // 빨간줄 사라짐 ✅
+  const { meetupId, userId } = params; // ← 여기 타입 완전 정상
 
   try {
-    const ref = db.collection("meetups").doc(meetupId);
+    const ref = adminDB.collection("meetups").doc(meetupId);
     const snap = await ref.get();
 
     if (!snap.exists) {
@@ -50,29 +49,27 @@ export async function DELETE(
 
     console.log(`🚪 User ${userId} left meetup ${meetupId}`);
 
-    // ✅ 알림 로직 처리
+    // 알림: 요청자가 host인지 user인지 구분
     const initiator = req.headers.get("x-initiator");
 
     if (initiator === "host") {
-      // ✅ 호스트가 강퇴한 경우
+      // 호스트가 강퇴
       await sendNotification({
-        userId, // ✅ toUserId → userId
+        userId, // 강퇴당한 사람에게 알림
         fromUserId: data.hostId,
         meetupId,
         message: "You were removed from the meetup by the host",
         type: "removed",
       });
-
     } else {
-      // ✅ 참석자가 스스로 나간 경우
+      // 참가자가 스스로 나감
       await sendNotification({
-        userId: data.hostId, // ✅
+        userId: data.hostId, // 호스트에게 알림
         fromUserId: userId,
         meetupId,
         message: "canceled attendance",
         type: "cancel",
       });
-
     }
 
     return NextResponse.json({

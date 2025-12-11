@@ -9,7 +9,6 @@ interface CommentRouteParams {
   parentId: string;
 }
 
-// 함수: fanhub일 때만 다른 경로 사용하도록
 function getBaseRef(type: string, parentId: string) {
   if (type === "fanhub") {
     return adminDB
@@ -21,12 +20,15 @@ function getBaseRef(type: string, parentId: string) {
   return adminDB.collection(type).doc(parentId);
 }
 
-export async function GET(_req: Request, { params }: { params: Promise<CommentRouteParams> }) {
-  const { type, parentId } = await params;
+export async function GET(
+  req: Request,
+  context: { params: Promise<CommentRouteParams> }
+) {
+  const { type, parentId } = await context.params;
 
   try {
-    const url = new URL(_req.url);
-    const currentUserId = url.searchParams.get("userId"); // ⭐ 추가
+    const url = new URL(req.url);
+    const currentUserId = url.searchParams.get("userId");
 
     const baseRef = getBaseRef(type, parentId);
 
@@ -42,18 +44,18 @@ export async function GET(_req: Request, { params }: { params: Promise<CommentRo
           ? data.createdAt._seconds * 1000
           : Date.now();
 
-        // ⭐ 댓글 좋아요 개수
         const commentLikesSnap = await doc.ref.collection("likes").get();
         const likeCount = commentLikesSnap.size;
 
-        // ⭐ 내가 댓글 좋아요 눌렀는지
         let isLiked = false;
         if (currentUserId) {
-          const likedDoc = await doc.ref.collection("likes").doc(currentUserId).get();
+          const likedDoc = await doc.ref
+            .collection("likes")
+            .doc(currentUserId)
+            .get();
           isLiked = likedDoc.exists;
         }
 
-        // ⭐ 대댓글
         const repliesSnap = await doc.ref
           .collection("replies")
           .orderBy("createdAt", "asc")
@@ -66,10 +68,12 @@ export async function GET(_req: Request, { params }: { params: Promise<CommentRo
             const replyLikesSnap = await r.ref.collection("likes").get();
             const replyLikeCount = replyLikesSnap.size;
 
-            // ⭐ 대댓글 isLiked
             let replyIsLiked = false;
             if (currentUserId) {
-              const likedDoc = await r.ref.collection("likes").doc(currentUserId).get();
+              const likedDoc = await r.ref
+                .collection("likes")
+                .doc(currentUserId)
+                .get();
               replyIsLiked = likedDoc.exists;
             }
 
@@ -84,9 +88,8 @@ export async function GET(_req: Request, { params }: { params: Promise<CommentRo
               edited: Boolean(d.edited),
               createdAt: rCreatedAt,
               likeCount: replyLikeCount,
-              isLiked: Boolean(replyIsLiked),  // ← 마지막에!
+              isLiked: Boolean(replyIsLiked),
             };
-
           })
         );
 
@@ -97,21 +100,26 @@ export async function GET(_req: Request, { params }: { params: Promise<CommentRo
           createdAt,
           likeCount,
           replies,
-          isLiked: Boolean(isLiked),  // ⭐ 여기에 둬야 함!
+          isLiked: Boolean(isLiked),
         };
-
       })
     );
 
     return NextResponse.json(comments);
   } catch (error) {
     console.error("❌ Failed to fetch comments:", error);
-    return NextResponse.json({ error: "Failed to fetch comments" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch comments" },
+      { status: 500 }
+    );
   }
 }
 
-export async function POST(req: Request, { params }: { params: Promise<CommentRouteParams> }) {
-  const { type, parentId } = await params;
+export async function POST(
+  req: Request,
+  context: { params: Promise<CommentRouteParams> }
+) {
+  const { type, parentId } = await context.params;
 
   let body: any;
   try {
@@ -122,27 +130,23 @@ export async function POST(req: Request, { params }: { params: Promise<CommentRo
 
   const { text, authorNickname, userId, parentCommentId } = body;
 
-  // 첫 번째 baseRef
-  const baseRef = getBaseRef(type, parentId);
-
-  if (!parentCommentId) {
-    await baseRef.set(
-      { commentCount: FieldValue.increment(1) },
-      { merge: true }
-    );
-  }
-
   if (!text?.trim() || !userId) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
 
   try {
-    // 두 번째 baseRef
-    const baseRef2 = getBaseRef(type, parentId);
+    const baseRef = getBaseRef(type, parentId);
+
+    if (!parentCommentId) {
+      await baseRef.set(
+        { commentCount: FieldValue.increment(1) },
+        { merge: true }
+      );
+    }
 
     const targetRef = parentCommentId
-      ? baseRef2.collection("comments").doc(parentCommentId).collection("replies")
-      : baseRef2.collection("comments");
+      ? baseRef.collection("comments").doc(parentCommentId).collection("replies")
+      : baseRef.collection("comments");
 
     const newComment = {
       text: text.trim(),
@@ -160,6 +164,9 @@ export async function POST(req: Request, { params }: { params: Promise<CommentRo
     });
   } catch (error) {
     console.error("❌ Failed to post comment/reply:", error);
-    return NextResponse.json({ error: "Failed to post comment" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to post comment" },
+      { status: 500 }
+    );
   }
 }

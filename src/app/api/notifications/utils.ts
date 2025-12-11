@@ -1,20 +1,22 @@
 // src/app/api/notifications/utils.ts
 import { db } from "@/lib/firebaseAdmin";
 
-/** ✅ Create a new notification */
+interface CreateNotifArgs {
+  userId: string;
+  fromUserId?: string;
+  type?: string;
+  message: string;
+  meetupId?: string;
+}
+
+/** ✅ Create new notification */
 export async function createNotification({
   userId,
   fromUserId,
   type,
   message,
   meetupId,
-}: {
-  userId: string;
-  fromUserId?: string;
-  type?: string;
-  message: string;
-  meetupId?: string;
-}) {
+}: CreateNotifArgs) {
   const notif = {
     userId,
     fromUserId: fromUserId || null,
@@ -25,17 +27,19 @@ export async function createNotification({
     createdAt: new Date().toISOString(),
   };
 
-  await db.collection("notifications").add(notif);
-  return notif;
+  const ref = await db.collection("notifications").add(notif);
+
+  return { id: ref.id, ...notif };
 }
 
-/** ✅ Mark notification as read */
+/** ✅ Mark a single notification as read */
 export async function markNotificationAsRead(notificationId: string) {
-  const ref = db.collection("notifications").doc(notificationId);
-  await ref.update({ read: true });
+  await db.collection("notifications").doc(notificationId).update({
+    read: true,
+  });
 }
 
-/** ✅ Get all notifications for a user */
+/** ✅ Fetch all notifications for a user (latest first) */
 export async function getUserNotifications(userId: string) {
   const snap = await db
     .collection("notifications")

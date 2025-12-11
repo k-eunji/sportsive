@@ -1,21 +1,23 @@
 // src/app/api/region/[regionSlug]/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import sqlite3 from "sqlite3";
 import { open } from "sqlite";
 import path from "path";
 
 const DB_FILE = path.join(process.cwd(), "sportsive.db");
 
-export async function GET(
-  _req: Request,
-  { params }: { params: Promise<{ regionSlug: string }> }
-) {
-  const { regionSlug } = await params;
-  let db;
+interface RouteParams {
+  params: { regionSlug: string };
+}
+
+export async function GET(_req: NextRequest, { params }: RouteParams) {
+  const { regionSlug } = params;
+  let db: any;
 
   try {
     db = await open({ filename: DB_FILE, driver: sqlite3.Database });
 
+    // 지역 정보
     const region = await db.get(
       `
       SELECT 
@@ -34,7 +36,7 @@ export async function GET(
       return NextResponse.json({ region: null }, { status: 404 });
     }
 
-    // 관련 도시 목록도 함께 반환
+    // 해당 지역에 소속된 도시 목록
     const cities = await db.all(
       `
       SELECT 
@@ -48,10 +50,16 @@ export async function GET(
       [region.id]
     );
 
-    return NextResponse.json({ ...region, cities });
+    return NextResponse.json({
+      ...region,
+      cities,
+    });
   } catch (err) {
     console.error("❌ [Region API Error]:", err);
-    return NextResponse.json({ error: "Failed to fetch region" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch region" },
+      { status: 500 }
+    );
   } finally {
     if (db) await db.close();
   }

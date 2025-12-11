@@ -1,9 +1,7 @@
 // src/app/api/meetups/[meetupId]/route.ts
 
 import { NextResponse } from "next/server";
-import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
-import { db as clientDb } from "@/lib/firebase";
-import { db as adminDb } from "@/lib/firebaseAdmin";
+import { adminDB } from "@/lib/firebaseAdmin";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -12,97 +10,115 @@ interface MeetupParams {
   meetupId: string;
 }
 
-/** GET /api/meetups/[meetupId] */
+/* ============================================================
+   GET /api/meetups/[meetupId]
+   밋업 상세 정보 불러오기
+============================================================ */
 export async function GET(
   _req: Request,
-  { params }: { params: Promise<MeetupParams> } // 👈 Promise로 수정
+  { params }: { params: Promise<MeetupParams> }
 ) {
-  const { meetupId } = await params; // 👈 반드시 await 추가
+  const { meetupId } = await params;
 
   try {
-    const ref = doc(clientDb, "meetups", meetupId);
-    const snap = await getDoc(ref);
+    // -----------------------------
+    // 1) 밋업 데이터 가져오기
+    // -----------------------------
+    const snap = await adminDB.collection("meetups").doc(meetupId).get();
 
-    if (!snap.exists()) {
+    if (!snap.exists) {
       return NextResponse.json({ error: "Meetup not found" }, { status: 404 });
     }
 
-    const data = snap.data();
+    const data = snap.data()!;
 
-    // ✅ 참가자 상세 정보 불러오기
-    const participants: string[] = data.participants || [];
+    // -----------------------------
+    // 2) 참가자 상세 정보
+    // -----------------------------
+    const participantIds: string[] = data.participants || [];
+
     const participantsDetailed = await Promise.all(
-      participants.map(async (uid) => {
+      participantIds.map(async (uid) => {
         try {
-          const userRef = doc(clientDb, "users", uid);
-          const userSnap = await getDoc(userRef);
-          const user = userSnap.exists() ? userSnap.data() : null;
+          const userSnap = await adminDB.collection("users").doc(uid).get();
+          const user = userSnap.exists ? userSnap.data() : null;
+
           return {
             id: uid,
             name:
               user?.displayName ||
               user?.authorNickname ||
-              user?.username ||
+              user?.nickname ||
               "Anonymous",
             avatar: user?.photoURL || user?.avatar || null,
           };
         } catch (err) {
-          console.warn("⚠️ Failed to load user:", uid, err);
+          console.warn("⚠️ Failed loading user:", uid, err);
           return { id: uid, name: "Unknown", avatar: null };
         }
       })
     );
 
     const participantsAvatars = participantsDetailed
-      .filter((p) => !!p.avatar)
-      .map((p) => p.avatar);
+      .filter((u) => u.avatar)
+      .map((u) => u.avatar);
 
-    // ✅ 이벤트 정보 가져오기
+    // -----------------------------
+    // 3) 이벤트 정보 가져오기
+    // -----------------------------
     const targetEventId = data.eventId || data.selectedEventId;
+
     const baseUrlRaw =
       process.env.NEXT_PUBLIC_BASE_URL ||
       process.env.NEXT_PUBLIC_API_URL ||
       "http://localhost:3000";
 
-    const baseUrl = baseUrlRaw.endsWith("/api")
-      ? baseUrlRaw.replace(/\/api$/, "")
-      : baseUrlRaw;
+    const baseUrl = baseUrlRaw.replace(/\/api$/, "");
 
-    const eventRes = await fetch(`${baseUrl}/api/events/england/football`, {
-      cache: "no-store",
-    });
-
-    let eventData: any = null;
+    let eventData = null;
     let upcomingEvents: any[] = [];
 
-    if (eventRes.ok) {
-      const dataJson = await eventRes.json();
-      const matches = dataJson.matches || [];
-      eventData = matches.find(
-        (m: any) => String(m.id) === String(targetEventId)
-      );
-
-      const now = new Date();
-      const nextWeek = new Date(now);
-      nextWeek.setDate(now.getDate() + 7);
-
-      upcomingEvents = matches.filter((m: any) => {
-        const matchDate = new Date(m.date || m.utcDate);
-        return matchDate >= now && matchDate <= nextWeek;
+    try {
+      const eventRes = await fetch(`${baseUrl}/api/events/england/football`, {
+        cache: "no-store",
       });
+
+      if (eventRes.ok) {
+        const json = await eventRes.json();
+        const matches = json.matches ?? [];
+
+        eventData = matches.find(
+          (m: any) => String(m.id) === String(targetEventId)
+        );
+
+        const now = new Date();
+        const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+        upcomingEvents = matches.filter((m: any) => {
+          const d = new Date(m.date || m.utcDate);
+          return d >= now && d <= nextWeek;
+        });
+      }
+    } catch (e) {
+      console.error("⚠️ Failed loading event info:", e);
     }
 
-    // ✅ 같은 타이틀의 다른 밋업들
-    const relatedQuery = query(
-      collection(clientDb, "meetups"),
-      where("title", "==", data.title)
-    );
-    const relatedSnap = await getDocs(relatedQuery);
+    // -----------------------------
+    // 4) 동일한 제목의 다른 밋업들
+    // -----------------------------
+    const relatedSnap = await adminDB
+      .collection("meetups")
+      .where("title", "==", data.title)
+      .get();
+
     const relatedMeetups = relatedSnap.docs.map((d) => ({
       id: d.id,
       ...d.data(),
     }));
 
+    // -----------------------------
+    // 5) 장소 data format
+    // -----------------------------
     const location = {
       name: data.location?.name ?? "",
       lat: data.location?.lat ?? 0,
@@ -110,82 +126,85 @@ export async function GET(
       address: data.location?.address ?? data.address ?? "",
     };
 
-    // ✅ 밋업 종료 후 하루가 지나면 리뷰 자동 오픈 및 알림 발송
-    // ✅ 밋업 종료 후 1시간이 지나면 리뷰 자동 오픈 및 알림 발송
+    // -----------------------------
+    // 6) 자동 리뷰 오픈 처리 (1시간 후)
+    // -----------------------------
     try {
-      const now = new Date();
       const meetupDate = new Date(data.datetime);
       const oneHourAfter = new Date(meetupDate.getTime() + 60 * 60 * 1000);
+      const now = new Date();
 
       if (!data.reviewsOpen && now > oneHourAfter) {
-        console.log("📢 Auto-opening reviews for meetup:", meetupId);
+        console.log(`📢 Auto-opening reviews for meetup: ${meetupId}`);
 
-        // 1️⃣ reviewsOpen 업데이트
-        await adminDb.collection("meetups").doc(meetupId).update({
+        // reviewsOpen 업데이트
+        await adminDB.collection("meetups").doc(meetupId).update({
           reviewsOpen: true,
+          updatedAt: new Date().toISOString(),
         });
+
         data.reviewsOpen = true;
 
-        // 2️⃣ 참가자 알림 생성
-        const participantIds = data.participants || [];
+        // 참가자들에게 알림 생성
         if (participantIds.length > 0) {
-          const batch = adminDb.batch();
-          participantIds.forEach((uid: string) => {
-            const ref = adminDb.collection("notifications").doc();
-            batch.set(ref, {
-              userId: uid, // ✅ toUserId → userId
+          const batch = adminDB.batch();
+          participantIds.forEach((uid) => {
+            const nref = adminDB.collection("notifications").doc();
+            batch.set(nref, {
+              userId: uid,
               meetupId,
-              type: "review_prompt", // ✅ 알림 타입 지정
+              type: "review_prompt",
               message: `💬 "${data.title}" meetup has ended! Please leave a review.`,
-              read: false, // ✅ isRead → read
+              read: false,
               createdAt: new Date().toISOString(),
             });
           });
           await batch.commit();
-          console.log(`📨 Sent review reminder to ${participantIds.length} users`);
+
+          console.log(
+            `📨 Sent review reminder notifications to ${participantIds.length} users`
+          );
         }
       }
-    } catch (error) {
-      console.error("⚠️ Failed to auto-open reviews or send notifications:", error);
+    } catch (e) {
+      console.error("⚠️ Auto review open failed:", e);
     }
 
     return NextResponse.json(
       {
         id: snap.id,
         ...data,
-        reviewsOpen: data.reviewsOpen ?? false,
-        participantsCount: participants.length,
-        participantsAvatars,
+        participantsCount: participantIds.length,
         participantsDetailed,
+        participantsAvatars,
         location,
-        event: eventData || data.event || null,
+        event: eventData ?? null,
         upcomingEvents,
         relatedMeetups,
+        reviewsOpen: data.reviewsOpen ?? false,
       },
       { status: 200 }
     );
   } catch (error) {
     console.error("❌ Error fetching meetup:", error);
     return NextResponse.json(
-      {
-        error:
-          error instanceof Error ? error.message : "Failed to load meetup",
-      },
+      { error: "Failed to load meetup" },
       { status: 500 }
     );
   }
 }
 
-/** PATCH /api/meetups/[meetupId] */
+/* ============================================================
+   PATCH /api/meetups/[meetupId]  (밋업 수정)
+============================================================ */
 export async function PATCH(
   req: Request,
-  { params }: { params: Promise<MeetupParams> } // 👈 Promise로 수정
+  { params }: { params: Promise<MeetupParams> }
 ) {
-  const { meetupId } = await params; // 👈 await 추가
+  const { meetupId } = await params;
 
   try {
     const body = await req.json();
-    console.log("🧩 PATCH meetup:", meetupId, body);
 
     const {
       purpose,
@@ -208,6 +227,7 @@ export async function PATCH(
       teamType,
     } = body;
 
+    // 업데이트할 항목이 없을 때
     if (
       [
         purpose,
@@ -230,7 +250,10 @@ export async function PATCH(
         teamType,
       ].every((v) => v === undefined)
     ) {
-      return NextResponse.json({ error: "No fields to update" }, { status: 400 });
+      return NextResponse.json(
+        { error: "No fields to update" },
+        { status: 400 }
+      );
     }
 
     const updateData: Record<string, any> = {
@@ -261,12 +284,11 @@ export async function PATCH(
       updateData["location.name"] = location.name;
       updateData["location.lat"] = location.lat;
       updateData["location.lng"] = location.lng;
-      if (location.address) updateData["location.address"] = location.address;
+      if (location.address)
+        updateData["location.address"] = location.address;
     }
 
-    console.log("🔥 Firestore Update Data:", updateData);
-
-    await adminDb.collection("meetups").doc(meetupId).update(updateData);
+    await adminDB.collection("meetups").doc(meetupId).update(updateData);
 
     return NextResponse.json({
       ok: true,
@@ -275,30 +297,23 @@ export async function PATCH(
   } catch (error) {
     console.error("🔥 Error updating meetup:", error);
     return NextResponse.json(
-      {
-        error:
-          error instanceof Error ? error.message : "Failed to update meetup",
-      },
+      { error: "Failed to update meetup" },
       { status: 500 }
     );
   }
 }
 
-/** DELETE /api/meetups/[meetupId] */
+/* ============================================================
+   DELETE /api/meetups/[meetupId]
+============================================================ */
 export async function DELETE(
   _req: Request,
-  { params }: { params: Promise<MeetupParams> } // 👈 Promise로 수정
+  { params }: { params: Promise<MeetupParams> }
 ) {
-  const { meetupId } = await params; // 👈 await 추가
+  const { meetupId } = await params;
 
   try {
-    console.log("🗑️ Deleting meetup:", meetupId);
-
-    if (!meetupId) {
-      return NextResponse.json({ error: "Meetup ID required" }, { status: 400 });
-    }
-
-    await adminDb.collection("meetups").doc(meetupId).delete();
+    await adminDB.collection("meetups").doc(meetupId).delete();
 
     return NextResponse.json({
       ok: true,
@@ -307,10 +322,7 @@ export async function DELETE(
   } catch (error) {
     console.error("🔥 Error deleting meetup:", error);
     return NextResponse.json(
-      {
-        error:
-          error instanceof Error ? error.message : "Failed to delete meetup",
-      },
+      { error: "Failed to delete meetup" },
       { status: 500 }
     );
   }

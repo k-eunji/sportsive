@@ -1,56 +1,64 @@
 // src/app/api/users/[userId]/route.ts
-
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/firebaseAdmin";
-import { Timestamp } from "firebase-admin/firestore";
 import { getLevel } from "@/lib/levels";
 
-export async function GET(
-  _req: Request,
-  context:
-    | { params: { userId: string } }
-    | { params: Promise<{ userId: string }> }
-) {
-  // ✅ Promise / 객체 모두 처리
-  const rawParams = (context as any).params;
-  const { userId } =
-    typeof rawParams.then === "function" ? await rawParams : rawParams;
+interface RouteParams {
+  params: { userId: string };
+}
+
+export async function GET(_req: NextRequest, { params }: RouteParams) {
+  const { userId } = params;
 
   try {
-    const userDoc = await db.collection("users").doc(userId).get();
-    if (!userDoc.exists)
+    // -------------------------------------
+    // 🔥 사용자 기본 정보
+    // -------------------------------------
+    const userSnap = await db.collection("users").doc(userId).get();
+
+    if (!userSnap.exists) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
 
-    const data = userDoc.data() || {};
-    const points = data.points ?? 0;
-    const levelInfo = getLevel(points);
+    const userData = userSnap.data() ?? {};
+    const points = userData.points ?? 0;
+    const level = getLevel(points);
 
-    // ✅ 호스트 / 참가 밋업 정보
+    // -------------------------------------
+    // 🔥 호스트 & 참가 밋업 정보
+    // -------------------------------------
     const meetupsRef = db.collection("meetups");
+
     const [hostedSnap, joinedSnap] = await Promise.all([
       meetupsRef.where("hostId", "==", userId).get(),
       meetupsRef.where("participants", "array-contains", userId).get(),
     ]);
 
-    const safeMeetup = (m: any) => ({
-      id: m.id,
-      title: m.title || "Untitled Meetup",
+    const formatMeetup = (m: any, id: string) => ({
+      id,
+      title: m.title ?? "Untitled Meetup",
       datetime:
-        m.datetime && m.datetime.toDate
+        m.datetime?.toDate?.() instanceof Date
           ? m.datetime.toDate().toISOString()
-          : m.datetime || null,
-      location: m.location || null,
-      imageUrl: m.imageUrl || null,
-      type: m.type || "unknown",
-      participantsCount: m.participants?.length || 0,
-      teamType: m.teamType || "neutral",
-      fee: m.fee || 0,
+          : m.datetime ?? null,
+      location: m.location ?? null,
+      imageUrl: m.imageUrl ?? null,
+      type: m.type ?? "unknown",
+      participantsCount: m.participants?.length ?? 0,
+      teamType: m.teamType ?? "neutral",
+      fee: m.fee ?? 0,
     });
 
-    const hostedMeetups = hostedSnap.docs.map((d) => safeMeetup(d.data()));
-    const joinedMeetups = joinedSnap.docs.map((d) => safeMeetup(d.data()));
+    const hostedMeetups = hostedSnap.docs.map((d) =>
+      formatMeetup(d.data(), d.id)
+    );
+    const joinedMeetups = joinedSnap.docs.map((d) =>
+      formatMeetup(d.data(), d.id)
+    );
 
-    // ✅ 리뷰
+    // -------------------------------------
+    // 🔥 리뷰 정보
+    // -------------------------------------
     const reviewsSnap = await db
       .collection("reviews")
       .where("targetUserId", "==", userId)
@@ -59,74 +67,102 @@ export async function GET(
 
     const reviews = await Promise.all(
       reviewsSnap.docs.map(async (doc) => {
-        const rData = doc.data();
+        const r = doc.data();
         let reviewerName = "Anonymous";
+
         try {
-          const reviewerDoc = await db
+          const reviewerSnap = await db
             .collection("users")
-            .doc(rData.fromUserId)
+            .doc(r.fromUserId)
             .get();
-          if (reviewerDoc.exists) {
-            const rd = reviewerDoc.data()!;
+
+          if (reviewerSnap.exists) {
+            const d = reviewerSnap.data()!;
             reviewerName =
-              rd.displayName || rd.username || rd.authorNickname || "Anonymous";
+              d.displayName ||
+              d.username ||
+              d.authorNickname ||
+              "Anonymous";
           }
         } catch {}
+
         return {
           id: doc.id,
           reviewer: reviewerName,
-          rating: rData.rating ?? null,
-          comment: rData.content ?? "",
-          createdAt: rData.createdAt,
-          meetupId: rData.meetupId,
+          rating: r.rating ?? null,
+          comment: r.content ?? "",
+          createdAt: r.createdAt,
+          meetupId: r.meetupId,
         };
       })
     );
 
-    // ✅ 관계 기반 카운트 계산
-    // supportersCount: 나를 support하는 유저 수
-    // teammatesCount: 나와 mutual 관계인 유저 수
-    const usersSnap = await db.collection("users").get();
+    // -------------------------------------
+    // 🔥 supporters / teammates 계산
+    // supportersCount: 나를 support한 사람
+    // teammatesCount: 서로 support한 사람
+    // -------------------------------------
+    const allUsersSnap = await db.collection("users").get();
+
+    const mySupports: string[] = userData.supporting ?? [];
     let supportersCount = 0;
     let teammatesCount = 0;
 
-    usersSnap.forEach((doc) => {
+    allUsersSnap.forEach((doc) => {
       const u = doc.data();
-      const supports: string[] = u.supporting || [];
+      const supports: string[] = u.supporting ?? [];
+
       if (supports.includes(userId)) {
         supportersCount++;
-        // 상대방도 나를 support하면 팀메이트
-        const mySupports: string[] = data.supporting || [];
-        if (mySupports.includes(doc.id)) teammatesCount++;
+
+        if (mySupports.includes(doc.id)) {
+          teammatesCount++;
+        }
       }
     });
 
+    // -------------------------------------
+    // 🔥 응답 구성
+    // -------------------------------------
     return NextResponse.json({
       id: userId,
       displayName:
-        data.displayName || data.authorNickname || data.username || "Anonymous",
-      authorNickname: data.authorNickname || "",
-      nickname: data.nickname || "",
-      username: data.username || "",
-      photoURL: data.photoURL || data.avatar || null,
-      bio: data.bio || "",
-      region: data.region || "",
-      sports: data.sports || [],
-      email: data.email || "",
-      createdAt: data.createdAt || null,
+        userData.displayName ||
+        userData.authorNickname ||
+        userData.username ||
+        "Anonymous",
+      authorNickname: userData.authorNickname ?? "",
+      nickname: userData.nickname ?? "",
+      username: userData.username ?? "",
+      photoURL: userData.photoURL ?? userData.avatar ?? null,
+      bio: userData.bio ?? "",
+      region: userData.region ?? "",
+      sports: userData.sports ?? [],
+      email: userData.email ?? "",
+      createdAt: userData.createdAt ?? null,
+
+      // 레벨
       points,
-      level: levelInfo.name,
-      levelDesc: levelInfo.desc,
-      levelColor: levelInfo.color,
+      level: level.name,
+      levelDesc: level.desc,
+      levelColor: level.color,
+
+      // 밋업
       hostedMeetups,
       joinedMeetups,
+
+      // 리뷰
       reviews,
-      // ✅ 추가된 실제 수치
+
+      // 관계
       supportersCount,
       teammatesCount,
     });
   } catch (err) {
     console.error("❌ Error fetching user info:", err);
-    return NextResponse.json({ error: "Failed to fetch user" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch user" },
+      { status: 500 }
+    );
   }
 }

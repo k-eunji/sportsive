@@ -3,6 +3,13 @@
 import { db } from "@/lib/firebaseAdmin";
 import { NextResponse } from "next/server";
 
+function toMillis(ts: any): number {
+  if (!ts) return 0;
+  if (typeof ts === "string") return new Date(ts).getTime();
+  if (ts._seconds) return ts._seconds * 1000;
+  return Date.now();
+}
+
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const tag = url.searchParams.get("tag");
@@ -20,10 +27,14 @@ export async function GET(req: Request) {
   const snap = await query.get();
 
   // messages[]
-  let messages: any[] = snap.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  }));
+  let messages: any[] = snap.docs.map((doc) => {
+    const data = doc.data();
+    return {
+      id: doc.id,
+      ...data,
+      createdAt: toMillis(data.createdAt),  // ⭐ 안전하게 변환
+    };
+  });
 
   // Likes & Comments 가져오기
   for (let m of messages) {
@@ -55,8 +66,8 @@ export async function GET(req: Request) {
   // 📈 TRENDING 정렬
   if (sort === "trending") {
     messages.sort((a, b) => {
-      const ageA = Date.now() - new Date(a.createdAt).getTime();
-      const ageB = Date.now() - new Date(b.createdAt).getTime();
+      const ageA = Date.now() - a.createdAt;
+      const ageB = Date.now() - b.createdAt;
 
       const scoreA =
         (a.likes * 2 + a.comments) * (ageA < 86400000 ? 1.5 : 1);
@@ -69,11 +80,7 @@ export async function GET(req: Request) {
 
   // 🕒 LATEST 정렬
   if (sort === "latest") {
-    messages.sort(
-      (a, b) =>
-        new Date(b.createdAt).getTime() -
-        new Date(a.createdAt).getTime()
-    );
+    messages.sort((a, b) => b.createdAt - a.createdAt);
   }
 
   return NextResponse.json(messages);

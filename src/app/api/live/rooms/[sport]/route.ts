@@ -1,14 +1,13 @@
 // src/app/api/live/rooms/[sport]/route.ts
-
 import { NextResponse } from "next/server";
 import { getAllEvents } from "@/lib/events";
 import { db as adminDb } from "@/lib/firebaseAdmin";
 
 export async function GET(
   req: Request,
-  context: { params: Promise<{ sport: string }> }
+  { params }: { params: Promise<{ sport: string }> }
 ) {
-  const { sport } = await context.params;
+  const { sport } = await params;
 
   try {
     const allEvents = await getAllEvents();
@@ -19,12 +18,7 @@ export async function GET(
 
     const filtered = allEvents.filter((event: any) => {
       const d = new Date(event.date);
-
-      return (
-        event.sport === sport &&
-        d >= startOfToday &&
-        d <= endOfFutureRange
-      );
+      return event.sport === sport && d >= startOfToday && d <= endOfFutureRange;
     });
 
     const rooms = await Promise.all(
@@ -36,7 +30,7 @@ export async function GET(
           .doc(event.id)
           .get();
 
-        const participants = liveDoc.exists ? liveDoc.data()?.participants ?? 0 : 0;
+        const participants = Number(liveDoc.data()?.participants ?? 0);
 
         return {
           id: event.id,
@@ -44,7 +38,7 @@ export async function GET(
           sport: event.sport,
           title: `${event.homeTeam} vs ${event.awayTeam}`,
           participants,
-          datetime: event.date, 
+          datetime: event.date,
           homeTeam: event.homeTeam,
           awayTeam: event.awayTeam,
           homeTeamLogo: event.homeTeamLogo ?? null,
@@ -54,9 +48,8 @@ export async function GET(
     );
 
     return NextResponse.json({ rooms });
-
   } catch (err) {
-    console.error(err);
+    console.error("❌ GET /live/rooms/[sport] failed:", err);
     return NextResponse.json({ rooms: [] }, { status: 500 });
   }
 }

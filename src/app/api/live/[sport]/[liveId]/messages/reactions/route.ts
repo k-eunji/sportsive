@@ -7,12 +7,14 @@ import { db as adminDb } from "@/lib/firebaseAdmin";
 
 const EMOJIS = ["👍", "❤️", "😮", "😢", "😡", "😂", "😱", "🎉"];
 
-// GET: 특정 라이브의 리액션 카운트
+// ---------------------
+// GET: 리액션 조회
+// ---------------------
 export async function GET(
   req: Request,
-  context: { params: Promise<{ sport: string; liveId: string }> }
+  { params }: { params: Promise<{ sport: string; liveId: string }> }
 ) {
-  const { sport, liveId } = await context.params;
+  const { sport, liveId } = await params; // ★ 반드시 await
 
   try {
     const snapshot = await adminDb
@@ -28,7 +30,7 @@ export async function GET(
 
     snapshot.forEach((doc) => {
       const data = doc.data();
-      if (data.type && EMOJIS.includes(data.type)) {
+      if (data?.type && EMOJIS.includes(data.type)) {
         count[data.type] += 1;
       }
     });
@@ -40,17 +42,17 @@ export async function GET(
   }
 }
 
-
-// POST: 리액션 추가
+// ---------------------
+// POST: 리액션 생성
+// ---------------------
 export async function POST(
   req: Request,
-  context: { params: Promise<{ sport: string; liveId: string }> }
+  { params }: { params: Promise<{ sport: string; liveId: string }> }
 ) {
-  const { sport, liveId } = await context.params;
+  const { sport, liveId } = await params; // ★ 반드시 await
 
   try {
-    const body = await req.json();
-    const { userId, type } = body;
+    const { userId, type } = await req.json();
 
     if (!userId || !type) {
       return NextResponse.json(

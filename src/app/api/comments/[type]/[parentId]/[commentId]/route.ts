@@ -9,7 +9,7 @@ interface Params {
   commentId: string;
 }
 
-/** 🔥 getBaseRef: 이 파일 안에 직접 넣어야 한다 */
+/** ✅ getBaseRef 로컬 함수 */
 function getBaseRef(type: string, parentId: string) {
   if (type === "fanhub") {
     return adminDB
@@ -23,9 +23,10 @@ function getBaseRef(type: string, parentId: string) {
 
 export async function PATCH(
   req: Request,
-  context: { params: Params }
+  context: { params: Promise<Params> }   // ✅ Promise로 변경
 ) {
-  const { type, parentId, commentId } = await context.params;
+  const { type, parentId, commentId } = await context.params; // ✅ 반드시 await
+
   const { text } = await req.json();
 
   if (!text?.trim()) {
@@ -44,9 +45,10 @@ export async function PATCH(
 
 export async function DELETE(
   req: Request,
-  context: { params: Params }
+  context: { params: Promise<Params> }   // ✅ Promise로 변경
 ) {
-  const { type, parentId, commentId } = await context.params;
+  const { type, parentId, commentId } = await context.params; // ✅ 반드시 await
+
   const baseRef = getBaseRef(type, parentId);
 
   await baseRef

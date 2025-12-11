@@ -1,39 +1,63 @@
 // src/app/api/search/all/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-// 🔍 문자열 매칭 헬퍼 (null-safe + normalize)
+/* ----------------------------------------------
+ *  검색 문자열 매칭 (null-safe, normalize)
+ * ---------------------------------------------- */
 function matchValue(value: any, keyword: string) {
   if (!value || typeof value !== "string") return false;
   return value.toLowerCase().includes(keyword);
 }
 
-// 🔥 점수 기반 랭킹: 필드별 가중치
+/* ----------------------------------------------
+ *  가중치 기반 점수 계산
+ * ---------------------------------------------- */
 function scoreMatch(obj: any, keyword: string, fields: string[]) {
   let score = 0;
+
   for (const field of fields) {
     const value = obj[field];
     if (!value) continue;
 
     if (typeof value === "string") {
-      if (value.toLowerCase().startsWith(keyword)) score += 3;
-      else if (value.toLowerCase().includes(keyword)) score += 1;
+      const lower = value.toLowerCase();
+      if (lower.startsWith(keyword)) score += 3;
+      else if (lower.includes(keyword)) score += 1;
     }
 
-    // 배열(예: tags[])인 경우
+    // 배열 필드(tags 등)
     if (Array.isArray(value)) {
       if (value.some((v) => matchValue(v, keyword))) score += 2;
     }
   }
+
   return score;
 }
 
-export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  let keyword = searchParams.get("query")?.toLowerCase() ?? "";
+/* ----------------------------------------------
+ *  safe JSON 파싱 헬퍼
+ * ---------------------------------------------- */
+async function safeJson(result: PromiseSettledResult<Response>) {
+  if (result.status === "fulfilled" && result.value.ok) {
+    try {
+      return await result.value.json();
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
 
-  // 검색어 전처리 (여분의 기호 제거)
+/* ----------------------------------------------
+ *  GET /api/search/all
+ * ---------------------------------------------- */
+export async function GET(req: NextRequest) {
+  let keyword = req.nextUrl.searchParams.get("query")?.toLowerCase() ?? "";
+
+  // 검색어 전처리
   keyword = keyword.replace(/[^a-z0-9\s]/gi, "").trim();
 
+  // 최소 글자수 미만이면 바로 빈 결과 반환
   if (!keyword || keyword.length < 2) {
     return NextResponse.json({
       teams: [],
@@ -45,18 +69,24 @@ export async function GET(req: Request) {
   }
 
   try {
-    // ---------- Fetch all resources ----------
-    const [teamsRes, eventsRes, fanhubRes, liveRes, meetupsRes] =
-      await Promise.allSettled([
-        fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/teams`),
-        fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/events`),
-        fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/fanhub`),
-        fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/live`),
-        fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/meetups`),
-      ]);
+    // ----------------------------------------------
+    //  1. 모든 데이터 소스 병렬 요청
+    // ----------------------------------------------
+    const base = process.env.NEXT_PUBLIC_BASE_URL;
 
-    const safeJson = async (res: any) =>
-      res?.value?.ok ? await res.value.json() : null;
+    const [
+      teamsRes,
+      eventsRes,
+      fanhubRes,
+      liveRes,
+      meetupsRes,
+    ] = await Promise.allSettled([
+      fetch(`${base}/api/teams`),
+      fetch(`${base}/api/events`),
+      fetch(`${base}/api/fanhub`),
+      fetch(`${base}/api/live`),
+      fetch(`${base}/api/meetups`),
+    ]);
 
     const teamsData = await safeJson(teamsRes);
     const eventsData = await safeJson(eventsRes);
@@ -70,7 +100,10 @@ export async function GET(req: Request) {
     const live = liveData?.rooms ?? liveData?.liveRooms ?? [];
     const meetups = meetupsData?.meetups ?? [];
 
-    // ---------- TEAM SEARCH ----------
+    // ----------------------------------------------
+    //  2. 개별 영역 검색(score 기반 정렬)
+    // ----------------------------------------------
+
     const filteredTeams = teams
       .map((t: any) => ({
         ...t,
@@ -80,7 +113,6 @@ export async function GET(req: Request) {
       .sort((a: any, b: any) => b._score - a._score)
       .slice(0, 20);
 
-    // ---------- EVENT SEARCH ----------
     const filteredEvents = events
       .map((e: any) => ({
         ...e,
@@ -96,7 +128,6 @@ export async function GET(req: Request) {
       .sort((a: any, b: any) => b._score - a._score)
       .slice(0, 20);
 
-    // ---------- FANHUB SEARCH (본문 + 태그 + 작성자) ----------
     const filteredPosts = posts
       .map((p: any) => ({
         ...p,
@@ -106,7 +137,6 @@ export async function GET(req: Request) {
       .sort((a: any, b: any) => b._score - a._score)
       .slice(0, 20);
 
-    // ---------- LIVE ROOMS ----------
     const filteredLive = live
       .map((r: any) => ({
         ...r,
@@ -116,7 +146,6 @@ export async function GET(req: Request) {
       .sort((a: any, b: any) => b._score - a._score)
       .slice(0, 20);
 
-    // ---------- MEETUPS ----------
     const filteredMeetups = meetups
       .map((m: any) => ({
         ...m,
@@ -126,6 +155,9 @@ export async function GET(req: Request) {
       .sort((a: any, b: any) => b._score - a._score)
       .slice(0, 20);
 
+    // ----------------------------------------------
+    //  3. 응답 반환
+    // ----------------------------------------------
     return NextResponse.json({
       teams: filteredTeams,
       events: filteredEvents,
@@ -134,7 +166,7 @@ export async function GET(req: Request) {
       meetups: filteredMeetups,
     });
   } catch (err) {
-    console.error("Search API failed:", err);
+    console.error("❌ [Search API Error]:", err);
 
     return NextResponse.json(
       {

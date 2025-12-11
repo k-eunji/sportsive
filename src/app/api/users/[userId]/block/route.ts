@@ -1,28 +1,36 @@
-//src/app/api/users/[userId]/block/route.ts
-
-import { NextResponse } from "next/server";
+// src/app/api/users/[userId]/block/route.ts
+import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/firebaseAdmin";
 import { getCurrentUserId } from "@/lib/getCurrentUser";
 
-export async function POST(
-  req: Request,
-  { params }: { params: { userId: string } }
-) {
+interface RouteParams {
+  params: { userId: string };
+}
+
+export async function POST(req: NextRequest, { params }: RouteParams) {
   try {
     const myId = await getCurrentUserId(req);
-    if (!myId)
+    if (!myId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     const { userId } = params;
-    if (myId === userId)
-      return NextResponse.json({ error: "Cannot block yourself" }, { status: 400 });
+
+    if (myId === userId) {
+      return NextResponse.json(
+        { error: "Cannot block yourself" },
+        { status: 400 }
+      );
+    }
 
     await db
       .collection("users")
       .doc(myId)
       .collection("blocked")
       .doc(userId)
-      .set({ blockedAt: new Date().toISOString() });
+      .set({
+        blockedAt: new Date().toISOString(),
+      });
 
     return NextResponse.json({ success: true });
   } catch (err) {

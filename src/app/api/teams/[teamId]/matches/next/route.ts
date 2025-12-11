@@ -1,16 +1,16 @@
-//src/app/api/teams/[teamId]/matches/next/route.ts
+// src/app/api/teams/[teamId]/matches/next/route.ts
+import { NextRequest, NextResponse } from "next/server";
 
-import { NextResponse } from "next/server";
+interface RouteParams {
+  params: { teamId: string };
+}
 
-export async function GET(
-  _req: Request,
-  { params }: { params: Promise<{ teamId: string }> }
-) {
-  const { teamId } = await params;
+export async function GET(_req: NextRequest, { params }: RouteParams) {
+  const { teamId } = params;
 
-  // ✅ TODO: SQLite 쿼리로 실제 경기 불러오기 (지금은 더미 데이터)
+  // TODO: SQLite 또는 API에서 실제 다음 경기 불러오기
   const nextMatch = {
-    id: "next-" + teamId,
+    id: `next-${teamId}`,
     homeTeam: `Team ${teamId}`,
     awayTeam: "Rivals FC",
     date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),

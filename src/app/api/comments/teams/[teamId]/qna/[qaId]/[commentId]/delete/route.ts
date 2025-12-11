@@ -2,12 +2,16 @@
 
 import { adminDB } from "@/lib/firebaseAdmin";
 import { NextResponse } from "next/server";
-import { FieldValue } from "firebase-admin/firestore"; // ⭐ 필수
+import { FieldValue } from "firebase-admin/firestore";
 
-export async function POST(req: Request, { params }: any) {
-  const { teamId, qaId, commentId } = await params;
+export async function POST(
+  _req: Request,
+  context: {
+    params: Promise<{ teamId: string; qaId: string; commentId: string }>;
+  }
+) {
+  const { teamId, qaId, commentId } = await context.params;
 
-  // 댓글 삭제
   await adminDB
     .collection("teams")
     .doc(teamId)
@@ -17,14 +21,13 @@ export async function POST(req: Request, { params }: any) {
     .doc(commentId)
     .delete();
 
-  // answerCount -1
   await adminDB
     .collection("teams")
     .doc(teamId)
     .collection("qna")
     .doc(qaId)
     .update({
-      answerCount: FieldValue.increment(-1), // ⭐ok
+      answerCount: FieldValue.increment(-1),
     });
 
   return NextResponse.json({ success: true });

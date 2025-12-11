@@ -1,5 +1,4 @@
-//src/app/api/live/all/rooms/route.ts
-
+// src/app/api/live/all/rooms/route.ts
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
@@ -11,13 +10,7 @@ export async function GET() {
     const DAYS_AHEAD = 5;
     const now = new Date();
 
-    const startOfToday = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate(),
-      0, 0, 0, 0
-    );
-
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
     const endOfFutureRange = new Date(
       now.getFullYear(),
       now.getMonth(),
@@ -27,41 +20,24 @@ export async function GET() {
 
     const allEvents = await getAllEvents();
 
+    // 날짜 필터링
     const filtered = allEvents.filter((event: any) => {
       const d = new Date(event.date);
       return d >= startOfToday && d <= endOfFutureRange;
     });
 
-    // ⛔ sport 누락 체크 (중요)
-    filtered.forEach((e) => {
-      if (!e.sport) {
-        console.error("❌ ERROR: event.sport is undefined!", e);
-      }
-    });
-
-    // 🔥 Firestore participants 불러오기 + 모든 디버깅 포함
     const rooms = await Promise.all(
       filtered.map(async (event: any) => {
-        console.log("🔎 DEBUG EVENT:", {
-          id: event.id,
-          sport: event.sport,
-          date: event.date,
-        });
+        const sport = event.sport ?? "football"; // ★ 누락 방지
 
-        const liveDocRef = adminDb
+        const liveDoc = await adminDb
           .collection("live_events")
-          .doc(event.sport)
+          .doc(sport)
           .collection("events")
-          .doc(event.id);
+          .doc(event.id)
+          .get();
 
-        console.log("🔎 DEBUG PATH:", liveDocRef.path);
-
-        const liveDoc = await liveDocRef.get();
-
-        console.log("🔎 DEBUG liveDoc.exists:", liveDoc.exists);
-        console.log("🔎 DEBUG liveDoc.data:", liveDoc.data());
-
-        const participants = Number(liveDoc.data()?.participants || 0);
+        const participants = Number(liveDoc.data()?.participants ?? 0);
 
         return {
           id: event.id,
@@ -73,14 +49,14 @@ export async function GET() {
           awayTeam: event.awayTeam,
           homeTeamLogo: event.homeTeamLogo ?? null,
           awayTeamLogo: event.awayTeamLogo ?? null,
-          sport: event.sport ?? "football",
+          sport,
         };
       })
     );
 
     return NextResponse.json({ rooms });
   } catch (err) {
-    console.error(err);
+    console.error("❌ GET /live/all/rooms failed:", err);
     return NextResponse.json({ rooms: [] }, { status: 500 });
   }
 }

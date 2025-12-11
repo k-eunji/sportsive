@@ -2,6 +2,7 @@
 
 import { db } from "@/lib/firebaseAdmin";
 import { NextResponse } from "next/server";
+import { FieldValue } from "firebase-admin/firestore";
 
 export async function POST(req: Request) {
   try {
@@ -14,11 +15,12 @@ export async function POST(req: Request) {
       );
     }
 
-  const ref = db
-    .collection("predictions")
-    .doc(userId)
-    .collection("matches")
-    .doc(matchId);
+    const ref = db
+      .collection("predictions")
+      .doc(userId)
+      .collection("matches")
+      .doc(matchId);
+
     const exist = await ref.get();
 
     if (exist.exists) {
@@ -31,17 +33,14 @@ export async function POST(req: Request) {
     await ref.set({
       userId,
       matchId,
-      choice,            // "home" | "draw" | "away"
-      createdAt: new Date().toISOString(),
+      choice,                  // "home" | "draw" | "away"
+      createdAt: FieldValue.serverTimestamp(),  // ⭐ 더 안전한 Timestamp
     });
 
     return NextResponse.json({ success: true });
 
   } catch (err) {
     console.error("❌ Predict API Error:", err);
-    return NextResponse.json(
-      { error: "Server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

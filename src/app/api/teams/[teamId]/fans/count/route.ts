@@ -1,20 +1,19 @@
-//src/app/api/teams/[teamId]/fans/count/route.ts
+// src/app/api/teams/[teamId]/fans/count/route.ts
+import { NextRequest, NextResponse } from "next/server";
 
-import { NextResponse } from "next/server";
+interface RouteParams {
+  params: { teamId: string };
+}
 
 /**
- * ✅ GET /api/teams/[teamId]/fans/count
- * - 특정 팀의 근처 팬 수를 반환합니다.
- * - 지금은 샘플 데이터로 27명 고정.
+ * GET /api/teams/[teamId]/fans/count
+ * 임시: 팀의 팬 수를 랜덤으로 반환
  */
-export async function GET(
-  _req: Request,
-  { params }: { params: Promise<{ teamId: string }> }
-) {
-  const { teamId } = await params;
+export async function GET(_req: NextRequest, { params }: RouteParams) {
+  const { teamId } = params;
 
-  // TODO: 실제 DB 연동 시 teamId 기반 팬 카운트 조회
-  const count = 27 + Math.floor(Math.random() * 20); // 임시로 랜덤
+  // TODO: DB 연동 시 teamId 기준 실제 팬 수 조회
+  const count = 27 + Math.floor(Math.random() * 20);
 
-  return NextResponse.json({ count });
+  return NextResponse.json({ teamId, count });
 }

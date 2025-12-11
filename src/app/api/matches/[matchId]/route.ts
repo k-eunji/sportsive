@@ -5,9 +5,13 @@ import { db } from "@/lib/db.mock";
 
 export async function GET(
   req: Request,
-  context: { params: Promise<{ matchId: string }> } // ✅ Promise로 변경
+  { params }: { params: Promise<{ matchId: string }> }
 ) {
-  const { matchId } = await context.params; // ✅ await 필요
+  const { matchId } = await params;
+
+  if (!matchId) {
+    return NextResponse.json({ error: "Missing matchId" }, { status: 400 });
+  }
 
   try {
     const docSnap = await db.collection("matches").doc(matchId).get();

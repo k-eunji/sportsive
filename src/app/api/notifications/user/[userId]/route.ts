@@ -1,14 +1,15 @@
 // src/app/api/notifications/user/[userId]/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/firebaseAdmin";
 
+interface RouteParams {
+  params: { userId: string };
+}
+
 /**
- * 🔔 GET: 유저의 알림 목록 불러오기 (최신순)
+ * 🔔 GET: 유저 알림 목록 조회 (최신순)
  */
-export async function GET(
-  _req: Request,
-  { params }: { params: { userId: string } }
-) {
+export async function GET(_req: NextRequest, { params }: RouteParams) {
   const { userId } = params;
 
   try {
@@ -25,21 +26,23 @@ export async function GET(
 
     return NextResponse.json(notifications);
   } catch (err) {
-    console.error("🔥 Failed to load notifications:", err);
+    console.error("🔥 GET /notifications/user/[id] failed:", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Failed to load notifications" },
+      {
+        error:
+          err instanceof Error
+            ? err.message
+            : "Failed to load notifications",
+      },
       { status: 500 }
     );
   }
 }
 
 /**
- * ✅ PATCH: 모든 안 읽은 알림을 읽음 처리
+ * 📩 PATCH: 모든 안 읽은 알림 읽음 처리
  */
-export async function PATCH(
-  _req: Request,
-  { params }: { params: { userId: string } }
-) {
+export async function PATCH(_req: NextRequest, { params }: RouteParams) {
   const { userId } = params;
 
   try {
@@ -50,14 +53,21 @@ export async function PATCH(
       .get();
 
     const batch = db.batch();
+
     snap.forEach((doc) => batch.update(doc.ref, { read: true }));
+
     await batch.commit();
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error("🔥 Failed to mark notifications read:", err);
+    console.error("🔥 PATCH /notifications/user/[id] failed:", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Failed to mark read" },
+      {
+        error:
+          err instanceof Error
+            ? err.message
+            : "Failed to update notifications",
+      },
       { status: 500 }
     );
   }
