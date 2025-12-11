@@ -9,7 +9,7 @@ interface Params {
   commentId: string;
 }
 
-/** ✅ getBaseRef 로컬 함수 */
+/** 🔧 fanhub 전용 처리 포함한 공통 ref 생성 함수 */
 function getBaseRef(type: string, parentId: string) {
   if (type === "fanhub") {
     return adminDB
@@ -18,14 +18,18 @@ function getBaseRef(type: string, parentId: string) {
       .collection("messages")
       .doc(parentId);
   }
+
   return adminDB.collection(type).doc(parentId);
 }
 
+/* ============================
+    PATCH — 댓글 수정
+============================ */
 export async function PATCH(
   req: Request,
-  context: { params: Promise<Params> }   // ✅ Promise로 변경
+  context: { params: Params }
 ) {
-  const { type, parentId, commentId } = await context.params; // ✅ 반드시 await
+  const { type, parentId, commentId } = context.params;
 
   const { text } = await req.json();
 
@@ -38,16 +42,22 @@ export async function PATCH(
   await baseRef
     .collection("comments")
     .doc(commentId)
-    .update({ text, edited: true });
+    .update({
+      text,
+      edited: true,
+    });
 
   return NextResponse.json({ success: true });
 }
 
+/* ============================
+    DELETE — 댓글 삭제
+============================ */
 export async function DELETE(
   req: Request,
-  context: { params: Promise<Params> }   // ✅ Promise로 변경
+  context: { params: Params }
 ) {
-  const { type, parentId, commentId } = await context.params; // ✅ 반드시 await
+  const { type, parentId, commentId } = context.params;
 
   const baseRef = getBaseRef(type, parentId);
 
