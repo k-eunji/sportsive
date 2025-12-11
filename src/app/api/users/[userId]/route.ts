@@ -1,25 +1,17 @@
 // src/app/api/users/[userId]/route.ts
+
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/firebaseAdmin";
 import { getLevel } from "@/lib/levels";
 
-interface RouteParams {
-  params: { userId: string };
-}
-
 export async function GET(
   _req: NextRequest,
-  context: Promise<{ params: { userId: string } }>
+  context: { params: Promise<{ userId: string }> }
 ) {
-  const { params } = await context;
-  const { userId } = params;
+  const { userId } = await context.params;
 
   try {
-    // -------------------------------------
-    // 🔥 사용자 기본 정보
-    // -------------------------------------
     const userSnap = await db.collection("users").doc(userId).get();
-
     if (!userSnap.exists) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
@@ -28,9 +20,6 @@ export async function GET(
     const points = userData.points ?? 0;
     const level = getLevel(points);
 
-    // -------------------------------------
-    // 🔥 호스트 & 참가 밋업 정보
-    // -------------------------------------
     const meetupsRef = db.collection("meetups");
 
     const [hostedSnap, joinedSnap] = await Promise.all([
@@ -60,9 +49,6 @@ export async function GET(
       formatMeetup(d.data(), d.id)
     );
 
-    // -------------------------------------
-    // 🔥 리뷰 정보
-    // -------------------------------------
     const reviewsSnap = await db
       .collection("reviews")
       .where("targetUserId", "==", userId)
@@ -101,13 +87,7 @@ export async function GET(
       })
     );
 
-    // -------------------------------------
-    // 🔥 supporters / teammates 계산
-    // supportersCount: 나를 support한 사람
-    // teammatesCount: 서로 support한 사람
-    // -------------------------------------
     const allUsersSnap = await db.collection("users").get();
-
     const mySupports: string[] = userData.supporting ?? [];
     let supportersCount = 0;
     let teammatesCount = 0;
@@ -115,19 +95,12 @@ export async function GET(
     allUsersSnap.forEach((doc) => {
       const u = doc.data();
       const supports: string[] = u.supporting ?? [];
-
       if (supports.includes(userId)) {
         supportersCount++;
-
-        if (mySupports.includes(doc.id)) {
-          teammatesCount++;
-        }
+        if (mySupports.includes(doc.id)) teammatesCount++;
       }
     });
 
-    // -------------------------------------
-    // 🔥 응답 구성
-    // -------------------------------------
     return NextResponse.json({
       id: userId,
       displayName:
@@ -135,6 +108,7 @@ export async function GET(
         userData.authorNickname ||
         userData.username ||
         "Anonymous",
+
       authorNickname: userData.authorNickname ?? "",
       nickname: userData.nickname ?? "",
       username: userData.username ?? "",
@@ -145,20 +119,14 @@ export async function GET(
       email: userData.email ?? "",
       createdAt: userData.createdAt ?? null,
 
-      // 레벨
       points,
       level: level.name,
       levelDesc: level.desc,
       levelColor: level.color,
 
-      // 밋업
       hostedMeetups,
       joinedMeetups,
-
-      // 리뷰
       reviews,
-
-      // 관계
       supportersCount,
       teammatesCount,
     });
