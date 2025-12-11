@@ -7,8 +7,11 @@ interface RouteParams {
   params: { userId: string };
 }
 
-export async function GET(_req: NextRequest, { params }: RouteParams) {
-  const { userId } = params;
+export async function GET(
+  _req: NextRequest,
+  context: { params: { userId: string } }
+) {
+  const { userId } = context.params; // ← 반드시 이렇게 사용해야 함
 
   try {
     // -------------------------------------
