@@ -3,19 +3,35 @@
 import TeamHeader from "./components/TeamHeader";
 import TeamPageClient from "./TeamPage.client";
 
-export default async function TeamPage({ params }: { params: Promise<{ teamId: string }> }) {
+// ✅ 서버 컴포넌트용 base URL
+const baseUrl =
+  process.env.NEXT_PUBLIC_BASE_URL ??
+  "http://localhost:3000";
+
+export default async function TeamPage({
+  params,
+}: {
+  params: Promise<{ teamId: string }>;
+}) {
   const { teamId } = await params;
 
-  const teamData = await fetch(`/api/teams/${teamId}`, {
-    cache: "no-store",
-  }).then((r) => r.json());
-
+  // ----------------------------
+  // 팀 정보
+  // ----------------------------
+  const teamData = await fetch(
+    `${baseUrl}/api/teams/${teamId}`,
+    { cache: "no-store" }
+  ).then((r) => r.json());
 
   const team = teamData.team;
 
-  const events = await fetch(`/api/events/england/football`, {
-    cache: "no-store",
-  }).then((r) => r.json());
+  // ----------------------------
+  // 경기 정보
+  // ----------------------------
+  const events = await fetch(
+    `${baseUrl}/api/events/england/football`,
+    { cache: "no-store" }
+  ).then((r) => r.json());
 
   const matches = (events.matches as any[]).map((m: any) => {
     const isHome = m.homeTeamId === team.id;
@@ -24,7 +40,7 @@ export default async function TeamPage({ params }: { params: Promise<{ teamId: s
       ...m,
       kickoff: m.date,
       day: m.date.slice(0, 10),
-      opponent: isHome ? m.awayTeam : m.homeTeam,   // ⭐ 추가
+      opponent: isHome ? m.awayTeam : m.homeTeam,
     };
   });
 
