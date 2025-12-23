@@ -1,7 +1,12 @@
 // src/app/api/trending/teams/route.ts
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import sqlite3 from "sqlite3";
+import { open } from "sqlite";
+import path from "path";
 
-// 문자열 정리
+// ===============================
+// Utils
+// ===============================
 function clean(str: string | null | undefined) {
   return (str ?? "")
     .replace(/\b(FC|AFC|CF)\b/gi, "")
@@ -10,7 +15,6 @@ function clean(str: string | null | undefined) {
     .toLowerCase();
 }
 
-// 약칭 → 실제 팀명 매핑
 const ALIAS: Record<string, string> = {
   "man utd": "manchester united",
   "man united": "manchester united",
@@ -25,16 +29,47 @@ function normalizeTeamName(name: string) {
   return ALIAS[key] ?? key;
 }
 
-export async function GET(_req: NextRequest) {
+// ===============================
+// DB
+// ===============================
+const DB_FILE = path.join(process.cwd(), "sportsive.db");
+
+// ===============================
+// GET /api/trending/teams
+// ===============================
+export async function GET() {
+  let db;
+
   try {
-    const base = process.env.NEXT_PUBLIC_BASE_URL;
+    db = await open({
+      filename: DB_FILE,
+      driver: sqlite3.Database,
+    });
 
     // -------------------------------------------------
-    // 1) 팀 목록 가져오기
+    // 1) 팀 목록 (DB 직접 조회)
     // -------------------------------------------------
-    const teamRes = await fetch(`${base}/api/teams`, { cache: "no-store" });
-    const teamJson = await teamRes.json();
-    const allTeams = teamJson?.teams ?? [];
+    const teams = await db.all(`
+      SELECT
+        id,
+        name,
+        logo_url AS logo
+      FROM "2526_england_pl_football_teams"
+    `);
+
+    // England National Team 수동 추가
+    const allTeams = [
+      {
+        id: "england",
+        name: "England National Football Team",
+        logo: "https://upload.wikimedia.org/wikipedia/en/b/be/Flag_of_England.svg",
+      },
+      ...teams.map((t: any) => ({
+        id: String(t.id),
+        name: t.name,
+        logo: t.logo ?? null,
+      })),
+    ];
 
     const nameMap: Record<
       string,
@@ -42,64 +77,70 @@ export async function GET(_req: NextRequest) {
     > = {};
 
     for (const t of allTeams) {
-      const key = clean(t.name);
-      nameMap[key] = {
-        id: String(t.id),
+      nameMap[clean(t.name)] = {
+        id: t.id,
         name: t.name,
-        logo: t.logo ?? null,
+        logo: t.logo,
       };
     }
 
     // -------------------------------------------------
-    // 2) Events + FanHub 병렬 가져오기
+    // 2) Events (외부 API 직접 호출)
     // -------------------------------------------------
-    const [eventsRes, fanhubRes] = await Promise.allSettled([
-      fetch(`${base}/api/events`, { cache: "no-store" }),
-      fetch(`${base}/api/fanhub/list?sort=latest`, { cache: "no-store" }),
-    ]);
-
-    const safeJson = async (res: PromiseSettledResult<Response>) => {
-      if (res.status === "fulfilled" && res.value.ok) {
-        try {
-          return await res.value.json();
-        } catch {
-          return null;
-        }
+    const eventsRes = await fetch(
+      "https://api.football-data.org/v4/competitions/PL/matches",
+      {
+        headers: {
+          "X-Auth-Token": process.env.FOOTBALL_DATA_API_KEY!,
+        },
+        cache: "no-store",
       }
-      return null;
-    };
+    );
 
-    const events = (await safeJson(eventsRes))?.events ?? [];
-    const posts = (await safeJson(fanhubRes)) ?? [];
+    const eventsJson = eventsRes.ok ? await eventsRes.json() : null;
+    const events = eventsJson?.matches ?? [];
 
     // -------------------------------------------------
-    // 3) 점수 계산
+    // 3) FanHub (DB 직접 조회)
+    // -------------------------------------------------
+    const posts = await db.all(`
+      SELECT text, tags
+      FROM fanhub_posts
+      ORDER BY created_at DESC
+      LIMIT 100
+    `);
+
+    // -------------------------------------------------
+    // 4) 점수 계산
     // -------------------------------------------------
     const scores: Record<string, number> = {};
 
-    const addScore = (rawTeam: string, amount: number) => {
-      const key = normalizeTeamName(rawTeam);
+    const addScore = (raw: string, amount: number) => {
+      const key = normalizeTeamName(raw);
       if (!key) return;
       scores[key] = (scores[key] || 0) + amount;
     };
 
-    // A. Event 기반
+    // A. 경기 기반
     for (const e of events) {
-      addScore(e.homeTeam, 1);
-      addScore(e.awayTeam, 1);
+      addScore(e.homeTeam?.name, 1);
+      addScore(e.awayTeam?.name, 1);
     }
 
     // B. FanHub 기반
     for (const p of posts) {
-      // 태그 기반
-      if (Array.isArray(p.tags)) {
-        for (const tag of p.tags as string[]) {
-          addScore(tag, 3);
+      // 태그
+      try {
+        const tags = JSON.parse(p.tags ?? "[]");
+        if (Array.isArray(tags)) {
+          for (const tag of tags) {
+            addScore(tag, 3);
+          }
         }
-      }
+      } catch {}
 
-      // 본문 기반
-      const text = p.text?.toLowerCase() ?? "";
+      // 본문
+      const text = (p.text ?? "").toLowerCase();
       for (const key of Object.keys(nameMap)) {
         if (text.includes(key)) {
           addScore(key, 2);
@@ -108,7 +149,7 @@ export async function GET(_req: NextRequest) {
     }
 
     // -------------------------------------------------
-    // 4) 랭킹 구성 후 상위 10개 반환
+    // 5) 랭킹 상위 10개
     // -------------------------------------------------
     const trending = Object.entries(scores)
       .map(([key, score]) => {
@@ -129,5 +170,7 @@ export async function GET(_req: NextRequest) {
   } catch (err) {
     console.error("❌ trending error:", err);
     return NextResponse.json([], { status: 500 });
+  } finally {
+    if (db) await db.close();
   }
 }
