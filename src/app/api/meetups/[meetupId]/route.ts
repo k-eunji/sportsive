@@ -68,18 +68,11 @@ export async function GET(
     // -----------------------------
     const targetEventId = data.eventId || data.selectedEventId;
 
-    const baseUrlRaw =
-      process.env.NEXT_PUBLIC_BASE_URL ||
-      process.env.NEXT_PUBLIC_API_URL ||
-      "http://localhost:3000";
-
-    const baseUrl = baseUrlRaw.replace(/\/api$/, "");
-
     let eventData = null;
     let upcomingEvents: any[] = [];
 
     try {
-      const eventRes = await fetch(`${baseUrl}/api/events/england/football`, {
+      const eventRes = await fetch("/api/events/england/football", {
         cache: "no-store",
       });
 

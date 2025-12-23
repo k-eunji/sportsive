@@ -3,9 +3,7 @@
 import HistoryRow from "./HistoryRow";
 
 async function getList(teamId: string) {
-  const base = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
-
-  const res = await fetch(`${base}/api/teams/${teamId}/momvote/list`, {
+  const res = await fetch(`/api/teams/${teamId}/momvote/list`, {
     cache: "no-store",
   });
 

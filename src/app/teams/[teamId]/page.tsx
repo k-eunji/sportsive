@@ -6,15 +6,14 @@ import TeamPageClient from "./TeamPage.client";
 export default async function TeamPage({ params }: { params: Promise<{ teamId: string }> }) {
   const { teamId } = await params;
 
-  const base = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-
-  const teamData = await fetch(`${base}/api/teams/${teamId}`, {
+  const teamData = await fetch(`/api/teams/${teamId}`, {
     cache: "no-store",
   }).then((r) => r.json());
 
+
   const team = teamData.team;
 
-  const events = await fetch(`${base}/api/events/england/football`, {
+  const events = await fetch(`/api/events/england/football`, {
     cache: "no-store",
   }).then((r) => r.json());
 
