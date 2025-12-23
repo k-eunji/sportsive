@@ -103,12 +103,18 @@ export async function GET() {
     // -------------------------------------------------
     // 3) FanHub (DB 직접 조회)
     // -------------------------------------------------
-    const posts = await db.all(`
-      SELECT text, tags
-      FROM fanhub_posts
-      ORDER BY created_at DESC
-      LIMIT 100
-    `);
+    let posts: any[] = [];
+
+    try {
+      posts = await db.all(`
+        SELECT text, tags
+        FROM fanhub_posts
+        ORDER BY created_at DESC
+        LIMIT 100
+      `);
+    } catch (e) {
+      console.warn("⚠️ fanhub_posts table not found, skipping FanHub");
+    }
 
     // -------------------------------------------------
     // 4) 점수 계산
