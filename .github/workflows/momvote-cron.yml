@@ -1,0 +1,17 @@
+name: MOM Vote Cron
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+  run-cron:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call chelsea
+        run: |
+          curl -X POST https://sportsive-v2.vercel.app/api/teams/chelsea/momvote/cron
+
+      - name: Call tottenham
+        run: |
+          curl -X POST https://sportsive-v2.vercel.app/api/teams/tottenham/momvote/cron
