@@ -1,10 +1,7 @@
 // src/app/api/teams/[teamId]/route.ts
-import { NextResponse } from "next/server";
-import sqlite3 from "sqlite3";
-import { open } from "sqlite";
-import path from "path";
 
-const DB_FILE = path.join(process.cwd(), "sportsive.db");
+import { NextResponse } from "next/server";
+import { supabase } from "@/lib/supabaseServer";
 
 function cleanTeamName(name: string | null | undefined) {
   return (name ?? "")
@@ -17,9 +14,10 @@ export async function GET(
   _req: Request,
   { params }: { params: Promise<{ teamId: string }> }
 ) {
+  // ✅ Next 16: params는 Promise
   const { teamId } = await params;
 
-  // ✅ 1️⃣ England National Team — Special Case
+  // England special case
   if (teamId.toLowerCase() === "england") {
     return NextResponse.json({
       team: {
@@ -30,7 +28,7 @@ export async function GET(
         city: "London",
         homepageUrl: "https://www.englandfootball.com/",
         venue: "Wembley Stadium",
-        transportInfo: "Wembley Park Station (Jubilee & Metropolitan Lines)",
+        transportInfo: "Wembley Park Station",
         foundedYear: 1863,
         instagram: "https://www.instagram.com/england",
         x: "https://x.com/England",
@@ -39,51 +37,49 @@ export async function GET(
     });
   }
 
-  // ✅ 2️⃣ 나머지 팀은 DB 조회
-  const teamIdNum = Number(teamId);
-  if (isNaN(teamIdNum)) {
+  const id = Number(teamId);
+  if (Number.isNaN(id)) {
     return NextResponse.json({ team: null }, { status: 400 });
   }
 
-  let db;
-  try {
-    db = await open({ filename: DB_FILE, driver: sqlite3.Database });
+  const { data: team, error } = await supabase
+    .from("england_pl_football_teams")
+    .select(`
+      id,
+      name,
+      logo_url,
+      region,
+      city,
+      homepage_url,
+      venue,
+      transport_info,
+      founded_year,
+      instagram,
+      x,
+      youtube
+    `)
+    .eq("id", id)
+    .single();
 
-    const team = await db.get(
-      `
-      SELECT 
-        id,
-        name,
-        logo_url AS logo,
-        region,
-        city,
-        homepage_url AS homepageUrl,
-        venue,
-        transport_info AS transportInfo,
-        founded_year AS foundedYear,
-        instagram,
-        x,
-        youtube
-      FROM "2526_england_pl_football_teams"
-      WHERE id = ?
-      `,
-      [teamIdNum]
-    );
-
-    if (!team) {
-      return NextResponse.json({ team: null }, { status: 404 });
-    }
-
-    return NextResponse.json({
-      team: {
-        ...team,
-        name: cleanTeamName(team.name),
-      },
-    });
-  } catch (err) {
-    console.error("❌ Error fetching team:", err);
-    return NextResponse.json({ team: null }, { status: 500 });
-  } finally {
-    if (db) await db.close();
+  if (error || !team) {
+    console.error(error);
+    return NextResponse.json({ team: null }, { status: 404 });
   }
+
+  return NextResponse.json({
+    team: {
+      id: String(team.id),
+      name: cleanTeamName(team.name),
+      logo: team.logo_url,
+      region: team.region,
+      city: team.city,
+      homepageUrl: team.homepage_url,
+      venue: team.venue,
+      transportInfo: team.transport_info,
+      foundedYear: team.founded_year,
+      instagram: team.instagram,
+      x: team.x,
+      youtube: team.youtube,
+    },
+  });
 }
