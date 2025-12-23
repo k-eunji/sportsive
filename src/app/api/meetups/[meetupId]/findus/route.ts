@@ -1,6 +1,8 @@
 // src/app/api/meetups/[meetupId]/findus/route.ts
+
+export const runtime = "nodejs";
 import { NextResponse } from "next/server";
-import { adminDB } from "@/lib/firebaseAdmin";
+import { adminDb } from "@/lib/firebaseAdmin";
 
 interface MeetupParams {
   meetupId: string;
@@ -20,7 +22,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Invalid content" }, { status: 400 });
     }
 
-    await adminDB
+    await adminDb
       .collection("meetups")
       .doc(meetupId)
       .update({

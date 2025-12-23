@@ -1,6 +1,8 @@
 // src/app/api/users/[userId]/block-status/route.ts
+
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/firebaseAdmin";
+import { adminDb } from "@/lib/firebaseAdmin";
 import { getCurrentUserId } from "@/lib/getCurrentUser";
 
 interface RouteParams {
@@ -16,7 +18,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
 
     const { userId } = params;
 
-    const ref = db
+    const ref = adminDb
       .collection("users")
       .doc(myId)
       .collection("blocked")

@@ -1,6 +1,8 @@
 // src/app/api/messages/[conversationId]/route.ts
+
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/firebaseAdmin";
+import { adminDb } from "@/lib/firebaseAdmin";
 import { getCurrentUserId } from "@/lib/getCurrentUser";
 
 interface RouteParams {
@@ -19,7 +21,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const convRef = db.collection("conversations").doc(conversationId);
+    const convRef = adminDb.collection("conversations").doc(conversationId);
     const convSnap = await convRef.get();
 
     if (!convSnap.exists) {
@@ -71,7 +73,7 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const convRef = db.collection("conversations").doc(conversationId);
+    const convRef = adminDb.collection("conversations").doc(conversationId);
     const convSnap = await convRef.get();
 
     if (!convSnap.exists) {
@@ -85,7 +87,7 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
     }
 
     const msgsSnap = await convRef.collection("messages").get();
-    const batch = db.batch();
+    const batch = adminDb.batch();
 
     msgsSnap.forEach((doc) => batch.delete(doc.ref));
     batch.delete(convRef);

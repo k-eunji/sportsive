@@ -1,6 +1,7 @@
 // src/app/api/fanhub/[id]/edit/route.ts
 
-import { db } from "@/lib/firebaseAdmin";
+export const runtime = "nodejs";
+import { adminDb } from "@/lib/firebaseAdmin";
 import { NextResponse } from "next/server";
 
 export async function POST(
@@ -10,7 +11,7 @@ export async function POST(
   const { id } = await params;  // ⬅️ 반드시 await
   const { text } = await req.json();
 
-  await db
+  await adminDb
     .collection("fanhub")
     .doc("global")
     .collection("messages")

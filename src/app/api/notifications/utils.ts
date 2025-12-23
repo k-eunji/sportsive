@@ -1,5 +1,7 @@
 // src/app/api/notifications/utils.ts
-import { db } from "@/lib/firebaseAdmin";
+
+export const dynamic = "force-dynamic";
+import { adminDb } from "@/lib/firebaseAdmin";
 
 interface CreateNotifArgs {
   userId: string;
@@ -27,21 +29,21 @@ export async function createNotification({
     createdAt: new Date().toISOString(),
   };
 
-  const ref = await db.collection("notifications").add(notif);
+  const ref = await adminDb.collection("notifications").add(notif);
 
   return { id: ref.id, ...notif };
 }
 
 /** ✅ Mark a single notification as read */
 export async function markNotificationAsRead(notificationId: string) {
-  await db.collection("notifications").doc(notificationId).update({
+  await adminDb.collection("notifications").doc(notificationId).update({
     read: true,
   });
 }
 
 /** ✅ Fetch all notifications for a user (latest first) */
 export async function getUserNotifications(userId: string) {
-  const snap = await db
+  const snap = await adminDb
     .collection("notifications")
     .where("userId", "==", userId)
     .orderBy("createdAt", "desc")

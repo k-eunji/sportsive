@@ -1,6 +1,6 @@
 //src/app/api/likes/count/route.ts
-
-import { db } from "@/lib/firebaseAdmin";
+export const runtime = "nodejs";
+import { adminDb } from "@/lib/firebaseAdmin";
 import { NextResponse } from "next/server";
 
 export async function GET(req: Request) {
@@ -11,7 +11,7 @@ export async function GET(req: Request) {
   if (!parentType || !parentId)
     return NextResponse.json({ count: 0 });
 
-  const snap = await db
+  const snap = await adminDb
     .collection("likes")
     .doc(parentType)
     .collection(parentId)

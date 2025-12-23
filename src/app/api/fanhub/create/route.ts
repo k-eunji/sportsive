@@ -1,6 +1,6 @@
 // src/app/api/fanhub/create/route.ts
-
-import { db } from "@/lib/firebaseAdmin";
+export const runtime = "nodejs";
+import { adminDb } from "@/lib/firebaseAdmin";
 import { NextResponse } from "next/server";
 import { FieldValue } from "firebase-admin/firestore";   // ★ 추가됨
 
@@ -9,7 +9,7 @@ export async function POST(req: Request) {
     await req.json();
 
   // 1) 문서 ID 먼저 생성
-  const ref = db
+  const ref = adminDb
     .collection("fanhub")
     .doc("global")
     .collection("messages")

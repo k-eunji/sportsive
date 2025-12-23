@@ -1,6 +1,8 @@
 // src/app/api/notifications/route.ts
+
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/firebaseAdmin";
+import { adminDb } from "@/lib/firebaseAdmin";
 
 export async function POST(req: NextRequest) {
   try {
@@ -23,7 +25,7 @@ export async function POST(req: NextRequest) {
       createdAt: new Date().toISOString(),
     };
 
-    const ref = await db.collection("notifications").add(newNotif);
+    const ref = await adminDb.collection("notifications").add(newNotif);
 
     return NextResponse.json({
       id: ref.id,

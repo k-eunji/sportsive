@@ -45,11 +45,11 @@ export default function CreateMeetupModal({
     switch (meetupType) {
       case "match_attendance":
       case "pub_gathering":
-        return !!form.selectedEvent;
+        return true;
       case "online_game":
         return !!form.onlineGameName && !!form.onlineLink;
       case "pickup_sports":
-        return !!form.skillLevel && !!(form.venue || form.venueLatLng);
+        return !!form.skillLevel && !!form.venue;
       default:
         return false;
     }
@@ -60,10 +60,13 @@ export default function CreateMeetupModal({
     const currentUser = auth?.currentUser;
     if (!currentUser) return alert("Please log in first.");
 
-    const idToken = await currentUser.getIdToken();
-    let imageUrl = form.autoImageUrl || null;
+    console.log("SUBMIT venue:", form.venue);
+    console.log("SUBMIT selectedEvent:", form.selectedEvent?.venue);
 
-    if (form.useCustomImage && form.customImage && storage) {
+    const idToken = await currentUser.getIdToken();
+    let imageUrl: string | null = null;
+
+    if (form.customImage && storage) {
       try {
         const fileName = `${Date.now()}_${form.customImage.name}`;
         const fileRef = ref(storage, `meetups/${fileName}`);
@@ -74,18 +77,51 @@ export default function CreateMeetupModal({
       }
     }
 
+    // ✅ location을 먼저 만든다
+    let location = null;
+
+    // 1️⃣ 온라인 게임
+    if (meetupType === "online_game") {
+      location = {
+        name: "Online",
+        address: "Online",
+        lat: 0,
+        lng: 0,
+      };
+    }
+
+    // 2️⃣ 사용자가 장소를 직접 선택한 경우 (모든 타입 공통)
+    else if (form.venue) {
+      location = {
+        name: form.venue.name,
+        address: form.venue.name,
+        lat: form.venue.lat,
+        lng: form.venue.lng,
+      };
+    }
+
+    // 3️⃣ 매치 직관 + 장소 미선택 → 경기장 자동
+    else if (meetupType === "match_attendance" && form.selectedEvent) {
+      location = {
+        name: form.selectedEvent.venue ?? "Stadium",
+        address: form.selectedEvent.venue ?? "",
+        lat: form.selectedEvent.location?.lat ?? 0,
+        lng: form.selectedEvent.location?.lng ?? 0,
+      };
+    }
+
     const body: any = {
       hostId: user.uid,
       authorNickname: user.authorNickname,
       type: meetupType,
       datetime: form.datetime,
-      sportType: form.sportType,
       title: "",
       purpose: form.purpose,
       details: form.details,
-      venue: form.venue,
-      location:
-        meetupType === "online_game" ? { name: "Online" } : form.venue,
+
+      // ✅ location만 단일 소스로 사용
+      location,
+
       maxParticipants: form.maxParticipants,
       isPrivate: form.isPrivate,
       onlineLink: form.onlineLink,

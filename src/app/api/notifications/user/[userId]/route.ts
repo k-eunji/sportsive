@@ -1,6 +1,8 @@
 // src/app/api/notifications/user/[userId]/route.ts
+
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/firebaseAdmin";
+import { adminDb } from "@/lib/firebaseAdmin";
 
 interface RouteParams {
   params: { userId: string };
@@ -13,7 +15,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
   const { userId } = params;
 
   try {
-    const snap = await db
+    const snap = await adminDb
       .collection("notifications")
       .where("userId", "==", userId)
       .orderBy("createdAt", "desc")
@@ -46,13 +48,13 @@ export async function PATCH(_req: NextRequest, { params }: RouteParams) {
   const { userId } = params;
 
   try {
-    const snap = await db
+    const snap = await adminDb
       .collection("notifications")
       .where("userId", "==", userId)
       .where("read", "==", false)
       .get();
 
-    const batch = db.batch();
+    const batch = adminDb.batch();
 
     snap.forEach((doc) => batch.update(doc.ref, { read: true }));
 

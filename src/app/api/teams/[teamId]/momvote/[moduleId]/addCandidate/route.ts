@@ -2,7 +2,7 @@
 
 export const runtime = "nodejs";
 
-import { db } from "@/lib/firebaseAdmin";
+import { adminDb } from "@/lib/firebaseAdmin";
 import { NextResponse } from "next/server";
 import { v4 as uuid } from "uuid";
 
@@ -13,7 +13,7 @@ export async function POST(req: Request, ctx: any) {
   if (!name)
     return NextResponse.json({ error: "name required" }, { status: 400 });
 
-  const ref = db
+  const ref = adminDb
     .collection("teams")
     .doc(teamId)
     .collection("momvote")

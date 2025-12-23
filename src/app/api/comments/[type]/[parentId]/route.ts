@@ -1,7 +1,9 @@
 // src/app/api/comments/[type]/[parentId]/route.ts
 
+export const runtime = "nodejs";
+
 import { NextResponse } from "next/server";
-import { adminDB } from "@/lib/firebaseAdmin";
+import { adminDb } from "@/lib/firebaseAdmin";
 import { FieldValue } from "firebase-admin/firestore";
 
 interface CommentRouteParams {
@@ -11,13 +13,13 @@ interface CommentRouteParams {
 
 function getBaseRef(type: string, parentId: string) {
   if (type === "fanhub") {
-    return adminDB
+    return adminDb
       .collection("fanhub")
       .doc("global")
       .collection("messages")
       .doc(parentId);
   }
-  return adminDB.collection(type).doc(parentId);
+  return adminDb.collection(type).doc(parentId);
 }
 
 export async function GET(

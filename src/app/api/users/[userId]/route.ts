@@ -1,17 +1,22 @@
 // src/app/api/users/[userId]/route.ts
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
 
-import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/firebaseAdmin";
+import { NextResponse } from "next/server";
+import { adminDb } from "@/lib/firebaseAdmin";
 import { getLevel } from "@/lib/levels";
 
-export async function GET(
-  _req: NextRequest,
-  context: { params: Promise<{ userId: string }> }
-) {
+export async function GET(_req: Request, context: { params: Promise<{ userId: string }> }) {
   const { userId } = await context.params;
 
+  if (!userId) {
+    return NextResponse.json({ error: "Invalid userId" }, { status: 400 });
+  }
+
   try {
-    const userSnap = await db.collection("users").doc(userId).get();
+    const userSnap = await adminDb.collection("users").doc(userId).get();
+
     if (!userSnap.exists) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
@@ -20,7 +25,12 @@ export async function GET(
     const points = userData.points ?? 0;
     const level = getLevel(points);
 
-    const meetupsRef = db.collection("meetups");
+    const mySupports: string[] = userData.supporting ?? [];
+    const supportersCount = userData.supportersCount ?? 0;
+    const teammatesCount = mySupports.length;
+
+
+    const meetupsRef = adminDb.collection("meetups");
 
     const [hostedSnap, joinedSnap] = await Promise.all([
       meetupsRef.where("hostId", "==", userId).get(),
@@ -42,14 +52,10 @@ export async function GET(
       fee: m.fee ?? 0,
     });
 
-    const hostedMeetups = hostedSnap.docs.map((d) =>
-      formatMeetup(d.data(), d.id)
-    );
-    const joinedMeetups = joinedSnap.docs.map((d) =>
-      formatMeetup(d.data(), d.id)
-    );
+    const hostedMeetups = hostedSnap.docs.map((d) => formatMeetup(d.data(), d.id));
+    const joinedMeetups = joinedSnap.docs.map((d) => formatMeetup(d.data(), d.id));
 
-    const reviewsSnap = await db
+    const reviewsSnap = await adminDb
       .collection("reviews")
       .where("targetUserId", "==", userId)
       .orderBy("createdAt", "desc")
@@ -61,18 +67,12 @@ export async function GET(
         let reviewerName = "Anonymous";
 
         try {
-          const reviewerSnap = await db
-            .collection("users")
-            .doc(r.fromUserId)
-            .get();
+          const reviewerSnap = await adminDb.collection("users").doc(r.fromUserId).get();
 
           if (reviewerSnap.exists) {
             const d = reviewerSnap.data()!;
             reviewerName =
-              d.displayName ||
-              d.username ||
-              d.authorNickname ||
-              "Anonymous";
+              d.displayName || d.username || d.authorNickname || "Anonymous";
           }
         } catch {}
 
@@ -87,20 +87,6 @@ export async function GET(
       })
     );
 
-    const allUsersSnap = await db.collection("users").get();
-    const mySupports: string[] = userData.supporting ?? [];
-    let supportersCount = 0;
-    let teammatesCount = 0;
-
-    allUsersSnap.forEach((doc) => {
-      const u = doc.data();
-      const supports: string[] = u.supporting ?? [];
-      if (supports.includes(userId)) {
-        supportersCount++;
-        if (mySupports.includes(doc.id)) teammatesCount++;
-      }
-    });
-
     return NextResponse.json({
       id: userId,
       displayName:
@@ -108,7 +94,6 @@ export async function GET(
         userData.authorNickname ||
         userData.username ||
         "Anonymous",
-
       authorNickname: userData.authorNickname ?? "",
       nickname: userData.nickname ?? "",
       username: userData.username ?? "",
@@ -132,9 +117,6 @@ export async function GET(
     });
   } catch (err) {
     console.error("❌ Error fetching user info:", err);
-    return NextResponse.json(
-      { error: "Failed to fetch user" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to fetch user" }, { status: 500 });
   }
 }

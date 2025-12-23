@@ -1,7 +1,9 @@
 // src/app/api/meetups/[meetupId]/attendees/route.ts
 
+export const runtime = "nodejs";
+
 import { NextResponse } from "next/server";
-import { adminDB } from "@/lib/firebaseAdmin";
+import { adminDb } from "@/lib/firebaseAdmin";
 import { sendNotification } from "@/lib/sendNotification";
 
 export async function POST(req: Request, { params }: { params: { meetupId: string } }) {
@@ -9,7 +11,7 @@ export async function POST(req: Request, { params }: { params: { meetupId: strin
   const { userId } = await req.json();
 
   try {
-    const ref = adminDB.collection("meetups").doc(meetupId);
+    const ref = adminDb.collection("meetups").doc(meetupId);
     const snap = await ref.get();
 
     if (!snap.exists) {

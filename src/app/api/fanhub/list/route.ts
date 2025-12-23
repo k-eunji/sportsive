@@ -1,6 +1,6 @@
 // src/app/api/fanhub/list/route.ts
-
-import { db } from "@/lib/firebaseAdmin";
+export const runtime = "nodejs";
+import { adminDb } from "@/lib/firebaseAdmin";
 import { NextResponse } from "next/server";
 
 function toMillis(ts: any): number {
@@ -15,7 +15,7 @@ export async function GET(req: Request) {
   const tag = url.searchParams.get("tag");
   const sort = url.searchParams.get("sort") || "latest";
 
-  let query: FirebaseFirestore.Query = db
+  let query: FirebaseFirestore.Query = adminDb
     .collection("fanhub")
     .doc("global")
     .collection("messages");
@@ -38,13 +38,13 @@ export async function GET(req: Request) {
 
   // Likes & Comments 가져오기
   for (let m of messages) {
-    const likesSnap = await db
+    const likesSnap = await adminDb
       .collection("likes")
       .doc("fanhub")
       .collection(m.id)
       .get();
 
-    const commentsSnap = await db
+    const commentsSnap = await adminDb
       .collection("comments")
       .doc("fanhub")
       .collection(m.id)

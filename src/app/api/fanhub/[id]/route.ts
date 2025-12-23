@@ -1,6 +1,7 @@
 // src/app/api/fanhub/[id]/route.ts
 
-import { db } from "@/lib/firebaseAdmin";
+export const runtime = "nodejs";
+import { adminDb } from "@/lib/firebaseAdmin";
 import { NextResponse } from "next/server";
 
 export async function GET(
@@ -9,7 +10,7 @@ export async function GET(
 ) {
   const { id } = await params;  // ★ OK
 
-  const ref = db
+  const ref =  adminDb 
     .collection("fanhub")
     .doc("global")
     .collection("messages")

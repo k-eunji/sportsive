@@ -1,7 +1,9 @@
 // src/app/api/live/[sport]/[liveId]/route.ts
+
+export const runtime = "nodejs";
 import { NextResponse } from "next/server";
 import { getEventById } from "@/lib/events";
-import { db as adminDb } from "@/lib/firebaseAdmin";
+import { adminDb } from "@/lib/firebaseAdmin";
 
 export async function GET(
   req: Request,

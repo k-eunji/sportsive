@@ -1,20 +1,21 @@
 // src/app/api/live/rooms/[sport]/route.ts
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
+
 import { NextResponse } from "next/server";
 import { getAllEvents } from "@/lib/events";
-import { db as adminDb } from "@/lib/firebaseAdmin";
+import { adminDb } from "@/lib/firebaseAdmin";
 
-export async function GET(
-  req: Request,
-  { params }: { params: Promise<{ sport: string }> }
-) {
-  const { sport } = await params;
+export async function GET(req: Request, context: { params: Promise<{ sport: string }> }) {
+  const { sport } = await context.params;
 
   try {
     const allEvents = await getAllEvents();
     const now = new Date();
 
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-    const endOfFutureRange = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 5, 23, 59, 59, 999);
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const endOfFutureRange = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 5, 23, 59, 59);
 
     const filtered = allEvents.filter((event: any) => {
       const d = new Date(event.date);
@@ -26,8 +27,10 @@ export async function GET(
         const liveDoc = await adminDb
           .collection("live_events")
           .doc(sport)
-          .collection("events")
-          .doc(event.id)
+          .collection(sport)
+          .doc("events")
+          .collection(String(event.id))
+          .doc("meta")   // ← 실제 존재하는 문서
           .get();
 
         const participants = Number(liveDoc.data()?.participants ?? 0);

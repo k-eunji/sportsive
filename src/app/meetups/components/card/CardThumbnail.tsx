@@ -24,7 +24,7 @@ export default function CardThumbnail({
   const icon = typeEmoji[meetup.type] || "❓";
 
   const raw = meetup.imageUrl;
-  const imageUrl = raw && raw.startsWith("http") ? raw : null;
+  const imageUrl = meetup.imageUrl ?? null;
 
   const dim = size === "mobile" ? "w-12 h-12" : "w-14 h-14";
 

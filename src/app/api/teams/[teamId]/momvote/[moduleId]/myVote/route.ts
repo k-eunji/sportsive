@@ -2,7 +2,7 @@
 
 export const runtime = "nodejs";
 
-import { db } from "@/lib/firebaseAdmin";
+import { adminDb } from "@/lib/firebaseAdmin";
 import { NextResponse } from "next/server";
 
 export async function GET(req: Request, ctx: any) {
@@ -11,7 +11,7 @@ export async function GET(req: Request, ctx: any) {
   const userId = req.headers.get("x-user");
   if (!userId) return NextResponse.json({ myVote: null });
 
-  const ref = db
+  const ref = adminDb
     .collection("teams")
     .doc(teamId)
     .collection("momvote")

@@ -2,13 +2,13 @@
 
 export const runtime = "nodejs";
 
-import { db } from "@/lib/firebaseAdmin";
+import { adminDb } from "@/lib/firebaseAdmin";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request, ctx: any) {
   const { teamId } = await ctx.params;
 
-  const col = db
+  const col = adminDb
     .collection("teams")
     .doc(teamId)
     .collection("momvote");
@@ -28,7 +28,7 @@ export async function POST(req: Request, ctx: any) {
     const sorted = [...d.data.candidates].sort((a, b) => b.votes - a.votes);
     const totalVotes = sorted.reduce((s, c) => s + c.votes, 0);
 
-    const resultRef = db
+    const resultRef = adminDb
       .collection("teams")
       .doc(teamId)
       .collection("momvoteResults")

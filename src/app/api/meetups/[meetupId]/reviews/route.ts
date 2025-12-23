@@ -1,7 +1,9 @@
 // src/app/api/meetups/[meetupId]/reviews/route.ts
 
+export const runtime = "nodejs";
+
 import { NextResponse } from "next/server";
-import { adminDB } from "@/lib/firebaseAdmin";
+import { adminDb } from "@/lib/firebaseAdmin";
 import { rewardUser } from "@/lib/reward";
 import { sendNotification } from "@/lib/sendNotification";
 
@@ -17,7 +19,7 @@ export async function GET(
   const targetType = searchParams.get("targetType");
 
   try {
-    let query = adminDB
+    let query = adminDb
       .collection("reviews")
       .where("meetupId", "==", meetupId);
 
@@ -35,7 +37,7 @@ export async function GET(
     const enriched = await Promise.all(
       reviews.map(async (r: any) => {
         if ((!r.fromUserNickname || r.fromUserNickname === "Anonymous") && r.fromUserId) {
-          const userDoc = await adminDB.collection("users").doc(r.fromUserId).get();
+          const userDoc = await adminDb.collection("users").doc(r.fromUserId).get();
           const u = userDoc.exists ? userDoc.data() : null;
 
           return {
@@ -84,7 +86,7 @@ export async function POST(
     // =========================
     // 밋업 존재 여부 확인
     // =========================
-    const meetupRef = adminDB.collection("meetups").doc(meetupId);
+    const meetupRef = adminDb.collection("meetups").doc(meetupId);
     const meetupSnap = await meetupRef.get();
 
     if (!meetupSnap.exists) {
@@ -141,7 +143,7 @@ export async function POST(
     // =========================
     const reviewTarget = targetUserId ?? meetup.hostId;
 
-    const existing = await adminDB
+    const existing = await adminDb
       .collection("reviews")
       .where("meetupId", "==", meetupId)
       .where("fromUserId", "==", userId)
@@ -159,7 +161,7 @@ export async function POST(
     // =========================
     // 리뷰 작성자 닉네임 가져오기
     // =========================
-    const userSnap = await adminDB.collection("users").doc(userId).get();
+    const userSnap = await adminDb.collection("users").doc(userId).get();
     const user = userSnap.exists ? userSnap.data() : {};
     const nickname =
       user?.authorNickname ||
@@ -181,7 +183,7 @@ export async function POST(
       createdAt: new Date().toISOString(),
     };
 
-    const newRef = await adminDB.collection("reviews").add(newReview);
+    const newRef = await adminDb.collection("reviews").add(newReview);
 
     // 보상 지급
     await rewardUser(userId, "WRITE_REVIEW");

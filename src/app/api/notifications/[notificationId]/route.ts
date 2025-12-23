@@ -1,6 +1,8 @@
 // src/app/api/notifications/[notificationId]/route.ts
+
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/firebaseAdmin";
+import { adminDb } from "@/lib/firebaseAdmin";
 
 interface RouteParams {
   params: { notificationId: string };
@@ -8,7 +10,7 @@ interface RouteParams {
 
 export async function PATCH(_req: NextRequest, { params }: RouteParams) {
   try {
-    await db.collection("notifications").doc(params.notificationId).update({
+    await adminDb.collection("notifications").doc(params.notificationId).update({
       read: true,
     });
 
@@ -24,7 +26,7 @@ export async function PATCH(_req: NextRequest, { params }: RouteParams) {
 
 export async function DELETE(_req: NextRequest, { params }: RouteParams) {
   try {
-    await db.collection("notifications").doc(params.notificationId).delete();
+    await adminDb.collection("notifications").doc(params.notificationId).delete();
 
     return NextResponse.json({ ok: true });
   } catch (err: any) {

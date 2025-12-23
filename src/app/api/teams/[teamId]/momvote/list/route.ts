@@ -1,33 +1,47 @@
 // src/app/api/teams/[teamId]/momvote/list/route.ts
 
-import { db as fire } from "@/lib/firebaseAdmin";
+export const runtime = "nodejs";
+
 import { NextResponse } from "next/server";
+import { adminDb } from "@/lib/firebaseAdmin";
 import sqlite3 from "sqlite3";
 import { open } from "sqlite";
 import path from "path";
 
-export const runtime = "nodejs";
-
 const DB_FILE = path.join(process.cwd(), "sportsive.db");
 
-export async function GET(req: Request, ctx: any) {
-  const { teamId } = await ctx.params;
+export async function GET(
+  _req: Request,
+  { params }: { params: Promise<{ teamId: string }> }
+) {
+  const { teamId } = await params;
 
-  const col = fire.collection("teams").doc(teamId).collection("momvote");
-  const snap = await col.orderBy("createdAt", "desc").get();
+  // 🔥 Firestore (Admin SDK)
+  const colRef = adminDb
+    .collection("teams")
+    .doc(teamId)
+    .collection("momvote");
 
-  if (snap.empty) return NextResponse.json({ list: [] });
+  const snap = await colRef.orderBy("createdAt", "desc").get();
 
-  const db = await open({ filename: DB_FILE, driver: sqlite3.Database });
+  if (snap.empty) {
+    return NextResponse.json({ list: [] });
+  }
 
-  const list = [];
+  // 🔥 SQLite 연결
+  const sqliteDb = await open({
+    filename: DB_FILE,
+    driver: sqlite3.Database,
+  });
+
+  const list: any[] = [];
 
   for (const doc of snap.docs) {
     const d: any = doc.data();
     const matchId = d.data.matchId;
 
-    // 🔥 SQLite에서 경기 정보 가져오기
-    const match = await db.get(
+    // 🔥 SQLite에서 경기 정보 조회
+    const match = await sqliteDb.get(
       `
       SELECT 
         m.id,
@@ -48,31 +62,30 @@ export async function GET(req: Request, ctx: any) {
     let opponent = "Unknown";
     if (match) {
       opponent =
-        match.home_team_id == Number(teamId)
+        match.home_team_id === Number(teamId)
           ? match.awayTeam
           : match.homeTeam;
     }
 
-    // 🔥 후보 정렬
-    const sorted = [...(d.data.candidates ?? [])].sort(
-      (a, b) => b.votes - a.votes
-    );
+    // 🔥 후보 정렬 (득표수 기준)
+    const candidates = Array.isArray(d.data.candidates)
+      ? [...d.data.candidates].sort((a, b) => b.votes - a.votes)
+      : [];
 
     list.push({
-      id: d.id,
+      id: doc.id,
       data: {
         matchId,
         kickoff: match?.date ?? null,
         opponent,
-        locked: d.data.locked,
-        candidates: sorted,
-        winner: sorted[0] ?? null,
+        locked: d.data.locked ?? false,
+        candidates,
+        winner: candidates[0] ?? null,
       },
     });
-
   }
 
-  await db.close();
+  await sqliteDb.close();
 
   return NextResponse.json({ list });
 }

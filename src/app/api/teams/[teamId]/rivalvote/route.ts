@@ -1,6 +1,6 @@
 //src/app/api/teams/[teamId]/rivalvote/route.ts
 
-import { db } from "@/lib/firebaseAdmin";
+import { adminDb } from "@/lib/firebaseAdmin";
 import { NextResponse } from "next/server";
 
 export async function GET(
@@ -11,7 +11,7 @@ export async function GET(
     // 🔥 Next.js 15: params must be awaited
     const { teamId } = await params;
 
-    const ref = db
+    const ref = adminDb
       .collection("teams")
       .doc(teamId)
       .collection("rivalvote")

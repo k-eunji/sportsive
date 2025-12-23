@@ -2,7 +2,7 @@
 
 export const runtime = "nodejs";
 
-import { db } from "@/lib/firebaseAdmin";
+import { adminDb } from "@/lib/firebaseAdmin";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request, ctx: any) {
@@ -22,7 +22,7 @@ export async function POST(req: Request, ctx: any) {
 
   const matchId = todayMatch.id;
 
-  const col = db
+  const col = adminDb
     .collection("teams")
     .doc(teamId)
     .collection("momvote");

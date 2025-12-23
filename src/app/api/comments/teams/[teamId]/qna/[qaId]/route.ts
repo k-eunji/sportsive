@@ -1,7 +1,9 @@
 //src/app/api/comments/teams/[teamId]/qna/[qaId]/route.ts
 
+export const runtime = "nodejs";
+
 import { NextResponse } from "next/server";
-import { adminDB } from "@/lib/firebaseAdmin";
+import { adminDb} from "@/lib/firebaseAdmin";
 import { FieldValue } from "firebase-admin/firestore";
 
 export async function GET(
@@ -10,7 +12,7 @@ export async function GET(
 ) {
   const { teamId, qaId } = await context.params;
 
-  const snap = await adminDB
+  const snap = await adminDb
     .collection("teams")
     .doc(teamId)
     .collection("qna")
@@ -31,7 +33,7 @@ export async function POST(
 
   const body = await req.json();
 
-  const ref = adminDB
+  const ref = adminDb
     .collection("teams")
     .doc(teamId)
     .collection("qna")
@@ -47,7 +49,7 @@ export async function POST(
     createdAt: Date.now(),
   });
 
-  await adminDB
+  await adminDb
     .collection("teams")
     .doc(teamId)
     .collection("qna")

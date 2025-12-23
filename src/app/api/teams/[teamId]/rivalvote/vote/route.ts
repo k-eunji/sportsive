@@ -1,6 +1,6 @@
 //src/app/api/teams/[teamId]/rivalvote/vote/route.ts
 
-import { db } from "@/lib/firebaseAdmin";
+import { adminDb } from "@/lib/firebaseAdmin";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request, ctx: any) {
@@ -17,7 +17,7 @@ export async function POST(req: Request, ctx: any) {
 
     const today = new Date().toISOString().slice(0, 10);
 
-    const moduleRef = db
+    const moduleRef = adminDb
       .collection("teams")
       .doc(teamId)
       .collection("rivalvote")
@@ -31,7 +31,7 @@ export async function POST(req: Request, ctx: any) {
       return NextResponse.json({ error: "Already voted today" }, { status: 409 });
     }
 
-    await db.runTransaction(async (tx) => {
+    await adminDb.runTransaction(async (tx) => {
       const snap = await tx.get(moduleRef);
       if (!snap.exists) throw new Error("Module not found");
 

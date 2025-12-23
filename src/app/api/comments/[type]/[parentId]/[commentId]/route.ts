@@ -1,7 +1,9 @@
 // src/app/api/comments/[type]/[parentId]/[commentId]/route.ts
 
+export const runtime = "nodejs";
+
 import { NextResponse } from "next/server";
-import { adminDB } from "@/lib/firebaseAdmin";
+import { adminDb } from "@/lib/firebaseAdmin";
 
 interface Params {
   type: string;
@@ -12,14 +14,14 @@ interface Params {
 /** 🔧 fanhub 전용 처리 포함한 공통 ref 생성 함수 */
 function getBaseRef(type: string, parentId: string) {
   if (type === "fanhub") {
-    return adminDB
+    return adminDb
       .collection("fanhub")
       .doc("global")
       .collection("messages")
       .doc(parentId);
   }
 
-  return adminDB.collection(type).doc(parentId);
+  return adminDb.collection(type).doc(parentId);
 }
 
 /* ============================

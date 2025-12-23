@@ -37,7 +37,8 @@ export default function MeetupPreview() {
       </h2>
       <div className="flex flex-wrap justify-center gap-6">
         {meetups.map((m) => (
-          <MeetupCard key={m.id} meetup={m} hostId={m.hostId ?? ""} />
+          <MeetupCard key={m.id} meetup={m} />
+
         ))}
       </div>
 

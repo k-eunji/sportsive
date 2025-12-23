@@ -1,6 +1,8 @@
 // src/app/api/messages/inbox/route.ts
+
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/firebaseAdmin";
+import { adminDb } from "@/lib/firebaseAdmin";
 import { getCurrentUserId } from "@/lib/getCurrentUser";
 
 export async function GET(req: NextRequest) {
@@ -11,7 +13,7 @@ export async function GET(req: NextRequest) {
     }
 
     // 🔹 내가 포함된 DM 목록 조회
-    const snap = await db
+    const snap = await adminDb
       .collection("conversations")
       .where("type", "==", "dm")
       .where("participants", "array-contains", uid)
@@ -28,7 +30,7 @@ export async function GET(req: NextRequest) {
         // 🔹 상대 닉네임 가져오기
         let authorNickname = null;
         try {
-          const userDoc = await db.collection("users").doc(otherId).get();
+          const userDoc = await adminDb.collection("users").doc(otherId).get();
           if (userDoc.exists) {
             const u = userDoc.data() as any;
             authorNickname =
@@ -54,7 +56,7 @@ export async function GET(req: NextRequest) {
         };
 
         // 🔹 안 읽은 메시지 수
-        const unreadSnap = await db
+        const unreadSnap = await adminDb
           .collection("conversations")
           .doc(doc.id)
           .collection("messages")
@@ -65,7 +67,7 @@ export async function GET(req: NextRequest) {
         convo.unreadCount = unreadSnap.size;
 
         // 🔹 최신 메시지 가져오기
-        const lastMsgSnap = await db
+        const lastMsgSnap = await adminDb
           .collection("conversations")
           .doc(doc.id)
           .collection("messages")

@@ -37,17 +37,22 @@ export async function POST(req: NextRequest) {
     };
 
     // ---------- 위치 처리 ----------
-    if (body.type === "online_game") {
-      meetupData.location = { name: "Online", address: "", lat: 0, lng: 0 };
-    } else if (body.venue) {
+    if (body.location) {
       meetupData.location = {
-        name: body.venue.name || "",
-        address: body.venue.address || body.venue.name || "",
-        lat: body.venue.lat || 0,
-        lng: body.venue.lng || 0,
+        name: body.location.name || "",
+        address: body.location.address || body.location.name || "",
+        lat: body.location.lat ?? 0,
+        lng: body.location.lng ?? 0,
+      };
+    } else if (body.type === "online_game") {
+      meetupData.location = {
+        name: "Online",
+        address: "Online",
+        lat: 0,
+        lng: 0,
       };
     } else {
-      meetupData.location = { name: "", address: "", lat: 0, lng: 0 };
+      meetupData.location = null;
     }
 
     // ---------- 온라인 게임 옵션 ----------

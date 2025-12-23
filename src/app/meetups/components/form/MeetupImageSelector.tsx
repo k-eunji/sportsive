@@ -28,9 +28,21 @@ export function MeetupImageSelector({
         Cover Image
       </p>
 
-      <div className="relative w-full h-48 border border-gray-300 rounded-xl bg-gray-50 overflow-hidden">
-        {src ? (
-          <Image src={src} alt="cover" fill className="object-cover" />
+      <div className="relative w-full h-48 border border-gray-300 rounded-xl overflow-hidden">
+        {customImage ? (
+          <img
+            src={URL.createObjectURL(customImage)}
+            alt="cover"
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        ) : autoImageUrl ? (
+          <Image
+            src={autoImageUrl}
+            alt="cover"
+            fill
+            className="object-cover"
+            unoptimized
+          />
         ) : (
           <div className="flex items-center justify-center h-full text-gray-400 text-5xl">
             🏟️

@@ -1,8 +1,7 @@
 // src/app/api/teams/[teamId]/meetups/route.ts
 
 import { NextResponse } from "next/server";
-import { collection, query, where, getDocs } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { adminDb } from "@/lib/firebaseAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -10,33 +9,38 @@ interface TeamParams {
   teamId: string;
 }
 
-export async function GET(_req: Request, { params }: { params: Promise<TeamParams> }) {
+export async function GET(
+  _req: Request,
+  { params }: { params: Promise<TeamParams> }
+) {
   const { teamId } = await params;
-
   const teamIdNum = Number(teamId);
 
   try {
-    const meetupsRef = collection(db, "meetups");
+    const meetupsRef = adminDb.collection("meetups");
 
-    // ⭐ 1) MATCH meetups (정상)
-    const qMatch = query(
-      meetupsRef,
-      where("teamId", "==", teamIdNum),
-      where("type", "==", "match_attendance")
-    );
-    const matchSnap = await getDocs(qMatch);
-    const matchMeetups = matchSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    // 1) MATCH meetups
+    const matchSnap = await meetupsRef
+      .where("teamId", "==", teamIdNum)
+      .where("type", "==", "match_attendance")
+      .get();
 
-    // ⭐ 2) FAN meetups — 여기서 type 필터 제거!!!
-    const qFan = query(meetupsRef, where("teamId", "==", teamIdNum));
-    const fanSnap = await getDocs(qFan);
+    const matchMeetups = matchSnap.docs.map((d) => ({
+      id: d.id,
+      ...d.data(),
+    }));
 
-    const allTeamMeetups = fanSnap.docs.map((d) =>
-      ({ id: d.id, ...d.data() } as any)
-    );
+    // 2) FAN meetups (type 없이)
+    const fanSnap = await meetupsRef
+      .where("teamId", "==", teamIdNum)
+      .get();
 
+    const allTeamMeetups = fanSnap.docs.map((d) => ({
+      id: d.id,
+      ...d.data(),
+    })) as any[];
 
-    // ⭐ 3) JS에서 필터링(안전함)
+    // 3) JS에서 type 필터
     const fanMeetups = allTeamMeetups.filter((m) =>
       ["pub_gathering", "online_game", "pickup_sports"].includes(m.type)
     );
@@ -44,6 +48,9 @@ export async function GET(_req: Request, { params }: { params: Promise<TeamParam
     return NextResponse.json({ matchMeetups, fanMeetups });
   } catch (err) {
     console.error("❌ Team meetups fetch error:", err);
-    return NextResponse.json({ matchMeetups: [], fanMeetups: [] }, { status: 500 });
+    return NextResponse.json(
+      { matchMeetups: [], fanMeetups: [] },
+      { status: 500 }
+    );
   }
 }

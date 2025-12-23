@@ -1,10 +1,10 @@
 // src/app/api/meetups/[meetupId]/route.ts
 
-import { NextResponse } from "next/server";
-import { adminDB } from "@/lib/firebaseAdmin";
-
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+
+import { NextResponse } from "next/server";
+import { adminDb } from "@/lib/firebaseAdmin";
 
 interface MeetupParams {
   meetupId: string;
@@ -24,7 +24,7 @@ export async function GET(
     // -----------------------------
     // 1) 밋업 데이터 가져오기
     // -----------------------------
-    const snap = await adminDB.collection("meetups").doc(meetupId).get();
+    const snap = await adminDb.collection("meetups").doc(meetupId).get();
 
     if (!snap.exists) {
       return NextResponse.json({ error: "Meetup not found" }, { status: 404 });
@@ -40,7 +40,7 @@ export async function GET(
     const participantsDetailed = await Promise.all(
       participantIds.map(async (uid) => {
         try {
-          const userSnap = await adminDB.collection("users").doc(uid).get();
+          const userSnap = await adminDb.collection("users").doc(uid).get();
           const user = userSnap.exists ? userSnap.data() : null;
 
           return {
@@ -106,7 +106,7 @@ export async function GET(
     // -----------------------------
     // 4) 동일한 제목의 다른 밋업들
     // -----------------------------
-    const relatedSnap = await adminDB
+    const relatedSnap = await adminDb
       .collection("meetups")
       .where("title", "==", data.title)
       .get();
@@ -138,7 +138,7 @@ export async function GET(
         console.log(`📢 Auto-opening reviews for meetup: ${meetupId}`);
 
         // reviewsOpen 업데이트
-        await adminDB.collection("meetups").doc(meetupId).update({
+        await adminDb.collection("meetups").doc(meetupId).update({
           reviewsOpen: true,
           updatedAt: new Date().toISOString(),
         });
@@ -147,9 +147,9 @@ export async function GET(
 
         // 참가자들에게 알림 생성
         if (participantIds.length > 0) {
-          const batch = adminDB.batch();
+          const batch = adminDb.batch();
           participantIds.forEach((uid) => {
-            const nref = adminDB.collection("notifications").doc();
+            const nref = adminDb.collection("notifications").doc();
             batch.set(nref, {
               userId: uid,
               meetupId,
@@ -288,7 +288,7 @@ export async function PATCH(
         updateData["location.address"] = location.address;
     }
 
-    await adminDB.collection("meetups").doc(meetupId).update(updateData);
+    await adminDb.collection("meetups").doc(meetupId).update(updateData);
 
     return NextResponse.json({
       ok: true,
@@ -313,7 +313,7 @@ export async function DELETE(
   const { meetupId } = await params;
 
   try {
-    await adminDB.collection("meetups").doc(meetupId).delete();
+    await adminDb.collection("meetups").doc(meetupId).delete();
 
     return NextResponse.json({
       ok: true,

@@ -1,6 +1,8 @@
 //src/app/api/comments/teams/[teamId]/qna/[qaId]/[commentId]/delete/route.ts
 
-import { adminDB } from "@/lib/firebaseAdmin";
+export const runtime = "nodejs";
+
+import { adminDb } from "@/lib/firebaseAdmin";
 import { NextResponse } from "next/server";
 import { FieldValue } from "firebase-admin/firestore";
 
@@ -12,7 +14,7 @@ export async function POST(
 ) {
   const { teamId, qaId, commentId } = await context.params;
 
-  await adminDB
+  await adminDb
     .collection("teams")
     .doc(teamId)
     .collection("qna")
@@ -21,7 +23,7 @@ export async function POST(
     .doc(commentId)
     .delete();
 
-  await adminDB
+  await adminDb
     .collection("teams")
     .doc(teamId)
     .collection("qna")

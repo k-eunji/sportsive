@@ -1,6 +1,8 @@
 // src/app/api/messages/route.ts
+
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/firebaseAdmin";
+import { adminDb } from "@/lib/firebaseAdmin";
 import { getCurrentUserId } from "@/lib/getCurrentUser";
 
 export async function POST(req: NextRequest) {
@@ -24,8 +26,8 @@ export async function POST(req: NextRequest) {
     // 🔒 양방향 블락 상태 확인
     // ---------------------------------------------------
     const [senderBlockedDoc, receiverBlockedDoc] = await Promise.all([
-      db.collection("users").doc(senderId).collection("blocked").doc(to).get(),
-      db.collection("users").doc(to).collection("blocked").doc(senderId).get(),
+      adminDb.collection("users").doc(senderId).collection("blocked").doc(to).get(),
+      adminDb.collection("users").doc(to).collection("blocked").doc(senderId).get(),
     ]);
 
     if (senderBlockedDoc.exists) {
@@ -51,7 +53,7 @@ export async function POST(req: NextRequest) {
 
     if (!convId) {
       // 🔹 기존 DM이 있는지 확인
-      const existing = await db
+      const existing = await adminDb
         .collection("conversations")
         .where("participantsKey", "==", participantsKey)
         .limit(1)
@@ -59,7 +61,7 @@ export async function POST(req: NextRequest) {
 
       if (existing.empty) {
         // 🔹 새 대화 생성
-        const newConv = await db.collection("conversations").add({
+        const newConv = await adminDb.collection("conversations").add({
           participants,
           participantsKey,
           type: "dm",
@@ -74,7 +76,7 @@ export async function POST(req: NextRequest) {
         // 🔹 기존 대화 업데이트
         convId = existing.docs[0].id;
 
-        await db.collection("conversations").doc(convId).update({
+        await adminDb.collection("conversations").doc(convId).update({
           lastMessage: text,
           lastSender: senderId,
           updatedAt: new Date().toISOString(),
@@ -85,7 +87,7 @@ export async function POST(req: NextRequest) {
     // ---------------------------------------------------
     // 💬 메시지 저장
     // ---------------------------------------------------
-    const msgRef = await db
+    const msgRef = await adminDb
       .collection("conversations")
       .doc(convId)
       .collection("messages")

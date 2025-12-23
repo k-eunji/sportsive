@@ -1,6 +1,8 @@
 ///api/comments/like/toggle/route.ts
 
-import { adminDB } from "@/lib/firebaseAdmin";
+export const runtime = "nodejs";
+
+import { adminDb } from "@/lib/firebaseAdmin";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
@@ -12,12 +14,12 @@ export async function POST(req: Request) {
 
   const base =
     type === "fanhub"
-      ? adminDB
+      ? adminDb
           .collection("fanhub")
           .doc("global")
           .collection("messages")
           .doc(parentId)
-      : adminDB.collection(type).doc(parentId);
+      : adminDb.collection(type).doc(parentId);
 
   const targetRef = replyId
     ? base

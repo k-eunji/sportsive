@@ -1,6 +1,6 @@
 // src/app/api/fanhub/predict/list/route.ts
-
-import { db } from "@/lib/firebaseAdmin";
+export const runtime = "nodejs";
+import { adminDb } from "@/lib/firebaseAdmin";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
@@ -8,7 +8,7 @@ export async function POST(req: Request) {
 
   if (!userId) return NextResponse.json({});
 
-  const snap = await db
+  const snap = await adminDb
     .collection("predictions")
     .doc(userId)
     .collection("matches")

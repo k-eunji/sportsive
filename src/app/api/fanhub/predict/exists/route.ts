@@ -1,6 +1,6 @@
 // src/app/api/fanhub/predict/exists/route.ts
-
-import { db } from "@/lib/firebaseAdmin";
+export const runtime = "nodejs";
+import { adminDb } from "@/lib/firebaseAdmin";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
@@ -13,7 +13,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const ref = db
+  const ref = adminDb
     .collection("predictions")
     .doc(userId)
     .collection("matches")

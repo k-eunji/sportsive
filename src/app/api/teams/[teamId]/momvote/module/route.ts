@@ -2,7 +2,7 @@
 
 export const runtime = "nodejs";
 
-import { db } from "@/lib/firebaseAdmin";
+import { adminDb } from "@/lib/firebaseAdmin";
 import { NextResponse } from "next/server";
 import sqlite3 from "sqlite3";
 import { open } from "sqlite";
@@ -49,7 +49,7 @@ export async function GET(req: Request, ctx: any) {
   const kickoff = match.date;
 
   // Firestore reference
-  const col = db
+  const col = adminDb
     .collection("teams")
     .doc(teamId)
     .collection("momvote");

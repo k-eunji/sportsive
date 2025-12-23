@@ -1,7 +1,9 @@
 // src/app/api/meetups/[meetupId]/join/route.ts
 
+export const runtime = "nodejs";
+
 import { NextResponse } from "next/server";
-import { adminDB } from "@/lib/firebaseAdmin";
+import { adminDb } from "@/lib/firebaseAdmin";
 import { sendNotification } from "@/lib/sendNotification";
 
 export async function POST(
@@ -18,7 +20,7 @@ export async function POST(
       return NextResponse.json({ error: "Missing userId" }, { status: 400 });
     }
 
-    const meetupRef = adminDB.collection("meetups").doc(meetupId);
+    const meetupRef = adminDb.collection("meetups").doc(meetupId);
     const docSnap = await meetupRef.get();
 
     if (!docSnap.exists) {

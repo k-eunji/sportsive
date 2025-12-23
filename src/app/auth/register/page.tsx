@@ -1,13 +1,21 @@
 // src/app/auth/register/page.tsx
+
 'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createUserWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db, app } from '@/lib/firebase';
-import { getFunctions, httpsCallable } from 'firebase/functions';
+import {
+  doc,
+  setDoc,
+  serverTimestamp,
+  collection,
+  query,
+  where,
+  getDocs,
+} from 'firebase/firestore';
+import { auth, db } from '@/lib/firebase';
 import { useUser } from '@/context/UserContext';
 
 export default function RegisterPage() {
@@ -21,9 +29,19 @@ export default function RegisterPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Firebase Cloud Function (닉네임 중복검사)
-  const functions = getFunctions(app, 'us-central1');
-  const checkNicknameExistsFunction = httpsCallable(functions, 'checkNicknameExists');
+  /** 닉네임 중복 확인 (Firestore 직접 조회) */
+  const checkNicknameExists = async (nickname: string) => {
+    const trimmed = nickname.trim();
+    if (!trimmed) return false;
+
+    const q = query(
+      collection(db, 'users'),
+      where('authorNickname', '==', trimmed)
+    );
+
+    const snapshot = await getDocs(q);
+    return !snapshot.empty;
+  };
 
   /** Firebase 오류 메시지 변환 */
   const getErrorMessage = (code: string) => {
@@ -36,22 +54,6 @@ export default function RegisterPage() {
         return 'Password must be at least 6 characters.';
       default:
         return 'Something went wrong. Please try again.';
-    }
-  };
-
-  /** 닉네임 중복 확인 */
-  const checkNicknameExists = async (nickname: string) => {
-    const trimmed = nickname.trim();
-    if (!trimmed) return false;
-    try {
-      const res = await checkNicknameExistsFunction({ nickname: trimmed });
-      if (res && typeof res === 'object' && 'data' in res) {
-        return (res as any).data.exists ?? false;
-      }
-      return false;
-    } catch (err) {
-      console.error('Error checking nickname:', err);
-      return false;
     }
   };
 
@@ -74,7 +76,7 @@ export default function RegisterPage() {
     }
 
     try {
-      const nicknameTaken = await checkNicknameExists(authorNickname.trim());
+      const nicknameTaken = await checkNicknameExists(authorNickname);
       if (nicknameTaken) {
         setError('This nickname is already taken.');
         setLoading(false);
@@ -82,7 +84,11 @@ export default function RegisterPage() {
       }
 
       // Firebase Auth 계정 생성
-      const userCredential = await createUserWithEmailAndPassword(auth!, email, password);
+      const userCredential = await createUserWithEmailAndPassword(
+        auth!,
+        email,
+        password
+      );
       const user = userCredential.user;
 
       // 인증 상태 확인
@@ -126,7 +132,9 @@ export default function RegisterPage() {
 
   return (
     <main className="min-h-dvh flex flex-col items-center justify-center bg-white text-gray-900 px-6 py-10 font-sans">
-      <h1 className="text-4xl font-semibold tracking-tight mb-8">Register to Sportsive</h1>
+      <h1 className="text-4xl font-semibold tracking-tight mb-8">
+        Register to Sportsive
+      </h1>
 
       <form
         onSubmit={handleRegister}

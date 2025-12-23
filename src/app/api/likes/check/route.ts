@@ -1,6 +1,8 @@
 // src/app/api/likes/check/route.ts
+
+export const runtime = "nodejs";
 import { NextResponse } from "next/server";
-import { db } from "@/lib/firebaseAdmin";
+import { adminDb } from "@/lib/firebaseAdmin";
 
 export async function GET(req: Request) {
   try {
@@ -15,7 +17,7 @@ export async function GET(req: Request) {
     }
 
     // likes/{type}/{id}/{userId}
-    const likeRef = db
+    const likeRef = adminDb
       .collection("likes")
       .doc(type)
       .collection(id)

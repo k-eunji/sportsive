@@ -1,6 +1,8 @@
 // src/app/api/users/[userId]/points/route.ts
+
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/firebaseAdmin";
+import { adminDb } from "@/lib/firebaseAdmin";
 import { getActionPoint, ACTION_DESCRIPTIONS, ActionType } from "@/lib/points";
 import { getLevel } from "@/lib/levels";
 
@@ -31,7 +33,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const userRef = db.collection("users").doc(userId);
+    const userRef = adminDb.collection("users").doc(userId);
     const snap = await userRef.get();
 
     if (!snap.exists) {
@@ -53,7 +55,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     });
 
     // ⭐ 로그 기록
-    await db.collection("points_logs").add({
+    await adminDb.collection("points_logs").add({
       userId,
       action: typedAction,
       description,
@@ -91,7 +93,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
   try {
     const { userId } = params;
 
-    const snap = await db
+    const snap = await adminDb
       .collection("points_logs")
       .where("userId", "==", userId)
       .orderBy("createdAt", "desc")

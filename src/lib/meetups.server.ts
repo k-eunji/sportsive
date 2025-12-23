@@ -22,33 +22,20 @@ export async function createMeetupServer(meetup: Partial<Meetup>): Promise<strin
       title: meetup.title ?? "",
       datetime: meetup.datetime ?? new Date().toISOString(),
 
-      // ✅ location 처리
-      location:
-        meetup.type === "online_game"
-          ? { name: "Online", lat: 0, lng: 0 }
-          : meetup.location
-          ? {
-              name: meetup.location.name ?? "",
-              lat: meetup.location.lat ?? 0,
-              lng: meetup.location.lng ?? 0,
-            }
-          : { name: "", lat: 0, lng: 0 },
+      // ✅ 여기
+      location: meetup.location ?? null,
 
+      type: meetup.type ?? "other",
       maxParticipants: meetup.maxParticipants ?? 10,
       teamType: meetup.teamType ?? "neutral",
       teamId: meetup.teamId ?? null,
       participants: [],
       pendingParticipants: [],
-      type: meetup.type ?? "other",
       onlineGameName: meetup.onlineGameName ?? "",
       onlineLink: meetup.onlineLink ?? "",
       skillLevel: meetup.skillLevel ?? "any",
       createdAt: new Date(),
-      sportType: meetup.sportType ?? "",
       fee: meetup.fee ?? 0,
-      ageLimit: meetup.ageLimit ?? "All ages",
-      ageFrom: meetup.ageFrom ?? null,
-      ageTo: meetup.ageTo ?? null,
       imageUrl: meetup.imageUrl ?? null,
       reviewsOpen: false,
     };

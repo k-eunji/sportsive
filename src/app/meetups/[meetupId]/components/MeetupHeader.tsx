@@ -37,6 +37,7 @@ export default function MeetupHeader({ meetup }: { meetup: MeetupWithRelated }) 
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
 
   const [previewOpen, setPreviewOpen] = useState(false);
+  const hasImage = !!meetup.imageUrl;
 
   /** 저장 (제목만) */
   const handleSave = async () => {
@@ -81,33 +82,48 @@ export default function MeetupHeader({ meetup }: { meetup: MeetupWithRelated }) 
 
       {/* 🔥 Option A: Top Hero Image with blurred background */}
       <div className="relative w-full h-[200px] md:h-[260px] overflow-hidden">
-        {/* blurred background */}
-        <div className="absolute inset-0">
-          <Image
-            src={meetup.imageUrl || "/placeholder.jpg"}
-            alt="bg"
-            fill
-            className="object-cover blur-xl scale-110 opacity-60"
-            unoptimized
-          />
-        </div>
+        {hasImage ? (
+          <>
+            {/* blurred background */}
+            <div className="absolute inset-0">
+              <Image
+                src={meetup.imageUrl!}
+                alt="bg"
+                fill
+                className="object-cover blur-xl scale-110 opacity-60"
+                unoptimized
+              />
+            </div>
 
-        {/* real photo (object-contain) */}
-        <div
-          className="absolute inset-0 flex items-center justify-center cursor-pointer"
-          onClick={() => setPreviewOpen(true)}
-        >
-          <div className="relative w-full h-full max-w-[600px] mx-auto">
-            <Image
-              src={meetup.imageUrl || "/placeholder.jpg"}
-              alt={title}
-              fill
-              className="object-contain drop-shadow-lg"
-              unoptimized
-            />
+            {/* real image */}
+            <div
+              className="absolute inset-0 flex items-center justify-center cursor-pointer"
+              onClick={() => setPreviewOpen(true)}
+            >
+              <div className="relative w-full h-full max-w-[600px] mx-auto">
+                <Image
+                  src={meetup.imageUrl!}
+                  alt={title}
+                  fill
+                  className="object-contain drop-shadow-lg"
+                  unoptimized
+                />
+              </div>
+            </div>
+          </>
+        ) : (
+          /* ✅ 이미지 없을 때: 이모지 */
+          <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+            <span className="text-7xl">
+              {meetup.type === "match_attendance" && "🏟️"}
+              {meetup.type === "pub_gathering" && "🍺"}
+              {meetup.type === "online_game" && "🎮"}
+              {meetup.type === "pickup_sports" && "🏐"}
+            </span>
           </div>
-        </div>
+        )}
       </div>
+
 
       <div className="max-w-3xl mx-auto px-4 pt-4 pb-6 text-center space-y-3">
 
@@ -223,8 +239,10 @@ export default function MeetupHeader({ meetup }: { meetup: MeetupWithRelated }) 
       <ImagePreviewModal
         open={previewOpen}
         onClose={() => setPreviewOpen(false)}
-        imageUrl={meetup.imageUrl || ""}
+        imageUrl={meetup.imageUrl ?? null}
+        meetupType={meetup.type}
       />
+
     </header>
   );
 }

@@ -1,0 +1,132 @@
+# 🏟 Sportsive — IA & Flow Overview (v1.1)
+
+## 1. 🎯 Core Concept
+
+> “지역 기반 스포츠 커뮤니티 — 경기, 밋업, 팬 연결을 중심으로.”
+>
+> **누구나** 내 주변에서 열리는 스포츠를 발견하고,
+> **함께 보고, 함께 응원하고, 함께 나누는** 경험을 만든다.
+
+---
+
+## 2. 🌍 Main Flows
+
+| Flow                        | 설명                        | 결과                |
+| --------------------------- | ------------------------- | ----------------- |
+| 🗺️ **Home (Events / Map)** | 지도 기반 지역 경기 탐색            | 무료/유료 경기 정보 확인    |
+| 🤝 **Meetups**              | 팬들이 함께 보기 위한 모임 생성        | 지역별 밋업 목록         |
+| 💬 **Live**                 | 경기 중 실시간 응원 채팅            | 응원 / 경기 후기 자동 포스팅 |
+| 🏳️ **Team Page**           | 팀 중심 허브 (팬 피드, 밋업, 경기 일정) | 지역 팬 / 커뮤니티 연결    |
+| 🌐 **Community**            | 통합 피드 (팀 + 지역 + 밋업 후기)    | 모든 활동이 모이는 허브     |
+| 👤 **Profile**              | 내 활동 요약                   | 포인트, 밋업, 후기 기록    |
+
+---
+
+## 3. 🧭 UX Flow (User Journey)
+
+> 사용자가 “경기 발견 → 참여 → 공유”로 이어지는 핵심 여정
+
+```mermaid
+flowchart TD
+    A[🏠 Home (Events / Map)] --> B[📅 Event Detail]
+    B --> C[🤝 Meetup Creation]
+    C --> D[💬 Live Room]
+    D --> E[🏳️ Team Page]
+    E --> F[🌐 Community Feed]
+    F <--> G[👤 Profile]
+```
+
+---
+
+## 4. 🔗 Data & API Flow
+
+```text
+events → meetups → teamId → community
+live → teamId → community (realtime)
+```
+
+| Source API       | Consumed by         | Purpose        |
+| ---------------- | ------------------- | -------------- |
+| `/api/events`    | Events, Meetups     | 경기 데이터 조회      |
+| `/api/meetups`   | Meetups, TeamPage   | 지역 밋업 관리       |
+| `/api/live`      | Live, TeamPage      | 실시간 경기방 연결     |
+| `/api/teams/:id` | TeamPage, Community | 팀 기반 정보 / 팬 피드 |
+| `/api/community` | Community           | 통합 피드 / 후기 공유  |
+| `/api/users/:id` | Profile             | 개인 활동 요약       |
+
+---
+
+## 5. 📱 Key UX Scenarios
+
+### 📍 [런던 근처 야구 경기 찾기]
+
+1. 홈(Event Map)에서 위치 탐색
+2. 무료 아마추어 경기 클릭
+3. 상세 페이지 → “밋업 만들기”
+4. 생성 시 커뮤니티 자동 공유
+
+### 🤝 [팀 팬들과 밋업 만들기]
+
+1. 팀 페이지 → 밋업 탭
+2. “새 밋업 만들기” 클릭
+3. 지역·시간 설정 후 생성
+4. 커뮤니티에 자동 게시
+
+### 💬 [라이브 응원 & 후기 공유]
+
+1. Live Room 입장
+2. 실시간 응원 채팅
+3. 종료 시 → 커뮤니티 후기 자동 등록
+
+---
+
+## 6. ⚙️ Page Responsibility
+
+| Page                | Purpose    | Key Components                        | Primary Data     |
+| ------------------- | ---------- | ------------------------------------- | ---------------- |
+| `/events`           | 내 주변 경기 탐색 | `EventMap`, `EventList`               | `/api/events`    |
+| `/meetups`          | 밋업 탐색 / 생성 | `MeetupList`, `CreateMeetupModal`     | `/api/meetups`   |
+| `/live`             | 실시간 응원 채팅  | `LiveRoomList`, `LiveRoomDetail`      | `/api/live`      |
+| `/teams/[teamId]`   | 팀 중심 허브    | `TeamHeader`, `TeamTabs`, `FanFeed`   | `/api/teams/:id` |
+| `/community`        | 통합 커뮤니티 피드 | `FeedComposer`, `FeedList`, `Sidebar` | `/api/community` |
+| `/profile/[userId]` | 사용자 활동 요약  | `ProfileHeader`, `ActivitySummary`    | `/api/users/:id` |
+
+---
+
+## 7. 🧩 Entity Relationship
+
+```text
+Event
+ ├── hasMany → Meetup
+ │       └── belongsTo → Team
+ │
+ ├── hasMany → LiveRoom
+ │       └── belongsTo → Team
+ │
+ └── referencedBy → Community Post (type=post|meetup|live)
+
+User
+ ├── hasMany → Meetup (hosted)
+ ├── hasMany → LiveRoom (joined)
+ ├── hasMany → Community Post
+ └── belongsToMany → Team (following)
+```
+
+---
+
+## 8. 🚀 Next Steps / Roadmap
+
+* [ ] **Team Page** → 지역 기반 리디자인 (`region=London` 지원)
+* [ ] **Community Feed** → 지역 필터 추가
+* [ ] **Live** → 경기 종료 후 후기 자동 포스팅
+* [ ] **Home** → 사용자 위치 기반 추천 경기 자동화
+* [ ] **Event API** → OpenSports / custom API 연결
+* [ ] **Profile** → Fan Level / Badge 시스템 추가
+
+---
+
+## 9. 💬 핵심 비전
+
+> “Sportsive는 단순한 팬 커뮤니티가 아니다.
+> 지역 안에서 스포츠를 발견하고,
+> 낯선 사람들과 함께 응원하는 문화를 만든다.”

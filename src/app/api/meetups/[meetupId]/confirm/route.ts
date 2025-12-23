@@ -1,6 +1,8 @@
 // src/app/api/meetups/[meetupId]/confirm/route.ts
+
+export const runtime = "nodejs";
 import { NextResponse } from "next/server";
-import { adminDB, adminAuth } from "@/lib/firebaseAdmin";
+import { adminDb, adminAuth } from "@/lib/firebaseAdmin";
 import { rewardUser } from "@/lib/reward";
 
 export async function POST(
@@ -18,7 +20,7 @@ export async function POST(
     const idToken = authHeader.split(" ")[1];
     await adminAuth.verifyIdToken(idToken);
 
-    const meetupRef = adminDB.collection("meetups").doc(meetupId);
+    const meetupRef = adminDb.collection("meetups").doc(meetupId);
     const meetupSnap = await meetupRef.get();
 
     if (!meetupSnap.exists) {

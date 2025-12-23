@@ -1,7 +1,9 @@
 // app/api/matches/route.ts
 
+export const runtime = "nodejs";
+
 import { NextResponse } from "next/server";
-import { adminDB } from "@/lib/firebaseAdmin";
+import { adminDb } from "@/lib/firebaseAdmin";
 
 export async function GET(
   req: Request,
@@ -10,7 +12,7 @@ export async function GET(
   const { matchId } = await context.params;
 
   try {
-    const docSnap = await adminDB.collection("matches").doc(matchId).get();
+    const docSnap = await adminDb.collection("matches").doc(matchId).get();
 
     if (!docSnap.exists) {
       return NextResponse.json(

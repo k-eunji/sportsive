@@ -1,171 +1,98 @@
 // src/app/meetups/components/form/VenueFields.tsx
-
 "use client";
 
-import React, { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { useGoogleMaps } from "@/components/GoogleMapsProvider";
 
-interface VenueFieldsProps {
-  form: any;
-  meetupType: string;
-}
+export default function VenueFields({ form, meetupType }: any) {
+  const { isLoaded } = useGoogleMaps();
+  const { setVenue } = form;
 
-export default function VenueFields({ form, meetupType }: VenueFieldsProps) {
-  const {
-    venueInputRef,
-    mapRef,
-    showMap,
-    setShowMap,
-    handleVenueChange,
-    venueInput,
-    setVenue,
-    mapInstance,
-    geocoderRef,
-  } = form;
+  const containerRef = useRef<HTMLDivElement>(null);
+  const autocompleteRef =
+    useRef<google.maps.places.PlaceAutocompleteElement | null>(null);
 
-  // 지도 사용 안 하는 타입은 렌더링하지 않음
-  if (!["match_attendance", "pub_gathering", "pickup_sports"].includes(meetupType)) {
-    return null;
-  }
+  const shouldShow =
+    isLoaded &&
+    ["match_attendance", "pub_gathering", "pickup_sports"].includes(meetupType);
 
-  // ======================================================
-  // ⭐ 1. Google Places Autocomplete (기존 기능 유지)
-  // ======================================================
   useEffect(() => {
-    const google = (window as any).google;
-    if (!google?.maps?.places) return;
-    if (!venueInputRef.current) return;
+    if (!shouldShow) return;
+    if (!containerRef.current) return;
+    if (autocompleteRef.current) return;
 
-    const autocomplete = new google.maps.places.Autocomplete(venueInputRef.current, {
-      types: ["establishment"],
-      componentRestrictions: { country: "gb" },
-      fields: ["name", "formatted_address", "geometry"],
-    });
+    let isCancelled = false;
 
-    autocomplete.addListener("place_changed", () => {
-      const place = autocomplete.getPlace();
-      if (!place.geometry?.location) return;
+    (async () => {
+      // ✅ 2026형: importLibrary('places') 필수
+      await google.maps.importLibrary("places");
 
-      const lat = place.geometry.location.lat();
-      const lng = place.geometry.location.lng();
-      const name = place.formatted_address || place.name || "";
+      if (isCancelled) return;
 
-      setVenue({ name, lat, lng });
+      const placeAutocomplete = new google.maps.places.PlaceAutocompleteElement(
+        {}
+      );
 
-      if (mapInstance.current) {
-        mapInstance.current.setCenter({ lat, lng });
-        new google.maps.Marker({
-          position: { lat, lng },
-          map: mapInstance.current,
-        });
-      }
-    });
-  }, [venueInputRef]);
+      // ✅ 2026형: 국가 제한은 includedRegionCodes 사용 권장
+      // (componentRestrictions 대신)
+      (placeAutocomplete as any).includedRegionCodes = ["gb"];
 
-  // ======================================================
-  // ⭐ 2. 지도 초기화 (기존 기능 유지)
-  // ======================================================
-  useEffect(() => {
-    if (!showMap || !mapRef.current) return;
+      containerRef.current!.appendChild(placeAutocomplete);
+      autocompleteRef.current = placeAutocomplete;
 
-    const google = (window as any).google;
-    if (!google) return;
+      // ✅ 2026형: gmp-select 이벤트로 선택 감지
+      // @ts-ignore
+      placeAutocomplete.addEventListener(
+        "gmp-select",
+        // @ts-ignore
+        async ({ placePrediction }) => {
+          try {
+            const place = placePrediction.toPlace();
 
-    if (!mapInstance.current) {
-      mapInstance.current = new google.maps.Map(mapRef.current, {
-        center: { lat: 51.505, lng: -0.09 },
-        zoom: 13,
-      });
+            // ✅ 필요한 필드만 fetch (location은 여기서 가져옴)
+            await place.fetchFields({
+              fields: ["displayName", "formattedAddress", "location"],
+            });
 
-      geocoderRef.current = new google.maps.Geocoder();
-    }
-  }, [showMap]);
+            if (!place.location) return;
 
-  // ======================================================
-  // ⭐ 3. 입력값 변경 시 geocode (기존 기능 유지)
-  // ======================================================
-  useEffect(() => {
-    if (!venueInput) return;
+            const lat = place.location.lat();
+            const lng = place.location.lng();
 
-    const google = (window as any).google;
-    if (!google) return;
+            setVenue({
+              name:
+                place.formattedAddress ||
+                place.displayName?.text ||
+                "",
+              lat,
+              lng,
+            });
 
-    const geocoder = new google.maps.Geocoder();
-    geocoder.geocode({ address: venueInput }, (results: any, status: any) => {
-      if (status === "OK" && results?.[0]) {
-        const loc = results[0].geometry.location;
-
-        const lat = loc.lat();
-        const lng = loc.lng();
-
-        setVenue({
-          name: results[0].formatted_address,
-          lat,
-          lng,
-        });
-
-        if (mapInstance.current) {
-          mapInstance.current.setCenter({ lat, lng });
-
-          new google.maps.Marker({
-            map: mapInstance.current,
-            position: { lat, lng },
-          });
+            console.log("✅ Venue selected:", place.formattedAddress, lat, lng);
+          } catch (e) {
+            console.warn("❌ place fetchFields failed:", e);
+          }
         }
+      );
+    })();
+
+    return () => {
+      isCancelled = true;
+      if (autocompleteRef.current) {
+        autocompleteRef.current.remove();
+        autocompleteRef.current = null;
       }
-    });
-  }, [venueInput]);
+    };
+  }, [shouldShow, setVenue]);
 
-  // ======================================================
-  // ⭐ 4. UI만 심플하게 변경
-  // ======================================================
+  if (!shouldShow) return null;
+
   return (
-    <div className="mt-10 space-y-6">
-
-      {/* Label */}
+    <div className="mt-8 space-y-2">
       <p className="text-[12px] uppercase tracking-wide text-gray-500">
-        Venue
+        Meeting place
       </p>
-
-      {/* Input */}
-      <input
-        ref={venueInputRef}
-        type="text"
-        value={venueInput}
-        onChange={(e) => handleVenueChange(e.target.value)}
-        onFocus={() => setShowMap(true)}
-        placeholder="Enter address"
-        className="
-          w-full border-b border-gray-300 py-2 text-[15px]
-          bg-transparent placeholder-gray-400
-          focus:outline-none focus:border-black
-        "
-      />
-
-      {/* Map */}
-      {showMap && (
-        <div
-          ref={mapRef}
-          className="mt-4 w-full h-56 rounded-xl border border-gray-200 overflow-hidden"
-        />
-      )}
-
-      {/* How to find us */}
-      <div className="mt-6">
-        <p className="text-[12px] uppercase tracking-wide text-gray-500 mb-2">
-          How to find us
-        </p>
-        <textarea
-          value={form.findUsNote || ""}
-          onChange={(e) => form.setFindUsNote(e.target.value)}
-          placeholder="Optional"
-          rows={2}
-          className="
-            w-full border-b border-gray-300 py-2 text-[15px]
-            bg-transparent resize-none placeholder-gray-400
-            focus:outline-none focus:border-black
-          "
-        />
-      </div>
+      <div ref={containerRef} />
     </div>
   );
 }

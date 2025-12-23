@@ -1,7 +1,7 @@
 // src/app/api/meetups/route.ts
+
 import { NextRequest, NextResponse } from "next/server";
-import { collection, getDocs, orderBy, limit, query } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { adminDb } from "@/lib/firebaseAdmin";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -14,15 +14,14 @@ export const runtime = "nodejs";
 export async function GET(req: NextRequest) {
   try {
     const limitParam = Number(req.nextUrl.searchParams.get("limit") ?? 10);
-    const finalLimit = Number.isFinite(limitParam) && limitParam > 0 ? limitParam : 10;
+    const finalLimit =
+      Number.isFinite(limitParam) && limitParam > 0 ? limitParam : 10;
 
-    const q = query(
-      collection(db, "meetups"),
-      orderBy("datetime", "desc"),
-      limit(finalLimit)
-    );
-
-    const snap = await getDocs(q);
+    const snap = await adminDb
+      .collection("meetups")
+      .orderBy("datetime", "desc")
+      .limit(finalLimit)
+      .get();
 
     const meetups = snap.docs.map((doc) => ({
       id: doc.id,

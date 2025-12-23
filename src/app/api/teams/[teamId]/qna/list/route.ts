@@ -1,6 +1,6 @@
 // src/app/api/teams/[teamId]/qna/list/route.ts
 
-import { db } from "@/lib/firebaseAdmin";
+import { adminDb } from "@/lib/firebaseAdmin";
 import { NextResponse } from "next/server";
 
 export async function GET(req: Request, { params }: any) {
@@ -8,7 +8,7 @@ export async function GET(req: Request, { params }: any) {
 
   const sort = new URL(req.url).searchParams.get("sort") ?? "latest";
 
-  const snap = await db
+  const snap = await adminDb
     .collection("teams")
     .doc(teamId)
     .collection("qna")
@@ -24,7 +24,7 @@ export async function GET(req: Request, { params }: any) {
   // ❗ 댓글 수 읽어오는 병렬 처리
   list = await Promise.all(
     list.map(async (qna: any) => {
-      const commentsSnap = await db
+      const commentsSnap = await adminDb
         .collection("teams")
         .doc(teamId)
         .collection("qna")

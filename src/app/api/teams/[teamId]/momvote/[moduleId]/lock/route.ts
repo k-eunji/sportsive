@@ -2,13 +2,13 @@
 
 export const runtime = "nodejs";
 
-import { db } from "@/lib/firebaseAdmin";
+import { adminDb } from "@/lib/firebaseAdmin";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request, ctx: any) {
   const { teamId, moduleId } = await ctx.params;
 
-  await db
+  await adminDb
     .collection("teams")
     .doc(teamId)
     .collection("momvote")

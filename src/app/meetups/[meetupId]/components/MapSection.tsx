@@ -162,7 +162,13 @@ export default function MapSection({
 
           {/* Map */}
           <div className="h-72 w-full overflow-hidden rounded-lg border border-border">
-            <LeafletMap lat={lat} lng={lng} locationName={locationName} />
+            {lat === 0 && lng === 0 ? (
+              <div className="h-full flex items-center justify-center text-muted-foreground">
+                Location not set
+              </div>
+            ) : (
+              <LeafletMap lat={lat} lng={lng} locationName={locationName} />
+            )}
           </div>
 
           {/* How to find us */}

@@ -1,9 +1,16 @@
 {
   "compilerOptions": {
-    "types": ["node", "google.maps"],
-
+    /* ✅ 전역 타입 선언 추가 */
+    "types": [
+      "node",
+      "google.maps"
+    ],
     "target": "ES2017",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -13,32 +20,40 @@
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "incremental": true,
-    "plugins": [{ "name": "next" }],
-
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": [
+        "./src/*"
+      ]
     },
-
+    /* ✅ 타입 루트에 src 추가 */
     "typeRoots": [
-      "./src",
+      "./src", // ← src/global.d.ts 인식하도록 추가
       "./src/types",
       "./node_modules/@types"
     ],
-
+    /* ✅ 기타 옵션 유지 */
     "allowImportingTsExtensions": true,
     "allowArbitraryExtensions": true
   },
   "include": [
     "next-env.d.ts",
-    "src/global.d.ts",
+    "src/global.d.ts", // ✅ 명시적으로 추가해야 전역 타입 병합됨
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
     "src/app/server/generateToken.cjs",
-    "src/app/server/generateToken.js"
+    "src/app/server/generateToken.js",
+    ".next/dev/types/**/*.ts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules"
+  ]
 }

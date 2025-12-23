@@ -1,10 +1,11 @@
 // src/app/api/live/[sport]/[liveId]/participants/route.ts
-import { NextResponse } from "next/server";
-import { db as adminDb } from "@/lib/firebaseAdmin";
-import { FieldValue } from "firebase-admin/firestore";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+import { NextResponse } from "next/server";
+import { adminDb } from "@/lib/firebaseAdmin";
+import { FieldValue } from "firebase-admin/firestore";
 
 export async function POST(
   req: Request,

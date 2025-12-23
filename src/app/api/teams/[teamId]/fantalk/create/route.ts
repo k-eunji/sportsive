@@ -1,5 +1,7 @@
 // src/app/api/teams/[teamId]/fantalk/create/route.ts
-import { db } from "@/lib/firebaseAdmin";
+
+export const dynamic = "force-dynamic";
+import { adminDb } from "@/lib/firebaseAdmin";
 import { NextRequest, NextResponse } from "next/server";
 
 interface RouteParams {
@@ -12,7 +14,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
   try {
     const { text, imageUrl, userId, authorNickname } = await req.json();
 
-    await db
+    await adminDb
       .collection("teams")
       .doc(teamId)
       .collection("fantalk")

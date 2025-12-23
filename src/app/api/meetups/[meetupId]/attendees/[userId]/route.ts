@@ -1,7 +1,9 @@
 // src/app/api/meetups/[meetupId]/attendees/[userId]/route.ts
 
+export const runtime = "nodejs";
+
 import { NextResponse } from "next/server";
-import { adminDB } from "@/lib/firebaseAdmin";
+import { adminDb } from "@/lib/firebaseAdmin";
 import { sendNotification } from "@/lib/sendNotification";
 
 interface MeetupParams {
@@ -16,7 +18,7 @@ export async function DELETE(
   const { meetupId, userId } = params; // ← 여기 타입 완전 정상
 
   try {
-    const ref = adminDB.collection("meetups").doc(meetupId);
+    const ref = adminDb.collection("meetups").doc(meetupId);
     const snap = await ref.get();
 
     if (!snap.exists) {

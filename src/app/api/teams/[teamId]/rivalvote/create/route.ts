@@ -1,5 +1,5 @@
 // src/app/api/teams/[teamId]/rivalvote/create/route.ts
-import { db } from "@/lib/firebaseAdmin";
+import { adminDb } from "@/lib/firebaseAdmin";
 import { NextResponse } from "next/server";
 
 type TeamRow = {
@@ -37,7 +37,7 @@ export async function POST(req: Request, context: any) {
         votes: 0,
       }));
     // Firestore 저장
-    const docRef = db
+    const docRef = adminDb
       .collection("teams")
       .doc(teamId)
       .collection("rivalvote")

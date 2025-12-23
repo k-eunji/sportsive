@@ -1,6 +1,6 @@
 // src/app/api/fanhub/predict/user/[userId]/route.ts
-
-import { db } from "@/lib/firebaseAdmin";
+export const runtime = "nodejs";
+import { adminDb } from "@/lib/firebaseAdmin";
 import { NextResponse } from "next/server";
 
 export async function GET(
@@ -10,7 +10,7 @@ export async function GET(
   const { userId } = await params;
 
   // 🔥 올바른 collectionGroup = "matches"
-  const snap = await db
+  const snap = await adminDb
     .collectionGroup("matches")
     .where("userId", "==", userId)
     .get();

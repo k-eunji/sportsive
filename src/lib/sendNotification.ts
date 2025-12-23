@@ -1,5 +1,5 @@
 // src/lib/sendNotification.ts
-import { db } from "@/lib/firebaseAdmin";
+import { adminDb } from "@/lib/firebaseAdmin";
 
 interface NotificationData {
   userId: string; // 알림 받는 사람
@@ -24,7 +24,7 @@ export async function sendNotification({
   link,
 }: NotificationData) {
   try {
-    await db.collection("notifications").add({
+    await adminDb.collection("notifications").add({
       userId,
       fromUserId,
       meetupId,

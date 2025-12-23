@@ -1,6 +1,8 @@
 // src/app/api/messages/[conversationId]/read/route.ts
+
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/firebaseAdmin";
+import { adminDb } from "@/lib/firebaseAdmin";
 import { getCurrentUserId } from "@/lib/getCurrentUser";
 
 interface RouteParams {
@@ -16,7 +18,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
     const { conversationId } = params;
 
-    const convRef = db.collection("conversations").doc(conversationId);
+    const convRef = adminDb.collection("conversations").doc(conversationId);
 
     const unreadMsgsSnap = await convRef
       .collection("messages")
@@ -24,7 +26,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       .where("isRead", "==", false)
       .get();
 
-    const batch = db.batch();
+    const batch = adminDb.batch();
 
     unreadMsgsSnap.docs.forEach((doc) => batch.update(doc.ref, { isRead: true }));
 

@@ -1,5 +1,7 @@
 // src/app/api/teams/[teamId]/fantalk/[msgId]/delete/route.ts
-import { db } from "@/lib/firebaseAdmin";
+
+export const dynamic = "force-dynamic";
+import { adminDb } from "@/lib/firebaseAdmin";
 import { NextRequest, NextResponse } from "next/server";
 
 interface RouteParams {
@@ -10,7 +12,7 @@ export async function POST(_req: NextRequest, { params }: RouteParams) {
   const { teamId, msgId } = params;
 
   try {
-    await db
+    await adminDb
       .collection("teams")
       .doc(teamId)
       .collection("fantalk")

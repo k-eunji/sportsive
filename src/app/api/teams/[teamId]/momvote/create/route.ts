@@ -2,7 +2,7 @@
 
 export const runtime = "nodejs";
 
-import { db } from "@/lib/firebaseAdmin";
+import { adminDb } from "@/lib/firebaseAdmin";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request, ctx: any) {
@@ -13,7 +13,7 @@ export async function POST(req: Request, ctx: any) {
     return NextResponse.json({ error: "missing fields" }, { status: 400 });
   }
 
-  const exists = await db
+  const exists = await adminDb
     .collection("teams")
     .doc(teamId)
     .collection("momvote")
@@ -24,7 +24,7 @@ export async function POST(req: Request, ctx: any) {
     return NextResponse.json({ error: "already exists" }, { status: 409 });
   }
 
-  const ref = db.collection("teams").doc(teamId).collection("momvote").doc();
+  const ref = adminDb.collection("teams").doc(teamId).collection("momvote").doc();
 
   await ref.set({
     id: ref.id,

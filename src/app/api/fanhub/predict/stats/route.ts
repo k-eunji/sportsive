@@ -1,10 +1,10 @@
 // src/app/api/fanhub/predict/stats/route.ts
-
-import { db } from "@/lib/firebaseAdmin";
+export const runtime = "nodejs";
+import { adminDb } from "@/lib/firebaseAdmin";
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  const snap = await db.collectionGroup("matches").get();
+  const snap = await adminDb.collectionGroup("matches").get();
 
   const stats: Record<string, { home: number; draw: number; away: number }> = {};
 

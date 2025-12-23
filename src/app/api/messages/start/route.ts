@@ -1,6 +1,8 @@
 // src/app/api/messages/start/route.ts
+
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/firebaseAdmin";
+import { adminDb } from "@/lib/firebaseAdmin";
 import { getCurrentUserId } from "@/lib/getCurrentUser";
 
 export async function POST(req: NextRequest) {
@@ -20,7 +22,7 @@ export async function POST(req: NextRequest) {
     const participantsKey = participants.join("_");
 
     // 🔹 기존 대화가 있는지 확인
-    const existing = await db
+    const existing = await adminDb
       .collection("conversations")
       .where("participantsKey", "==", participantsKey)
       .limit(1)
@@ -34,7 +36,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 🔹 새 대화 생성
-    const newConvRef = await db.collection("conversations").add({
+    const newConvRef = await adminDb.collection("conversations").add({
       participants,
       participantsKey,
       type: "dm",

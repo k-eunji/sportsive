@@ -1,6 +1,8 @@
 // src/app/api/users/[userId]/relationship/route.ts
+
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/firebaseAdmin";
+import { adminDb } from "@/lib/firebaseAdmin";
 import { getRelationshipLabel } from "@/lib/relationships";
 
 interface RouteParams {
@@ -19,8 +21,8 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const myRef = db.collection("users").doc(myId);
-    const targetRef = db.collection("users").doc(targetUserId);
+    const myRef = adminDb.collection("users").doc(myId);
+    const targetRef = adminDb.collection("users").doc(targetUserId);
 
     const [mySnap, targetSnap] = await Promise.all([
       myRef.get(),
@@ -63,7 +65,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       newStatus = "MUTUAL";
 
       // 서로 응원 + 공동 밋업 → TEAMMATE
-      const meetupsSnap = await db
+      const meetupsSnap = await adminDb
         .collection("meetups")
         .where("participants", "array-contains", myId)
         .get();

@@ -1,5 +1,7 @@
 // src/app/api/likes/toggle/route.ts
-import { db } from "@/lib/firebaseAdmin";
+
+export const runtime = "nodejs";
+import { adminDb } from "@/lib/firebaseAdmin";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
@@ -14,7 +16,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const ref = db
+    const ref = adminDb
       .collection("likes")
       .doc(parentType)
       .collection(parentId)

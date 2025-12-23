@@ -1,9 +1,7 @@
-//src/components/GoogleMapsProvider.tsx
-
+// src/components/GoogleMapsProvider.tsx
 "use client";
 
-import { createContext, useContext } from "react";
-import { useJsApiLoader } from "@react-google-maps/api";
+import { createContext, useContext, useEffect, useState } from "react";
 
 const GoogleMapsContext = createContext({ isLoaded: false });
 
@@ -11,24 +9,49 @@ export function useGoogleMaps() {
   return useContext(GoogleMapsContext);
 }
 
-// ✔ TS가 허용하는 라이브러리 목록 재정의
-type GoogleMapsLibrary = "places" | "marker";
-
-const MAP_LIBRARIES: GoogleMapsLibrary[] = ["places", "marker"];
+declare global {
+  interface Window {
+    initGoogleMaps: () => void;
+  }
+}
 
 export default function GoogleMapsProvider({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { isLoaded } = useJsApiLoader({
-    id: "google-maps-loader",
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "",
-    libraries: MAP_LIBRARIES,
-    language: "en-GB",
-    region: "GB",
-    version: "weekly",
-  });
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    if ((window as any).google?.maps?.importLibrary) {
+      setIsLoaded(true);
+      return;
+    }
+
+    window.initGoogleMaps = async () => {
+      const google = (window as any).google;
+
+      // ✅ 여기서만 importLibrary 호출 가능
+      await google.maps.importLibrary("maps");
+      await google.maps.importLibrary("places");
+      await google.maps.importLibrary("marker");
+
+      setIsLoaded(true);
+    };
+
+    const script = document.createElement("script");
+    script.src =
+      `https://maps.googleapis.com/maps/api/js` +
+      `?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}` +
+      `&v=weekly` +
+      `&loading=async` +
+      `&callback=initGoogleMaps`;
+
+    script.async = true;
+    script.defer = true;
+
+    document.head.appendChild(script);
+  }, []);
 
   return (
     <GoogleMapsContext.Provider value={{ isLoaded }}>

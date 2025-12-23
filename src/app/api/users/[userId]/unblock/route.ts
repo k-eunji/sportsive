@@ -1,6 +1,8 @@
 // src/app/api/users/[userId]/unblock/route.ts
+
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/firebaseAdmin";
+import { adminDb } from "@/lib/firebaseAdmin";
 import { getCurrentUserId } from "@/lib/getCurrentUser";
 
 interface RouteParams {
@@ -23,7 +25,7 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const ref = db
+    const ref = adminDb
       .collection("users")
       .doc(myId)
       .collection("blocked")

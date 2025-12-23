@@ -2,7 +2,7 @@
 
 export const runtime = "nodejs";
 
-import { db } from "@/lib/firebaseAdmin";
+import { adminDb } from "@/lib/firebaseAdmin";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request, ctx: any) {
@@ -12,7 +12,7 @@ export async function POST(req: Request, ctx: any) {
   if (!candidateId || !userId)
     return NextResponse.json({ error: "bad request" }, { status: 400 });
 
-  const ref = db
+  const ref = adminDb
     .collection("teams")
     .doc(teamId)
     .collection("momvote")
@@ -30,7 +30,7 @@ export async function POST(req: Request, ctx: any) {
   if ((await hist.get()).exists)
     return NextResponse.json({ error: "already voted" }, { status: 409 });
 
-  await db.runTransaction(async (tx) => {
+  await adminDb.runTransaction(async (tx) => {
     const doc = await tx.get(ref);
     const data = doc.data() as any;
     const candidates = data.data.candidates;

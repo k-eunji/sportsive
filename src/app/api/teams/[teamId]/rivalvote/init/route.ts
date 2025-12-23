@@ -3,7 +3,7 @@
 import { NextResponse } from "next/server";
 import sqlite3 from "sqlite3";
 import { open } from "sqlite";
-import { db } from "@/lib/firebaseAdmin";
+import { adminDb } from "@/lib/firebaseAdmin";
 import path from "path";
 
 const DB_FILE = path.join(process.cwd(), "sportsive.db");
@@ -39,7 +39,7 @@ export async function POST(
         votes: 0,
       }));
 
-    const ref = db
+    const ref = adminDb
       .collection("teams")
       .doc(teamId)
       .collection("rivalvote")
