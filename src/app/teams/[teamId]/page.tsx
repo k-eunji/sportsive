@@ -18,7 +18,7 @@ export default async function TeamPage(props: {
   // 팀 정보
   // ----------------------------
   const teamData = await fetch(
-    `${baseUrl}/api/teams/${teamId}`,
+    `/api/teams/${teamId}`,
     { cache: "no-store" }
   ).then((r) => r.json());
 
@@ -28,7 +28,7 @@ export default async function TeamPage(props: {
   // 경기 정보
   // ----------------------------
   const events = await fetch(
-    `${baseUrl}/api/events/england/football`,
+    `/api/events/england/football`,
     { cache: "no-store" }
   ).then((r) => r.json());
 
