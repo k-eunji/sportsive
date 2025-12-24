@@ -2,41 +2,50 @@
 
 export const dynamic = "force-dynamic";
 
+import { headers } from "next/headers";
 import TeamHeader from "./components/TeamHeader";
 import TeamPageClient from "./TeamPage.client";
-
-const baseUrl =
-  process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
 
 export default async function TeamPage(props: {
   params: Promise<{ teamId: string }>;
 }) {
-  // ✅ Next 16 규칙: params는 Promise
+  // ✅ Next 16 규칙
   const { teamId } = await props.params;
+
+  // ✅ Next 15/16: headers()는 async
+  const h = await headers();
+  const host = h.get("host");
+  const protocol = h.get("x-forwarded-proto") ?? "http";
+
+  if (!host) {
+    throw new Error("Missing host header");
+  }
+
+  const baseUrl = `${protocol}://${host}`;
 
   // ----------------------------
   // 팀 정보
   // ----------------------------
-  const teamData = await fetch(
-    `/api/teams/${teamId}`,
+  const teamRes = await fetch(
+    `${baseUrl}/api/teams/${teamId}`,
     { cache: "no-store" }
-  ).then((r) => r.json());
-
+  );
+  const teamData = await teamRes.json();
   const team = teamData.team;
 
   // ----------------------------
   // 경기 정보
   // ----------------------------
-  const events = await fetch(
-    `/api/events/england/football`,
+  const eventsRes = await fetch(
+    `${baseUrl}/api/events/england/football`,
     { cache: "no-store" }
-  ).then((r) => r.json());
+  );
+  const events = await eventsRes.json();
 
   const teamIdNum = Number(team.id);
 
   const matches = (events.matches as any[]).map((m: any) => {
     const isHome = m.homeTeamId === teamIdNum;
-
     return {
       ...m,
       kickoff: m.date,
@@ -49,13 +58,13 @@ export default async function TeamPage(props: {
   const today = now.toISOString().slice(0, 10);
 
   const todayMatch = matches.find(
-    (m: any) =>
+    (m) =>
       m.day === today &&
       (m.homeTeamId === teamIdNum || m.awayTeamId === teamIdNum)
   );
 
   const nextMatch = matches.find(
-    (m: any) =>
+    (m) =>
       new Date(m.date).getTime() > now.getTime() &&
       (m.homeTeamId === teamIdNum || m.awayTeamId === teamIdNum)
   );
