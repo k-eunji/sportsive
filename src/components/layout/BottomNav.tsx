@@ -34,7 +34,9 @@ export default function BottomNav() {
   return (
     <nav
       className={`
-        fixed bottom-0 inset-x-0 z-50 h-[58px]
+        fixed inset-x-0 bottom-0 z-50
+        h-[58px]
+        pb-[env(safe-area-inset-bottom)]
         flex items-center justify-around
         bg-[var(--background)]
         border-t border-[var(--border)]

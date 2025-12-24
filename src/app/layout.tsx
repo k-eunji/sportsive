@@ -20,7 +20,7 @@ export const metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${inter.variable} h-full`}>
-      <body className="min-h-screen text-foreground antialiased">
+      <body className="text-foreground antialiased">
         <Providers>
 
           {/* ⭐ 전역에서 단 한 번만 Google Maps API 로드 */}
