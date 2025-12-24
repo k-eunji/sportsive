@@ -1,11 +1,11 @@
 // src/components/common/FileUploader.tsx
 
-// src/components/common/FileUploader.tsx
-
 "use client";
 
 import { useState } from "react";
 import { Upload, X } from "lucide-react";
+import { storage } from "@/lib/firebaseClient";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 export default function FileUploader({
   onUploaded,
@@ -13,26 +13,20 @@ export default function FileUploader({
   onUploaded: (data: { url: string; type: string }) => void;
 }) {
   const [preview, setPreview] = useState<string | null>(null);
-  const [isVideo, setIsVideo] = useState<boolean>(false);
-  const [uploading, setUploading] = useState<boolean>(false);
+  const [isVideo, setIsVideo] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   const upload = async (file: File) => {
     setUploading(true);
 
     try {
-      const fd = new FormData();
-      fd.append("file", file);
+      const fileRef = ref(
+        storage,
+        `uploads/${Date.now()}-${file.name}`
+      );
 
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: fd,
-      });
-
-      if (!res.ok) {
-        throw new Error("Upload failed");
-      }
-
-      const { url } = await res.json();
+      await uploadBytes(fileRef, file);
+      const url = await getDownloadURL(fileRef);
 
       onUploaded({
         url,
@@ -42,15 +36,16 @@ export default function FileUploader({
       console.error(err);
       alert("Upload failed. Please try again.");
     } finally {
-      setUploading(false); // 🔥 이 줄이 제일 중요
+      setUploading(false);
     }
   };
 
   return (
     <div className="space-y-2">
-
       {uploading && (
-        <p className="text-sm text-purple-600 font-medium">Uploading...</p>
+        <p className="text-sm text-purple-600 font-medium">
+          Uploading...
+        </p>
       )}
 
       {preview && (
@@ -95,19 +90,17 @@ export default function FileUploader({
             const file = e.target.files?.[0];
             if (!file) return;
 
-            if (file.size > 5 * 1024 * 1024) {
-              alert("File size must be under 5MB.");
+            if (file.size > 20 * 1024 * 1024) {
+              alert("File size must be under 20MB.");
               return;
             }
 
             const url = URL.createObjectURL(file);
-
             setPreview(url);
             setIsVideo(file.type.startsWith("video"));
 
             upload(file);
           }}
-
         />
       </label>
     </div>
