@@ -1,19 +1,18 @@
 // src/app/teams/[teamId]/page.tsx
 
+export const dynamic = "force-dynamic";
+
 import TeamHeader from "./components/TeamHeader";
 import TeamPageClient from "./TeamPage.client";
 
-// ✅ 서버 컴포넌트용 base URL
 const baseUrl =
-  process.env.NEXT_PUBLIC_BASE_URL ??
-  "http://localhost:3000";
+  process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
 
-export default async function TeamPage({
-  params,
-}: {
+export default async function TeamPage(props: {
   params: Promise<{ teamId: string }>;
 }) {
-  const { teamId } = await params;
+  // ✅ Next 16 규칙: params는 Promise
+  const { teamId } = await props.params;
 
   // ----------------------------
   // 팀 정보
@@ -33,8 +32,10 @@ export default async function TeamPage({
     { cache: "no-store" }
   ).then((r) => r.json());
 
+  const teamIdNum = Number(team.id);
+
   const matches = (events.matches as any[]).map((m: any) => {
-    const isHome = m.homeTeamId === team.id;
+    const isHome = m.homeTeamId === teamIdNum;
 
     return {
       ...m,
@@ -50,13 +51,13 @@ export default async function TeamPage({
   const todayMatch = matches.find(
     (m: any) =>
       m.day === today &&
-      (m.homeTeamId === team.id || m.awayTeamId === team.id)
+      (m.homeTeamId === teamIdNum || m.awayTeamId === teamIdNum)
   );
 
   const nextMatch = matches.find(
     (m: any) =>
       new Date(m.date).getTime() > now.getTime() &&
-      (m.homeTeamId === team.id || m.awayTeamId === team.id)
+      (m.homeTeamId === teamIdNum || m.awayTeamId === teamIdNum)
   );
 
   return (

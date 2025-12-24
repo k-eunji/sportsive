@@ -1,85 +1,115 @@
 // src/app/api/teams/[teamId]/momvote/module/route.ts
 
-export const runtime = "nodejs";
-
-import { adminDb } from "@/lib/firebaseAdmin";
 import { NextResponse } from "next/server";
-import sqlite3 from "sqlite3";
-import { open } from "sqlite";
-import path from "path";
+import { supabase } from "@/lib/supabaseServer";
 
-const DB_FILE = path.join(process.cwd(), "sportsive.db");
+type MatchWithTeams = {
+  id: number;
+  date: string;
+  home_team_id: number;
+  away_team_id: number;
+  home_team: { name: string } | null;
+  away_team: { name: string } | null;
+};
 
-export async function GET(req: Request, ctx: any) {
-  const { teamId } = await ctx.params;
+export async function GET(
+  _req: Request,
+  { params }: { params: Promise<{ teamId: string }> }
+) {
+  // ✅ Next 16 규칙
+  const { teamId } = await params;
+  const teamIdNum = Number(teamId);
 
-  // SQLite에서 오늘 경기 찾기 (summary API 의존 X)
-  const dbSql = await open({ filename: DB_FILE, driver: sqlite3.Database });
+  if (Number.isNaN(teamIdNum)) {
+    return NextResponse.json({ module: null }, { status: 400 });
+  }
 
-  const match = await dbSql.get(
-    `
-      SELECT 
-        m.id, 
-        m.date,
-        m.home_team_id,
-        m.away_team_id,
-        ht.name as homeTeam,
-        at.name as awayTeam
-      FROM "2526_england_pl_football_matches" m
-      JOIN "2526_england_pl_football_teams" ht ON m.home_team_id = ht.id
-      JOIN "2526_england_pl_football_teams" at ON m.away_team_id = at.id
-      WHERE m.date BETWEEN datetime('now', 'start of day', 'localtime')
-                 AND datetime('now', 'start of day', '+1 day', 'localtime')
-      AND (m.home_team_id = ? OR m.away_team_id = ?)
+  // =========================
+  // 1️⃣ 오늘 경기 조회
+  // =========================
+  const matchResult = await supabase
+    .from("england_pl_football_matches")
+    .select(`
+      id,
+      date,
+      home_team_id,
+      away_team_id,
+      home_team:home_team_id ( name ),
+      away_team:away_team_id ( name )
+    `)
+    .gte("date", new Date().toISOString().slice(0, 10))
+    .lt(
+      "date",
+      new Date(Date.now() + 24 * 60 * 60 * 1000)
+        .toISOString()
+        .slice(0, 10)
+    )
+    .or(`home_team_id.eq.${teamIdNum},away_team_id.eq.${teamIdNum}`)
+    .maybeSingle();
 
-    `,
-    [teamId, teamId]
-  );
+  const match = matchResult.data as MatchWithTeams | null;
 
-  await dbSql.close();
+  if (matchResult.error || !match) {
+    return NextResponse.json({ module: null });
+  }
 
-  if (!match)
-    return NextResponse.json({ module: null }); // 오늘 경기 없음
-
+  // =========================
+  // 2️⃣ 상대팀 계산
+  // =========================
   const opponent =
-    match.home_team_id == Number(teamId)
-      ? match.awayTeam
-      : match.homeTeam;
+    match.home_team_id === teamIdNum
+      ? match.away_team?.name ?? null
+      : match.home_team?.name ?? null;
 
   const kickoff = match.date;
 
-  // Firestore reference
-  const col = adminDb
-    .collection("teams")
-    .doc(teamId)
-    .collection("momvote");
+  // =========================
+  // 3️⃣ 기존 MOM 모듈 확인
+  // =========================
+  const existingResult = await supabase
+    .from("momvote_modules")
+    .select("*")
+    .eq("team_id", teamIdNum)
+    .eq("match_id", match.id)
+    .maybeSingle();
 
-  // 이미 있는지 확인
-  const snap = await col.where("data.matchId", "==", match.id).get();
-
-  if (!snap.empty) {
-    return NextResponse.json({ module: snap.docs[0].data() });
+  if (existingResult.data) {
+    return NextResponse.json({ module: existingResult.data });
   }
 
-  // 새 문서 생성
-  const ref = col.doc();
+  // =========================
+  // 4️⃣ 새 MOM 모듈 생성
+  // =========================
   const newModule = {
-    id: ref.id,
-    createdAt: new Date().toISOString(),
-    reactions: { likes: 0, participants: 0 },
+    team_id: teamIdNum,
+    match_id: match.id,
+    created_at: new Date().toISOString(),
+    reactions: {
+      likes: 0,
+      participants: 0,
+    },
     data: {
-      matchId: match.id,
       title: "Man of the Match",
-      expiresAt: new Date(new Date(kickoff).getTime() + 24 * 60 * 60 * 1000)
-        .toISOString(),
-      locked: false,
       kickoff,
       opponent,
+      locked: false,
+      expiresAt: new Date(
+        new Date(kickoff).getTime() + 24 * 60 * 60 * 1000
+      ).toISOString(),
       candidates: [],
     },
   };
 
-  await ref.set(newModule);
+  const insertResult = await supabase
+    .from("momvote_modules")
+    .insert(newModule)
+    .select()
+    .single();
 
-  return NextResponse.json({ module: newModule });
+  if (insertResult.error) {
+    console.error("momvote insert error:", insertResult.error);
+    return NextResponse.json({ module: null }, { status: 500 });
+  }
+
+  return NextResponse.json({ module: insertResult.data });
 }

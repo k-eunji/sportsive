@@ -1,12 +1,13 @@
 // src/app/api/teams/[teamId]/matches/next/route.ts
+
 import { NextRequest, NextResponse } from "next/server";
 
-interface RouteParams {
-  params: { teamId: string };
-}
-
-export async function GET(_req: NextRequest, { params }: RouteParams) {
-  const { teamId } = params;
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: Promise<{ teamId: string }> }
+) {
+  // ✅ Next 16: params는 Promise
+  const { teamId } = await params;
 
   // TODO: SQLite 또는 API에서 실제 다음 경기 불러오기
   const nextMatch = {
