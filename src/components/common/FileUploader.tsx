@@ -17,22 +17,31 @@ export default function FileUploader({
   const upload = async (file: File) => {
     setUploading(true);
 
-    const fd = new FormData();
-    fd.append("file", file);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
 
-    const res = await fetch("/api/upload", {
-      method: "POST",
-      body: fd,
-    });
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: fd,
+      });
 
-    const { url } = await res.json();
+      if (!res.ok) {
+        throw new Error("Upload failed");
+      }
 
-    onUploaded({
-      url,
-      type: file.type,
-    });
+      const { url } = await res.json();
 
-    setUploading(false);
+      onUploaded({
+        url,
+        type: file.type,
+      });
+    } catch (err) {
+      console.error(err);
+      alert("Upload failed. Please try again.");
+    } finally {
+      setUploading(false); // 🔥 이 줄이 제일 중요
+    }
   };
 
   return (
@@ -84,6 +93,11 @@ export default function FileUploader({
             const file = e.target.files?.[0];
             if (!file) return;
 
+            if (file.size > 5 * 1024 * 1024) {
+              alert("File size must be under 5MB.");
+              return;
+            }
+
             const url = URL.createObjectURL(file);
 
             setPreview(url);
@@ -91,6 +105,7 @@ export default function FileUploader({
 
             upload(file);
           }}
+
         />
       </label>
     </div>
