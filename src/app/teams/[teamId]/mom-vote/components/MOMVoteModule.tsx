@@ -6,6 +6,8 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { MomVoteModuleType, MOMCandidate } from "@/types";
+import { uploadToStorage } from "@/lib/uploadToStorage";
+
 
 export default function MOMVoteModule({
   mod,
@@ -69,14 +71,9 @@ export default function MOMVoteModule({
 
   /** 업로드 */
   const uploadImage = async (file: File): Promise<string | null> => {
-    const form = new FormData();
-    form.append("file", file);
-
     try {
       setUploading(true);
-      const res = await fetch("/api/upload", { method: "POST", body: form });
-      const data = await res.json();
-      return data.url ?? null;
+      return await uploadToStorage(file);
     } catch (e) {
       console.error(e);
       return null;

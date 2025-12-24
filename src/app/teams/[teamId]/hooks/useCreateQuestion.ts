@@ -2,6 +2,8 @@
 
 "use client";
 
+import { uploadToStorage } from "@/lib/uploadToStorage";
+
 export function useCreateQuestion() {
 
   async function createQuestion({
@@ -22,17 +24,9 @@ export function useCreateQuestion() {
 
     // 🔥 이미지 업로드
     if (imageFile) {
-      const fd = new FormData();
-      fd.append("file", imageFile);
+    imageUrl = await uploadToStorage(imageFile);
+  }
 
-      const uploadRes = await fetch("/api/upload", {
-        method: "POST",
-        body: fd,
-      });
-
-      const uploadData = await uploadRes.json();
-      imageUrl = uploadData.url;
-    }
 
     // 🔥 질문 생성
     await fetch(`/api/teams/${teamId}/qna/create`, {

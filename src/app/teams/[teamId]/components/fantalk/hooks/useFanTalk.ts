@@ -4,6 +4,8 @@
 
 import { useState, useEffect } from "react";
 import { useUser } from "@/context/UserContext";
+import { uploadToStorage } from "@/lib/uploadToStorage";
+
 
 export default function useFanTalk(teamId: string) {
   const [messages, setMessages] = useState<any[]>([]);
@@ -31,16 +33,9 @@ export default function useFanTalk(teamId: string) {
 
     // 이미지 업로드
     if (imageFile) {
-      const fd = new FormData();
-      fd.append("file", imageFile);
+    imageUrl = await uploadToStorage(imageFile);
+  }
 
-      const uploadRes = await fetch("/api/upload", {
-        method: "POST",
-        body: fd,
-      });
-
-      imageUrl = (await uploadRes.json()).url;
-    }
 
     await fetch(`/api/teams/${teamId}/fantalk/create`, {
       method: "POST",
