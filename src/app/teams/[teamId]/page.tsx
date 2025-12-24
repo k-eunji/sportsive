@@ -1,46 +1,40 @@
 // src/app/teams/[teamId]/page.tsx
-
 export const dynamic = "force-dynamic";
 
-import { headers } from "next/headers";
+import { notFound } from "next/navigation";
 import TeamHeader from "./components/TeamHeader";
 import TeamPageClient from "./TeamPage.client";
+import { getTeamById } from "@/lib/teams/getTeamById";
+
+async function getJsonOrThrow(res: Response) {
+  // HTML이 오면 여기서 바로 잡아냄
+  const text = await res.text();
+  if (!res.ok) {
+    console.error("API failed:", res.status, text.slice(0, 200));
+    throw new Error(`API failed: ${res.status}`);
+  }
+  try {
+    return JSON.parse(text);
+  } catch {
+    console.error("Non-JSON response (first 200 chars):", text.slice(0, 200));
+    throw new Error("Response was not JSON");
+  }
+}
 
 export default async function TeamPage(props: {
   params: Promise<{ teamId: string }>;
 }) {
-  // ✅ Next 16 규칙
   const { teamId } = await props.params;
 
-  // ✅ Next 15/16: headers()는 async
-  const h = await headers();
-  const host = h.get("host");
-  const protocol = h.get("x-forwarded-proto") ?? "http";
+  // ✅ 팀 정보: 내부 API 호출 X, 서버에서 바로 Supabase 호출
+  const team = await getTeamById(teamId);
+  if (!team) notFound();
 
-  if (!host) {
-    throw new Error("Missing host header");
-  }
-
-  const baseUrl = `${protocol}://${host}`;
-
-  // ----------------------------
-  // 팀 정보
-  // ----------------------------
-  const teamRes = await fetch(
-    `${baseUrl}/api/teams/${teamId}`,
-    { cache: "no-store" }
-  );
-  const teamData = await teamRes.json();
-  const team = teamData.team;
-
-  // ----------------------------
-  // 경기 정보
-  // ----------------------------
-  const eventsRes = await fetch(
-    `${baseUrl}/api/events/england/football`,
-    { cache: "no-store" }
-  );
-  const events = await eventsRes.json();
+  // ✅ 경기 정보: 일단 상대경로로 호출 (baseUrl 조합 X)
+  const eventsRes = await fetch(`/api/events/england/football`, {
+    cache: "no-store",
+  });
+  const events = await getJsonOrThrow(eventsRes);
 
   const teamIdNum = Number(team.id);
 
@@ -75,7 +69,7 @@ export default async function TeamPage(props: {
         team={team}
         teamId={teamId}
         nextMatch={nextMatch}
-        nearbyFans={team.nearbyFans}
+        nearbyFans={(team as any).nearbyFans}
       />
 
       <TeamPageClient
