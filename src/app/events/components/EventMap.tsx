@@ -3,9 +3,9 @@
 'use client';
 
 import React, { useRef, useEffect, useState } from 'react';
-import { GoogleMap } from '@react-google-maps/api';
 import type { Event } from '@/types';
 import { formatEventTimeWithOffsetUTC } from '@/utils/date';
+import { useGoogleMaps } from '@/components/GoogleMapsProvider';
 
 const MAP_ID_WEB = process.env.NEXT_PUBLIC_MAP_ID_WEB ?? '';
 
@@ -30,14 +30,20 @@ export default function EventMap({
   selectedRegion,
 }: Props) {
   const DEFAULT_LOCATION = { lat: 51.5074, lng: -0.1278 };
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
+  const { isLoaded } = useGoogleMaps();
+
   const markersRef = useRef<any[]>([]);
   const [currentMarker, setCurrentMarker] = useState<any>(null);
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
 
-  const supportsAdvancedMarker =
-    typeof window !== 'undefined' &&
-    (window as any).google?.maps?.marker?.AdvancedMarkerElement;
+  const supportsAdvancedMarker = React.useMemo(() => {
+    return (
+      typeof window !== 'undefined' &&
+      (window as any).google?.maps?.marker?.AdvancedMarkerElement
+    );
+  }, [isLoaded]);
 
   /** -------- InfoWindow HTML -------- */
   const createEventInfoWindowContent = (e: Event) => {
@@ -177,6 +183,21 @@ export default function EventMap({
   }, [selectedRegion, selectedCity, filteredEvents]);
 
   useEffect(() => {
+    if (!isLoaded || !mapContainerRef.current) return;
+
+    if (!mapRef.current) {
+      mapRef.current = new google.maps.Map(mapContainerRef.current, {
+        center: currentLocation ?? DEFAULT_LOCATION,
+        zoom: 8,
+        mapId: MAP_ID_WEB,
+        clickableIcons: true,
+      });
+    }
+
+    renderMarkers(currentLocation ?? undefined);
+  }, [isLoaded, currentLocation, filteredEvents]);
+
+  useEffect(() => {
     if (!mapRef.current || !selectedEvent?.location) return;
 
     const loc = selectedEvent.location;
@@ -195,6 +216,7 @@ export default function EventMap({
     });
 
     marker.addListener('click', () => info.open(mapRef.current, marker));
+    markersRef.current.forEach((m) => m.setMap?.(null));
     markersRef.current = [marker];
   }, [selectedEvent]);
 
@@ -225,20 +247,16 @@ export default function EventMap({
         📍
       </button>
 
-      <GoogleMap
-        mapContainerStyle={{ width: '100%', height: '500px', borderRadius: '16px' }}
-        center={currentLocation ?? DEFAULT_LOCATION}
-        zoom={8}
-        options={{
-          mapId: MAP_ID_WEB,
-          clickableIcons: true,
-          disableDefaultUI: false,
-        }}
-        onLoad={(map) => {
-          mapRef.current = map;
-          renderMarkers(currentLocation ?? undefined);
+      <div
+        ref={mapContainerRef}
+        style={{
+          width: '100%',
+          height: '500px',
+          borderRadius: '16px',
         }}
       />
+
+      
     </div>
   );
 }
