@@ -35,8 +35,9 @@ export default function EventMap({
   const { isLoaded } = useGoogleMaps();
 
   const markersRef = useRef<any[]>([]);
-  const [currentMarker, setCurrentMarker] = useState<any>(null);
+  const currentMarkerRef = useRef<any>(null);
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [isUserCentered, setIsUserCentered] = useState(false);
 
   const supportsAdvancedMarker = React.useMemo(() => {
     return (
@@ -73,7 +74,9 @@ export default function EventMap({
 
   const showCurrentMarker = (loc: { lat: number; lng: number }) => {
     if (!mapRef.current) return;
-    if (currentMarker) currentMarker.setMap?.(null);
+    if (currentMarkerRef.current) {
+      currentMarkerRef.current.setMap?.(null);
+    }
 
     const marker = createMarker({
       position: loc,
@@ -89,7 +92,8 @@ export default function EventMap({
         : undefined
     });
 
-    setCurrentMarker(marker);
+    currentMarkerRef.current = marker;
+
   };
 
   const getEventsNearLocation = (loc: { lat: number; lng: number }, radiusKm = 50) => {
@@ -154,7 +158,7 @@ export default function EventMap({
       bounds.extend(e.location);
     });
 
-    if (!bounds.isEmpty()) {
+    if (!bounds.isEmpty() && !isUserCentered) {
       mapRef.current.fitBounds(bounds);
     }
   };
@@ -168,7 +172,7 @@ export default function EventMap({
 
     const geocoder = new google.maps.Geocoder();
 
-    if (selectedRegion || selectedCity) {
+    if ((selectedRegion || selectedCity) && !isUserCentered) {
       geocoder.geocode({ address: selectedCity ?? selectedRegion }, (results, status) => {
         if (status === 'OK' && results?.[0]?.geometry?.location) {
           const loc = results[0].geometry.location;
@@ -180,7 +184,7 @@ export default function EventMap({
         }
       });
     }
-  }, [selectedRegion, selectedCity, filteredEvents]);
+  }, [selectedRegion, selectedCity, isUserCentered]);
 
   useEffect(() => {
     if (!isLoaded || !mapContainerRef.current) return;
@@ -233,6 +237,7 @@ export default function EventMap({
           navigator.geolocation.getCurrentPosition(
             (pos) => {
               const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+              setIsUserCentered(true);
               setCurrentLocation(loc);
               const nearby = getEventsNearLocation(loc, 50);
               setFilteredEvents(nearby);
