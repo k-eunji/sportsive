@@ -11,7 +11,7 @@ const navItems = (userId: string | null) => [
   { label: "FanHub", icon: "🥅", href: "/fanhub" },
   { label: "Live", icon: "🗣️", href: "/live" },        // 🔄 자리 변경됨
   { label: "Explore", icon: "🔍", href: "/explore" },  // 🔄 자리 변경됨
-  { label: "Meetup", icon: "🤝", href: "/meetups" },
+  { label: "Together", icon: "🤝", href: "/meetups" },
   {
     label: "Profile",
     icon: "👤",
