@@ -170,3 +170,33 @@ html, body {
 .pac-container {
   z-index: 999999 !important;
 }
+
+/* --- MapSnapCard Animations --- */
+
+@keyframes slide-up {
+  from {
+    transform: translate(-50%, 16px);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.25s ease-out;
+}
+
+@keyframes pulse-soft {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0);
+  }
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 1.5s infinite;
+}

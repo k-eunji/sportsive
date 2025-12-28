@@ -18,9 +18,15 @@ export default function EventCard({ event }: { event: Event }) {
     >
       {/* 날짜 */}
       {eventDate && (
-        <p className="text-[0.75rem] text-gray-500 dark:text-gray-400 font-medium mb-2 truncate">
-          {formatEventTimeWithOffsetUTC(eventDate)}
-        </p>
+        <div className="flex items-center gap-2 mb-2">
+          {event.status === 'LIVE' && (
+            <span className="text-xs font-bold text-red-600">🔴 LIVE</span>
+          )}
+          <span className="text-xs text-gray-500">
+            {formatEventTimeWithOffsetUTC(eventDate)}
+          </span>
+        </div>
+
       )}
 
       {/* 팀 */}

@@ -1,7 +1,7 @@
 // src/app/api/teams/[teamId]/info/route.ts
 
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabaseServer";
+import { supabase } from "../../../../../lib/supabaseServer";
 
 export async function GET(
   _req: Request,

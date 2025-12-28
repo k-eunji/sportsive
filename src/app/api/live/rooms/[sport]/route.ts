@@ -19,7 +19,11 @@ export async function GET(req: Request, context: { params: Promise<{ sport: stri
 
     const filtered = allEvents.filter((event: any) => {
       const d = new Date(event.date);
-      return event.sport === sport && d >= startOfToday && d <= endOfFutureRange;
+
+      return (
+        d >= startOfToday &&
+        d <= endOfFutureRange
+      );
     });
 
     const rooms = await Promise.all(
@@ -27,10 +31,8 @@ export async function GET(req: Request, context: { params: Promise<{ sport: stri
         const liveDoc = await adminDb
           .collection("live_events")
           .doc(sport)
-          .collection(sport)
-          .doc("events")
-          .collection(String(event.id))
-          .doc("meta")   // ← 실제 존재하는 문서
+          .collection("events")
+          .doc(String(event.id))
           .get();
 
         const participants = Number(liveDoc.data()?.participants ?? 0);

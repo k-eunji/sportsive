@@ -1,5 +1,5 @@
 // lib/teams/getTeamById.ts
-import { supabase } from "@/lib/supabaseServer";
+import { supabase } from "../../lib/supabaseServer";
 
 function cleanTeamName(name: string | null | undefined) {
   return (name ?? "")

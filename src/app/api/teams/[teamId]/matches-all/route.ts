@@ -1,7 +1,7 @@
 // src/app/api/teams/[teamId]/matches-all/route.ts
 
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabaseServer";
+import { supabase } from "../../../../../lib/supabaseServer";
 
 function cleanTeamName(name: string | null | undefined) {
   return (name ?? "")

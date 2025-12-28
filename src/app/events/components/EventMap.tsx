@@ -6,6 +6,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import type { Event } from '@/types';
 import { formatEventTimeWithOffsetUTC } from '@/utils/date';
 import { useGoogleMaps } from '@/components/GoogleMapsProvider';
+import MapSnapCard from './MapSnapCard';
 
 const MAP_ID_WEB = process.env.NEXT_PUBLIC_MAP_ID_WEB ?? '';
 
@@ -158,9 +159,10 @@ export default function EventMap({
       bounds.extend(e.location);
     });
 
-    if (!bounds.isEmpty() && !isUserCentered) {
+    if (!bounds.isEmpty() && !isUserCentered && !selectedEvent) {
       mapRef.current.fitBounds(bounds);
     }
+
   };
 
   useEffect(() => {
@@ -226,42 +228,66 @@ export default function EventMap({
 
   return (
     <div className="relative flex flex-col gap-3">
+      {/* 상단 카운트 */}
       <p className="text-gray-900 dark:text-gray-100 text-sm sm:text-base">
-        {events.length} event{events.length === 1 ? '' : 's'}
+        {events.length} match{events.length === 1 ? '' : 'es'}
       </p>
 
-      <button
-        type="button"
-        onClick={() => {
-          if (!navigator.geolocation) return alert('Geolocation not supported');
-          navigator.geolocation.getCurrentPosition(
-            (pos) => {
-              const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-              setIsUserCentered(true);
-              setCurrentLocation(loc);
-              const nearby = getEventsNearLocation(loc, 50);
-              setFilteredEvents(nearby);
-              mapRef.current?.panTo(loc);
-              mapRef.current?.setZoom(13);
-            },
-            () => alert('Location access denied')
-          );
-        }}
-        className="absolute top-2 right-2 z-10 text-2xl text-blue-600 bg-white dark:bg-gray-800 p-2 rounded-full shadow"
-      >
-        📍
-      </button>
+      {/* 지도 + 카드 레이어 */}
+      <div className="relative w-full h-[500px] rounded-2xl overflow-hidden">
+        {/* 📍 지도 */}
+        <div
+          ref={mapContainerRef}
+          className="absolute inset-0"
+        />
 
-      <div
-        ref={mapContainerRef}
-        style={{
-          width: '100%',
-          height: '500px',
-          borderRadius: '16px',
-        }}
-      />
+        {/* 📍 현재 위치 버튼 */}
+        <button
+          type="button"
+          onClick={() => {
+            if (!navigator.geolocation) {
+              alert('Geolocation not supported');
+              return;
+            }
 
-      
+            navigator.geolocation.getCurrentPosition(
+              (pos) => {
+                const loc = {
+                  lat: pos.coords.latitude,
+                  lng: pos.coords.longitude,
+                };
+
+                setIsUserCentered(true);
+                setCurrentLocation(loc);
+
+                // ✅ 핵심: 선택된 경기 카드 닫기
+                setSelectedEvent(null);
+
+                // London 전체 경기 다시 보여주기
+                setFilteredEvents(events);
+
+                mapRef.current?.panTo(loc);
+                mapRef.current?.setZoom(11);
+              },
+              () => alert('Location access denied')
+            );
+
+          }}
+          className="absolute top-3 right-3 z-20 text-xl bg-white dark:bg-gray-800 p-2 rounded-full shadow"
+          aria-label="Center map on your location"
+        >
+          📍
+        </button>
+
+        {/* 🧾 지도 위에 뜨는 경기 카드 */}
+        {selectedEvent && (
+          <MapSnapCard
+            event={selectedEvent}
+            onClose={() => setSelectedEvent(null)}
+          />
+        )}
+      </div>
     </div>
   );
+
 }

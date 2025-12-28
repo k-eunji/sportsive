@@ -6,6 +6,8 @@ import EventList from './components/EventList';
 import EventMap from './components/EventMap';
 import EventFilterBar from './components/EventFilter';
 import type { Event } from '@/types';
+import FocusFromQuery from './components/FocusFromQuery';
+
 
 export default function EventsPage() {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
@@ -134,27 +136,21 @@ export default function EventsPage() {
       </main>
     );
 
+
+
   return (
     <main
       className="
-        max-w-7xl mx-auto p-4 pt-24 
+        max-w-7xl mx-auto p-4 pt-6 
         text-gray-900 dark:text-gray-100
       "
     >
-      <h1 className="text-3xl font-semibold text-blue-600 mb-6 text-center">All Events</h1>
-
-      {selectedEvent && (
-        <div className="fixed bottom-6 right-6 z-50">
-          <a
-            href={`/meetups?new=1&eventId=${encodeURIComponent(selectedEvent.id)}`}
-            className="px-4 py-3 rounded-xl shadow-lg bg-blue-600 text-white hover:bg-blue-700"
-            title="Create a meetup for this event"
-          >
-            🤝 Create meetup for “{selectedEvent.title ?? `${selectedEvent.homeTeam} vs ${selectedEvent.awayTeam}` }”
-          </a>
-        </div>
-      )}
-
+      <h1 className="text-3xl font-semibold mb-2 text-center">
+        Matches near you
+      </h1>
+      <p className="text-sm text-gray-500 text-center mb-6">
+        Live, today, and upcoming sports matches
+      </p>
 
       {/* 🔹 필터 바 */}
       <EventFilterBar
@@ -201,6 +197,11 @@ export default function EventsPage() {
           </div>
         </div>
       </EventFilterBar>
+
+      <FocusFromQuery
+        events={events}
+        onSelect={(event) => setSelectedEvent(event)}
+      />
 
       {/* 🔹 지도 + 리스트 영역 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">

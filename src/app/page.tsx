@@ -1,12 +1,10 @@
 // src/app/page.tsx
-import HeroCommunity from "./components/HeroCommunity";
-import CommunityHighlights from "./components/CommunityHighlights";
-import CommunityFeedPreview from "./components/CommunityFeedPreview";
+
+import WhatIsSportsive from "./components/WhatIsSportsive";
+import SituationHero from "./components/SituationHero";
+import PlatformActivity from "./components/PlatformActivity";
 import LivePreview from "./components/LivePreview";
-import MeetupIntroSection from "./components/MeetupIntroSection";
-import MeetupPreview from "./components/MeetupPreview";
-import RegionDisplay from "./components/RegionDisplay";
-import TeamsSection from "./teams/TeamsSection"; // ✅ 추가
+import MapHero from "./components/map-hero/MapHero";
 import { getUpcomingEvents } from "@/lib/events";
 
 export default async function Home() {
@@ -14,25 +12,42 @@ export default async function Home() {
   const safeEvents = JSON.parse(JSON.stringify(events));
 
   return (
-    <main className="relative mx-auto max-w-6xl px-6 pt-24 pb-28 space-y-28 transition-colors duration-500">
-      {/* 🏟 히어로 */}
-      <HeroCommunity events={safeEvents} />
-      <RegionDisplay />
-      <CommunityHighlights />
-      <TeamsSection />
-      <LivePreview />
-      <MeetupIntroSection />
-      <MeetupPreview />
-      <CommunityFeedPreview />
+    <main className="
+      relative mx-auto max-w-6xl
+      px-6 pt-6 pb-[140px]
+      space-y-28
+      transition-colors duration-500
+    ">
 
-      <div className="text-center mt-12">
-        <a
-          href="/community"
-          className="inline-block bg-[var(--primary-to)] text-white px-8 py-3 rounded-full shadow-md hover:opacity-90 transition"
-        >
-          🚀 Find your team & join the fan community →
-        </a>
-      </div>
+      {/* 1️⃣ Context first */}
+      <SituationHero />
+      
+      {/* 1️⃣ MAIN HERO — Map-based discovery */}
+      <MapHero />
+
+      {/* 2️⃣ What is this? (Explanation, not hero) */}
+      <WhatIsSportsive />
+
+      {/* 3️⃣ Trust signals (data, not people) */}
+      <PlatformActivity />
+
+      {/* 4️⃣ Live matches as a feature */}
+      <LivePreview />
+
+      {/* 5️⃣ Locked future (meetups later) */}
+      <section className="text-center text-gray-500 text-sm max-w-xl mx-auto">
+        <p className="font-medium text-gray-700 dark:text-gray-300">
+          Offline participation emerges only where activity already exists
+        </p>
+        <p className="mt-2">
+          When enough fans gather around a match,  
+          offline Together unlock naturally.
+        </p>
+        <p className="mt-1 text-xs opacity-70">
+          Available in active cities only.
+        </p>
+      </section>
+
     </main>
   );
 }

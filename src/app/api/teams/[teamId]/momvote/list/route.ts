@@ -4,11 +4,7 @@ export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebaseAdmin";
-import sqlite3 from "sqlite3";
-import { open } from "sqlite";
-import path from "path";
-
-const DB_FILE = path.join(process.cwd(), "sportsive.db");
+import { supabase } from "../../../../../../lib/supabaseServer";
 
 export async function GET(
   _req: Request,
@@ -16,7 +12,9 @@ export async function GET(
 ) {
   const { teamId } = await params;
 
-  // 🔥 Firestore (Admin SDK)
+  // ──────────────────────────
+  // 1) Firestore: momvote 목록
+  // ──────────────────────────
   const colRef = adminDb
     .collection("teams")
     .doc(teamId)
@@ -28,64 +26,84 @@ export async function GET(
     return NextResponse.json({ list: [] });
   }
 
-  // 🔥 SQLite 연결
-  const sqliteDb = await open({
-    filename: DB_FILE,
-    driver: sqlite3.Database,
-  });
+  const votes = snap.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  }));
 
-  const list: any[] = [];
+  // ──────────────────────────
+  // 2) matchId 모아서 Supabase 조회 (N+1 방지)
+  // ──────────────────────────
+  const matchIds = Array.from(
+    new Set(
+      votes
+        .map((v: any) => v.data?.matchId)
+        .filter(Boolean)
+    )
+  );
 
-  for (const doc of snap.docs) {
-    const d: any = doc.data();
-    const matchId = d.data.matchId;
+  let matchesMap = new Map<number, any>();
 
-    // 🔥 SQLite에서 경기 정보 조회
-    const match = await sqliteDb.get(
-      `
-      SELECT 
-        m.id,
-        m.date,
-        m.home_team_id,
-        m.away_team_id,
-        ht.name AS homeTeam,
-        at.name AS awayTeam
-      FROM "2526_england_pl_football_matches" m
-      JOIN "2526_england_pl_football_teams" ht ON m.home_team_id = ht.id
-      JOIN "2526_england_pl_football_teams" at ON m.away_team_id = at.id
-      WHERE m.id = ?
-      `,
-      [matchId]
-    );
+  if (matchIds.length > 0) {
+    const { data: matches, error } = await supabase
+      .from("england_pl_football_matches")
+      .select(`
+        id,
+        date,
+        home_team_id,
+        away_team_id,
+        home_team:home_team_id (
+          id,
+          name
+        ),
+        away_team:away_team_id (
+          id,
+          name
+        )
+      `)
+      .in("id", matchIds);
 
-    // 🔥 상대팀 계산
+    if (error) {
+      console.error("❌ supabase matches error:", error);
+    } else {
+      for (const m of matches ?? []) {
+        matchesMap.set(m.id, m);
+      }
+    }
+  }
+
+  // ──────────────────────────
+  // 3) Firestore + Supabase 데이터 합치기
+  // ──────────────────────────
+  const list = votes.map((v: any) => {
+    const matchId = v.data.matchId;
+    const match = matchesMap.get(matchId);
+
     let opponent = "Unknown";
+
     if (match) {
       opponent =
-        match.home_team_id === Number(teamId)
-          ? match.awayTeam
-          : match.homeTeam;
+        Number(teamId) === match.home_team_id
+          ? match.away_team?.name
+          : match.home_team?.name;
     }
 
-    // 🔥 후보 정렬 (득표수 기준)
-    const candidates = Array.isArray(d.data.candidates)
-      ? [...d.data.candidates].sort((a, b) => b.votes - a.votes)
+    const candidates = Array.isArray(v.data.candidates)
+      ? [...v.data.candidates].sort((a, b) => b.votes - a.votes)
       : [];
 
-    list.push({
-      id: doc.id,
+    return {
+      id: v.id,
       data: {
         matchId,
         kickoff: match?.date ?? null,
         opponent,
-        locked: d.data.locked ?? false,
+        locked: v.data.locked ?? false,
         candidates,
         winner: candidates[0] ?? null,
       },
-    });
-  }
-
-  await sqliteDb.close();
+    };
+  });
 
   return NextResponse.json({ list });
 }

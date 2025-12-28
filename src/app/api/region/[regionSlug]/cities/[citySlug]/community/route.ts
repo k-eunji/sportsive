@@ -1,10 +1,7 @@
 // src/app/api/region/[regionSlug]/cities/[citySlug]/community/route.ts
-import { NextRequest, NextResponse } from "next/server";
-import sqlite3 from "sqlite3";
-import { open } from "sqlite";
-import path from "path";
 
-const DB_FILE = path.join(process.cwd(), "sportsive.db");
+import { NextRequest, NextResponse } from "next/server";
+import { supabase } from "../../../../../../../lib/supabaseServer";
 
 interface RouteParams {
   params: { regionSlug: string; citySlug: string };
@@ -12,38 +9,33 @@ interface RouteParams {
 
 export async function GET(_req: NextRequest, { params }: RouteParams) {
   const { regionSlug, citySlug } = params;
-  let db: any;
 
   try {
-    db = await open({
-      filename: DB_FILE,
-      driver: sqlite3.Database,
-    });
-
-    const posts = await db.all(
-      `
-      SELECT 
+    const { data: posts, error } = await supabase
+      .from("community_posts")
+      .select(`
         id,
         user,
         text,
         likes,
         created_at
-      FROM community_posts
-      WHERE region_slug = ? AND city_slug = ?
-      ORDER BY created_at DESC
-      LIMIT 20
-      `,
-      [regionSlug, citySlug]
-    );
+      `)
+      .eq("region_slug", regionSlug)
+      .eq("city_slug", citySlug)
+      .order("created_at", { ascending: false })
+      .limit(20);
 
-    return NextResponse.json({ posts });
+    if (error) {
+      console.error("❌ community_posts error:", error);
+      return NextResponse.json({ posts: [] });
+    }
+
+    return NextResponse.json({ posts: posts ?? [] });
   } catch (err) {
     console.error("❌ [Community API Error]:", err);
     return NextResponse.json(
       { error: "Failed to fetch community posts" },
       { status: 500 }
     );
-  } finally {
-    if (db) await db.close();
   }
 }

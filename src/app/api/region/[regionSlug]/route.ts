@@ -1,10 +1,7 @@
 // src/app/api/region/[regionSlug]/route.ts
-import { NextRequest, NextResponse } from "next/server";
-import sqlite3 from "sqlite3";
-import { open } from "sqlite";
-import path from "path";
 
-const DB_FILE = path.join(process.cwd(), "sportsive.db");
+import { NextRequest, NextResponse } from "next/server";
+import { supabase } from "../../../../lib/supabaseServer";
 
 interface RouteParams {
   params: { regionSlug: string };
@@ -12,47 +9,40 @@ interface RouteParams {
 
 export async function GET(_req: NextRequest, { params }: RouteParams) {
   const { regionSlug } = params;
-  let db: any;
 
   try {
-    db = await open({ filename: DB_FILE, driver: sqlite3.Database });
-
-    // 지역 정보
-    const region = await db.get(
-      `
-      SELECT 
+    const { data: region, error } = await supabase
+      .from("regions")
+      .select(`
         id,
         name,
-        country_code AS countryCode,
+        country_code,
         continent,
-        slug
-      FROM regions
-      WHERE slug = ?
-      `,
-      [regionSlug]
-    );
+        slug,
+        cities (
+          id,
+          name,
+          slug,
+          population
+        )
+      `)
+      .eq("slug", regionSlug)
+      .single();
 
-    if (!region) {
+    if (error || !region) {
+      if (error?.code !== "PGRST116") {
+        console.error("❌ region fetch error:", error);
+      }
       return NextResponse.json({ region: null }, { status: 404 });
     }
 
-    // 해당 지역에 소속된 도시 목록
-    const cities = await db.all(
-      `
-      SELECT 
-        id,
-        name,
-        slug,
-        population
-      FROM cities
-      WHERE region_id = ?
-      `,
-      [region.id]
-    );
-
     return NextResponse.json({
-      ...region,
-      cities,
+      id: region.id,
+      name: region.name,
+      countryCode: region.country_code,
+      continent: region.continent,
+      slug: region.slug,
+      cities: region.cities ?? [],
     });
   } catch (err) {
     console.error("❌ [Region API Error]:", err);
@@ -60,7 +50,5 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
       { error: "Failed to fetch region" },
       { status: 500 }
     );
-  } finally {
-    if (db) await db.close();
   }
 }

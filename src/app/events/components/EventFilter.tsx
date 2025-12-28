@@ -1,7 +1,8 @@
 // src/app/events/components/EventFilter.tsx
+
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import type { Event } from '@/types';
 
 type EventFilterBarProps = {
@@ -14,7 +15,7 @@ type EventFilterBarProps = {
   onCityChange: (city: string) => void;
   onCategoryChange: (category: string) => void;
   onCompetitionChange: (competition: string) => void;
-  children?: React.ReactNode;
+  children?: React.ReactNode; // 날짜
 };
 
 export default function EventFilterBar({
@@ -29,73 +30,101 @@ export default function EventFilterBar({
   onCompetitionChange,
   children,
 }: EventFilterBarProps) {
-  // ✅ 안전한 데이터 추출 (null/undefined 제거 후 string 배열 단언)
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
+  const categories = [...new Set(events.map((e) => e.category).filter(Boolean))] as string[];
   const regions = [...new Set(events.map((e) => e.region).filter(Boolean))] as string[];
   const cities = selectedRegion
-    ? ([...new Set(events.filter((e) => e.region === selectedRegion).map((e) => e.city).filter(Boolean))] as string[])
+    ? ([...new Set(
+        events
+          .filter((e) => e.region === selectedRegion)
+          .map((e) => e.city)
+          .filter(Boolean)
+      )] as string[])
     : [];
-  const categories = [...new Set(events.map((e) => e.category).filter(Boolean))] as string[];
   const competitions = [...new Set(events.map((e) => e.competition).filter(Boolean))] as string[];
 
   return (
-    <div
-      className="
-        flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6
-        bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700
-        rounded-2xl p-4 shadow-sm
-      "
-    >
-      {/* 🔹 Left side: 필터 select 목록 */}
-      <div className="flex flex-wrap items-center gap-2 flex-1">
-        <SelectBox
-          label="Region"
-          value={selectedRegion}
-          onChange={(value) => {
-            onRegionChange(value);
-            onCityChange('');
-          }}
-          options={regions}
-          placeholder="All Countries"
-        />
-
-        <SelectBox
-          label="City"
-          value={selectedCity}
-          onChange={onCityChange}
-          options={cities}
-          placeholder="All Cities"
-          disabled={!selectedRegion}
-        />
-
-        <SelectBox
-          label="Category"
+    <div className="mb-4">
+      {/* 🔹 Primary (flat toolbar) */}
+      <div
+        className="
+          flex flex-wrap items-center gap-3
+          border-b border-gray-200 dark:border-gray-700
+          pb-3
+        "
+      >
+        {/* Sport */}
+        <InlineSelect
+          label="Sport"
           value={selectedCategory}
           onChange={onCategoryChange}
           options={categories}
-          placeholder="All Sports"
+          placeholder="All sports"
         />
 
-        <SelectBox
-          label="Competition"
-          value={selectedCompetition}
-          onChange={onCompetitionChange}
-          options={competitions}
-          placeholder="All Competitions"
-        />
+        {/* Date */}
+        {children}
+
+        {/* Advanced toggle (flat text) */}
+        <span
+          onClick={() => setShowAdvanced((v) => !v)}
+          className="
+            ml-auto text-sm cursor-pointer
+            text-gray-500 hover:text-gray-900
+            dark:text-gray-400 dark:hover:text-gray-100
+            transition
+          "
+        >
+          {showAdvanced ? 'Fewer filters' : 'More filters'}
+        </span>
       </div>
 
-      {/* 🔸 Right side: 추가 컨트롤 (날짜, 검색 등) */}
-      {children && (
-        <div className="flex flex-col lg:flex-row items-start lg:items-center gap-2">
-          {children}
+      {/* 🔸 Advanced (flat expand) */}
+      {showAdvanced && (
+        <div
+          className="
+            mt-3 pt-3
+            flex flex-wrap items-center gap-3
+            border-t border-gray-200 dark:border-gray-700
+          "
+        >
+          <InlineSelect
+            label="Region"
+            value={selectedRegion}
+            onChange={(value) => {
+              onRegionChange(value);
+              onCityChange('');
+            }}
+            options={regions}
+            placeholder="All regions"
+          />
+
+          <InlineSelect
+            label="City"
+            value={selectedCity}
+            onChange={onCityChange}
+            options={cities}
+            placeholder="All cities"
+            disabled={!selectedRegion}
+          />
+
+          <InlineSelect
+            label="Competition"
+            value={selectedCompetition}
+            onChange={onCompetitionChange}
+            options={competitions}
+            placeholder="All competitions"
+          />
         </div>
       )}
     </div>
   );
 }
 
-/** 🎯 공용 SelectBox 컴포넌트 (안정형) */
-function SelectBox({
+/* ---------- Flat inline select ---------- */
+
+function InlineSelect({
   label,
   value,
   onChange,
@@ -111,18 +140,27 @@ function SelectBox({
   disabled?: boolean;
 }) {
   return (
-    <label className="relative text-sm text-gray-700 dark:text-gray-300">
+    <label
+      className="
+        relative text-sm
+        text-gray-700 dark:text-gray-300
+        flex items-center gap-1
+      "
+    >
       <span className="sr-only">{label}</span>
+
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
         className="
-          appearance-none block w-full rounded-lg border border-gray-300 dark:border-gray-600
-          bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100
-          px-3 py-1.5 pr-8 cursor-pointer
-          focus:outline-none focus:ring-2 focus:ring-blue-500
-          disabled:opacity-50 disabled:cursor-not-allowed
+          appearance-none bg-transparent
+          border-none
+          px-1 pr-5 py-1
+          text-sm
+          text-gray-900 dark:text-gray-100
+          focus:outline-none
+          disabled:opacity-50
         "
       >
         <option value="">{placeholder}</option>
@@ -135,9 +173,9 @@ function SelectBox({
           ))}
       </select>
 
-      {/* ▼ 드롭다운 아이콘 */}
+      {/* caret */}
       <svg
-        className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none size-3 text-gray-500 dark:text-gray-400"
+        className="absolute right-0 top-1/2 -translate-y-1/2 size-3 pointer-events-none text-gray-400"
         fill="none"
         stroke="currentColor"
         strokeWidth="2"

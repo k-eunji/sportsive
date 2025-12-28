@@ -1,5 +1,5 @@
 // lib/events/getEnglandFootballEvents.ts
-import { supabase } from "@/lib/supabaseServer";
+import { supabase } from "../../lib/supabaseServer";
 
 const cleanTeamName = (name?: string | null) =>
   (name ?? "").replace(/\b(FC|AFC|CF)\b/gi, "").trim();

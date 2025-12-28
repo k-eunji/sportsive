@@ -1,7 +1,7 @@
 // src/app/api/teams/[teamId]/rivalvote/init/route.ts
 
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabaseServer";
+import { supabase } from "../../../../../../lib/supabaseServer";
 import { adminDb } from "@/lib/firebaseAdmin";
 
 export async function POST(

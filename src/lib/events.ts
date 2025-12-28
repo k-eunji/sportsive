@@ -1,229 +1,152 @@
 // src/lib/events.ts
-import sqlite3 from "sqlite3";
-import { open } from "sqlite";
-import path from "path";
 
-const DB_FILE = path.join(process.cwd(), "sportsive.db");
+import { supabase } from "../lib/supabaseServer";
+
+/* ────────────────────────── */
+/* utils */
+/* ────────────────────────── */
+
+const cleanTeamName = (name?: string | null) =>
+  (name ?? "").replace(/\b(FC|AFC|CF)\b/gi, "").trim();
+
+function formatMatch(m: any) {
+  return {
+    id: String(m.id),
+    date: m.date,
+    sport: (m.sport || "football").toLowerCase(),
+    status: m.status,
+    competition: m.competition ?? "",
+    homeTeam: cleanTeamName(m.home_team?.name),
+    awayTeam: cleanTeamName(m.away_team?.name),
+    homeTeamLogo: m.home_team?.logo_url,
+    awayTeamLogo: m.away_team?.logo_url,
+    venue: m.home_team?.venue,
+    location: {
+      lat: m.home_team?.lat,
+      lng: m.home_team?.lng,
+    },
+    city: m.home_team?.city,
+    region: m.home_team?.region,
+  };
+}
+
+const BASE_SELECT = `
+  id,
+  date,
+  status,
+  competition,
+  sport,
+  home_team_id,
+  away_team_id,
+  home_team:home_team_id (
+    name,
+    logo_url,
+    venue,
+    lat,
+    lng,
+    region,
+    city
+  ),
+  away_team:away_team_id (
+    name,
+    logo_url
+  )
+`;
+
+/* ────────────────────────── */
+/* API functions */
+/* ────────────────────────── */
 
 export async function getEventById(eventId: string) {
-  let db;
-  try {
-    db = await open({ filename: DB_FILE, driver: sqlite3.Database });
+  const { data, error } = await supabase
+    .from("england_pl_football_matches")
+    .select(BASE_SELECT)
+    .eq("id", eventId)
+    .single();
 
-    const m = await db.get(
-      `
-      SELECT 
-        m.id, m.date, m.status, m.competition, m.sport,
-        ht.name AS homeTeamName,
-        at.name AS awayTeamName,
-        ht.logo_url AS homeTeamLogo,
-        at.logo_url AS awayTeamLogo,
-        ht.venue AS venue,
-        ht.lat AS lat,
-        ht.lng AS lng,
-        ht.region AS region,
-        ht.city AS city
-      FROM "2526_england_pl_football_matches" m
-      JOIN "2526_england_pl_football_teams" ht ON m.home_team_id = ht.id
-      JOIN "2526_england_pl_football_teams" at ON m.away_team_id = at.id
-      WHERE m.id = ?
-    `,
-      [eventId]
-    );
-
-    if (!m) return null;
-
-    const cleanTeamName = (name: string | null | undefined) =>
-      (name ?? "").replace(/\b(FC|AFC|CF)\b/gi, "").trim();
-
-    return {
-      id: m.id.toString(),
-      date: m.date,
-      sport: (m.sport || "football").toLowerCase(),
-      status: m.status,
-      competition: m.competition,
-      homeTeam: cleanTeamName(m.homeTeamName),
-      awayTeam: cleanTeamName(m.awayTeamName),
-      homeTeamLogo: m.homeTeamLogo,
-      awayTeamLogo: m.awayTeamLogo,
-      venue: m.venue,
-      location: { lat: m.lat, lng: m.lng },
-      city: m.city,
-      region: m.region,
-    };
-  } finally {
-    if (db) await db.close();
+  if (error || !data) {
+    console.error("❌ getEventById error:", error);
+    return null;
   }
+
+  return formatMatch(data);
 }
+
+/* ────────────────────────── */
 
 export async function getUpcomingEvents(limit = 5) {
-  const db = await open({ filename: DB_FILE, driver: sqlite3.Database });
-  try {
-    const rows = await db.all(
-      `
-      SELECT m.id, m.date, m.sport, ht.name AS homeTeamName, at.name AS awayTeamName,
-             ht.logo_url AS homeTeamLogo, at.logo_url AS awayTeamLogo,
-             ht.venue AS venue, ht.lat AS lat, ht.lng AS lng,
-             ht.region AS region, ht.city AS city
-      FROM "2526_england_pl_football_matches" m
-      JOIN "2526_england_pl_football_teams" ht ON m.home_team_id = ht.id
-      JOIN "2526_england_pl_football_teams" at ON m.away_team_id = at.id
-      WHERE datetime(m.date) >= datetime('now')
-      ORDER BY m.date ASC
-      LIMIT ?
-      `,
-      [limit]
-    );
+  const now = new Date().toISOString();
 
-    const cleanTeamName = (name: string | null | undefined) =>
-      (name ?? "").replace(/\b(FC|AFC|CF)\b/gi, "").trim();
+  const { data, error } = await supabase
+    .from("england_pl_football_matches")
+    .select(BASE_SELECT)
+    .gte("date", now)
+    .order("date", { ascending: true })
+    .limit(limit);
 
-    return rows.map((m) => ({
-      id: m.id.toString(),
-      date: m.date,
-      sport: (m.sport || "football").toLowerCase(),
-      homeTeam: cleanTeamName(m.homeTeamName),
-      awayTeam: cleanTeamName(m.awayTeamName),
-      homeTeamLogo: m.homeTeamLogo,
-      awayTeamLogo: m.awayTeamLogo,
-      venue: m.venue,
-      location: { lat: m.lat, lng: m.lng },
-      city: m.city,
-      region: m.region,
-      competition: m.competition ?? "",
-    }));
-  } finally {
-    await db.close();
+  if (error) {
+    console.error("❌ getUpcomingEvents error:", error);
+    return [];
   }
+
+  return (data ?? []).map(formatMatch);
 }
 
-// src/lib/events.ts
+/* ────────────────────────── */
+
 export async function getTodaysEvents() {
-  const db = await open({ filename: DB_FILE, driver: sqlite3.Database });
-  try {
-    const today = new Date();
-    const startOfDay = today.toISOString().slice(0, 10) + "T00:00:00.000Z";
-    const endOfDay = today.toISOString().slice(0, 10) + "T23:59:59.999Z";
+  const today = new Date();
+  const start = today.toISOString().slice(0, 10) + "T00:00:00.000Z";
+  const end = today.toISOString().slice(0, 10) + "T23:59:59.999Z";
 
-    const rows = await db.all(
-      `
-      SELECT m.id, m.date, m.sport, ht.name AS homeTeamName, at.name AS awayTeamName,
-             ht.logo_url AS homeTeamLogo, at.logo_url AS awayTeamLogo,
-             ht.venue AS venue, ht.lat AS lat, ht.lng AS lng,
-             ht.region AS region, ht.city AS city
-      FROM "2526_england_pl_football_matches" m
-      JOIN "2526_england_pl_football_teams" ht ON m.home_team_id = ht.id
-      JOIN "2526_england_pl_football_teams" at ON m.away_team_id = at.id
-      WHERE datetime(m.date) BETWEEN datetime(?) AND datetime(?)
-      ORDER BY m.date ASC
-      `,
-      [startOfDay, endOfDay]
-    );
+  const { data, error } = await supabase
+    .from("england_pl_football_matches")
+    .select(BASE_SELECT)
+    .gte("date", start)
+    .lte("date", end)
+    .order("date", { ascending: true });
 
-    const cleanTeamName = (name: string | null | undefined) =>
-      (name ?? "").replace(/\b(FC|AFC|CF)\b/gi, "").trim();
-
-    return rows.map((m) => ({
-      id: m.id.toString(),
-      date: m.date,
-      sport: (m.sport || "football").toLowerCase(),
-      homeTeam: cleanTeamName(m.homeTeamName),
-      awayTeam: cleanTeamName(m.awayTeamName),
-      homeTeamLogo: m.homeTeamLogo,
-      awayTeamLogo: m.awayTeamLogo,
-      venue: m.venue,
-      location: { lat: m.lat, lng: m.lng },
-      city: m.city,
-      region: m.region,
-    }));
-  } finally {
-    await db.close();
+  if (error) {
+    console.error("❌ getTodaysEvents error:", error);
+    return [];
   }
+
+  return (data ?? []).map(formatMatch);
 }
+
+/* ────────────────────────── */
 
 export async function getEventsWithin7Days() {
-  const db = await open({ filename: DB_FILE, driver: sqlite3.Database });
-  try {
-    const now = new Date();
-    const sevenDaysLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const now = new Date();
+  const end = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-    const rows = await db.all(
-      `
-      SELECT m.id, m.date, m.sport, ht.name AS homeTeamName, at.name AS awayTeamName,
-             ht.logo_url AS homeTeamLogo, at.logo_url AS awayTeamLogo,
-             ht.venue AS venue, ht.lat AS lat, ht.lng AS lng,
-             ht.region AS region, ht.city AS city
-      FROM "2526_england_pl_football_matches" m
-      JOIN "2526_england_pl_football_teams" ht ON m.home_team_id = ht.id
-      JOIN "2526_england_pl_football_teams" at ON m.away_team_id = at.id
-      WHERE datetime(m.date) BETWEEN datetime(?) AND datetime(?)
-      ORDER BY m.date ASC
-      `,
-      [now.toISOString(), sevenDaysLater.toISOString()]
-    );
+  const { data, error } = await supabase
+    .from("england_pl_football_matches")
+    .select(BASE_SELECT)
+    .gte("date", now.toISOString())
+    .lte("date", end.toISOString())
+    .order("date", { ascending: true });
 
-    const cleanTeamName = (name: string | null | undefined) =>
-      (name ?? "").replace(/\b(FC|AFC|CF)\b/gi, "").trim();
-
-    return rows.map((m) => ({
-      id: m.id.toString(),
-      date: m.date,
-      sport: (m.sport || "football").toLowerCase(),
-      homeTeam: cleanTeamName(m.homeTeamName),
-      awayTeam: cleanTeamName(m.awayTeamName),
-      homeTeamLogo: m.homeTeamLogo,
-      awayTeamLogo: m.awayTeamLogo,
-      venue: m.venue,
-      location: { lat: m.lat, lng: m.lng },
-      city: m.city,
-      region: m.region,
-    }));
-  } finally {
-    await db.close();
+  if (error) {
+    console.error("❌ getEventsWithin7Days error:", error);
+    return [];
   }
+
+  return (data ?? []).map(formatMatch);
 }
 
+/* ────────────────────────── */
+
 export async function getAllEvents() {
-  const db = await open({ filename: DB_FILE, driver: sqlite3.Database });
-  try {
-    const rows = await db.all(
-      `
-      SELECT 
-        m.id, m.date,
-        m.sport,                              -- ⭐⭐⭐ 반드시 포함!
-        ht.name AS homeTeamName, 
-        at.name AS awayTeamName,
-        ht.logo_url AS homeTeamLogo, 
-        at.logo_url AS awayTeamLogo,
-        ht.venue AS venue, 
-        ht.lat AS lat, 
-        ht.lng AS lng,
-        ht.region AS region, 
-        ht.city AS city
-      FROM "2526_england_pl_football_matches" m
-      JOIN "2526_england_pl_football_teams" ht ON m.home_team_id = ht.id
-      JOIN "2526_england_pl_football_teams" at ON m.away_team_id = at.id
-      ORDER BY datetime(m.date) ASC
-      `
-    );
+  const { data, error } = await supabase
+    .from("england_pl_football_matches")
+    .select(BASE_SELECT)
+    .order("date", { ascending: true });
 
-    const cleanTeamName = (name: string | null | undefined) =>
-      (name ?? "").replace(/\b(FC|AFC|CF)\b/gi, "").trim();
-
-    return rows.map((m) => ({
-      id: m.id.toString(),
-      date: m.date,
-      sport: (m.sport || "football").toLowerCase(),   // ⭐⭐⭐ 반드시 존재!
-      homeTeam: cleanTeamName(m.homeTeamName),
-      awayTeam: cleanTeamName(m.awayTeamName),
-      homeTeamLogo: m.homeTeamLogo,
-      awayTeamLogo: m.awayTeamLogo,
-      venue: m.venue,
-      location: { lat: m.lat, lng: m.lng },
-      city: m.city,
-      region: m.region,
-    }));
-  } finally {
-    await db.close();
+  if (error) {
+    console.error("❌ getAllEvents error:", error);
+    return [];
   }
+
+  return (data ?? []).map(formatMatch);
 }

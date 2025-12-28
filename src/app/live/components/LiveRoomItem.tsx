@@ -1,103 +1,91 @@
-///src/app/live/components/LiveRoomItem.tsx
+// src/app/live/components/LiveRoomItemAll.tsx
 
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from "react";
-import { doc, onSnapshot } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 import { formatEventTimeWithOffsetUTC } from '@/utils/date'
 
-export default function LiveRoomItem({ room }: { room: any }) {
+export default function LiveRoomItemAll({ room }: { room: any }) {
   const router = useRouter()
-
-  // 🔥 추가된 부분
-  const [participants, setParticipants] = useState(room.participants)
-
-  useEffect(() => {
-    const ref = doc(db, "live_events", room.sport, "events", room.id)
-
-    const unsub = onSnapshot(ref, (snap) => {
-      if (snap.exists()) {
-        setParticipants(snap.data().participants ?? 0)
-      }
-    })
-
-    return () => unsub()
-  }, [room.sport, room.id])
-  // 🔥 여기까지
 
   const startTime = new Date(room.datetime)
   const now = new Date()
 
+  // ⏰ 시간 정책 (LiveRoomItem과 동일)
   const openTime = new Date(startTime.getTime() - 2 * 60 * 60 * 1000)
-  const closeTime = new Date(startTime.getTime() + 2 * 60 * 60 * 1000 + 30 * 60 * 1000)
+  const liveEndTime = new Date(startTime.getTime() + 2 * 60 * 60 * 1000)
+  const closeTime = new Date(liveEndTime.getTime() + 30 * 60 * 1000)
 
   let status: 'Scheduled' | 'LIVE' | 'END' = 'Scheduled'
-  if (now >= startTime && now <= new Date(startTime.getTime() + 2 * 60 * 60 * 1000)) status = 'LIVE'
-  else if (now > new Date(startTime.getTime() + 2 * 60 * 60 * 1000)) status = 'END'
+  if (now >= startTime && now <= liveEndTime) status = 'LIVE'
+  else if (now > liveEndTime) status = 'END'
 
   const isOpen = now >= openTime && now <= closeTime
 
+  // 🖱️ 클릭 제어
   const handleClick = () => {
-    if (isOpen) return router.push(`/live/${room.sport}/${room.id}`)
-    if (now < openTime)
+    if (isOpen) {
+      router.push(`/live/${room.sport}/${room.id}`)
+    } else if (now < openTime) {
       alert(
         `Chat opens at ${openTime.toLocaleTimeString([], {
           hour: '2-digit',
           minute: '2-digit',
         })}`
       )
-    else alert('This chat has ended.')
+    } else {
+      alert('This chat has ended.')
+    }
   }
-
-  const home = room.homeTeam ?? ''
-  const away = room.awayTeam ?? ''
-
-  const maxLen = 10
-  const displayHome = home.length > maxLen ? home.slice(0, maxLen) + '...' : home
-  const displayAway = away.length > maxLen ? away.slice(0, maxLen) + '...' : away
 
   return (
     <div
       onClick={handleClick}
-      className={`flex items-center justify-between py-4 cursor-pointer transition-colors
-        ${isOpen ? 'hover:bg-muted/40' : 'opacity-60 cursor-not-allowed'}
+      className={`flex items-center justify-between py-3 px-3 transition-colors text-[13px] md:text-[14px]
+        ${isOpen ? 'cursor-pointer hover:bg-muted/40' : 'opacity-60 cursor-not-allowed'}
       `}
     >
-      <div className="flex items-center min-w-0 gap-2">
-
-        {room.homeTeamLogo && (
-          <img src={room.homeTeamLogo} className="w-6 h-6 rounded-full object-cover" />
-        )}
-
-        <div className="flex flex-col flex-1 min-w-0">
-          <div className="flex items-center gap-1 flex-1 min-w-0">
-
-            <span className="truncate max-w-[90px] text-[13px] font-medium">
-              {displayHome}
-            </span>
-
-            <span className="opacity-70 text-[13px] font-medium">vs</span>
-
-            <span className="truncate max-w-[90px] text-[13px] font-medium">
-              {displayAway}
-            </span>
-          </div>
-
-          {/* 🔥 기존 room.participants → 실시간 state */}
-          <span className="text-xs text-muted-foreground truncate">
-            {formatEventTimeWithOffsetUTC(startTime)} • 👥 {participants}
-          </span>
+      {/* LEFT */}
+      <div className="flex items-center gap-2 min-w-0">
+        {/* LOGOS */}
+        <div className="flex items-center gap-1 shrink-0">
+          {room.homeTeamLogo && (
+            <img
+              src={room.homeTeamLogo}
+              alt={room.homeTeam}
+              className="w-6 h-6 rounded-full object-cover md:w-7 md:h-7"
+            />
+          )}
+          {room.awayTeamLogo && (
+            <img
+              src={room.awayTeamLogo}
+              alt={room.awayTeam}
+              className="w-6 h-6 rounded-full object-cover md:w-7 md:h-7"
+            />
+          )}
         </div>
 
-        {room.awayTeamLogo && (
-          <img src={room.awayTeamLogo} className="w-6 h-6 rounded-full object-cover ml-1" />
-        )}
+        {/* TEXT */}
+        <div className="flex flex-col min-w-0">
+          <span className="font-medium flex items-center gap-1 min-w-0">
+            <span className="truncate max-w-[70px] md:max-w-[110px]">
+              {room.homeTeam}
+            </span>
+            <span className="shrink-0">vs</span>
+            <span className="truncate max-w-[70px] md:max-w-[110px]">
+              {room.awayTeam}
+            </span>
+          </span>
+
+          <span className="text-[11px] text-muted-foreground truncate md:text-xs">
+            {formatEventTimeWithOffsetUTC(startTime)} • 👥 {room.participants}
+          </span>
+        </div>
       </div>
 
+      {/* STATUS */}
       <span
-        className={`px-2 py-1 text-xs rounded-full border ml-3
+        className={`px-2 py-1 text-xs rounded-full border ml-3 shrink-0
           ${
             status === 'LIVE'
               ? 'text-red-600 border-red-600/40'
