@@ -141,10 +141,14 @@ export default function EventsPage() {
   return (
     <main
       className="
-        max-w-7xl mx-auto p-4 pt-6 
+        w-full
+        lg:max-w-7xl lg:mx-auto
+        px-0 lg:px-4
+        pt-6
         text-gray-900 dark:text-gray-100
       "
     >
+
       <h1 className="text-3xl font-semibold mb-2 text-center">
         Matches near you
       </h1>
@@ -205,7 +209,7 @@ export default function EventsPage() {
 
       {/* 🔹 지도 + 리스트 영역 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-        <div className="rounded-2xl overflow-hidden shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="lg:rounded-2xl overflow-hidden shadow-sm border border-gray-200 dark:border-gray-700">
           <EventMap
             events={filteredEvents}
             filteredEvents={filteredEvents}

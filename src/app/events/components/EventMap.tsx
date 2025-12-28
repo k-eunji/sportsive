@@ -259,17 +259,28 @@ export default function EventMap({
 
                 setIsUserCentered(true);
                 setCurrentLocation(loc);
-
-                // ✅ 핵심: 선택된 경기 카드 닫기
                 setSelectedEvent(null);
-
-                // London 전체 경기 다시 보여주기
                 setFilteredEvents(events);
 
                 mapRef.current?.panTo(loc);
                 mapRef.current?.setZoom(11);
               },
-              () => alert('Location access denied')
+              (err) => {
+                console.error('GEO ERROR', err.code, err.message);
+
+                if (err.code === 1) {
+                  alert('Location permission denied.');
+                } else if (err.code === 2) {
+                  alert('Location unavailable. Enable Precise Location in Safari.');
+                } else if (err.code === 3) {
+                  alert('Location request timed out. Please try again.');
+                }
+              },
+              {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0,
+              }
             );
 
           }}

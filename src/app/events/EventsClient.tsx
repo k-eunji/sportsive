@@ -9,9 +9,6 @@ import EventList from './components/EventList';
 import EventFilterBar from './components/EventFilter';
 
 export default function EventsClient() {
-  const searchParams = useSearchParams();
-  const focusId = searchParams.get('focus');
-
   const [events, setEvents] = useState<Event[]>([]);
   const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
@@ -26,13 +23,6 @@ export default function EventsClient() {
     }
     load();
   }, []);
-
-  // ⭐ focus 처리 (핵심)
-  useEffect(() => {
-    if (!focusId) return;
-    const found = events.find(e => e.id === focusId);
-    if (found) setSelectedEvent(found);
-  }, [focusId, events]);
 
   return (
     <>
