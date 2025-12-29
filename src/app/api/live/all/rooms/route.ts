@@ -18,7 +18,11 @@ export async function GET() {
       23, 59, 59, 999
     );
 
-    const allEvents = await getAllEvents();
+    const allEvents = [
+      ...(await getAllEvents("football")),
+      ...(await getAllEvents("rugby")),
+    ];
+
 
     // 날짜 필터링
     const filtered = allEvents.filter((event: any) => {

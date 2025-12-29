@@ -41,9 +41,10 @@ export async function GET(req: Request) {
     // ────────────────────────────────
     // 1) 이벤트 API 두 개 병렬로 요청
     // ────────────────────────────────
-    const [eventsRes, footballRes] = await Promise.allSettled([
+    const [eventsRes, footballRes, rugbyRes] = await Promise.allSettled([
       fetch(`${base}/api/events`, { cache: "no-store" }),
-      fetch(`${base}/api/events/england/football`, { cache: "no-store" })
+      fetch(`${base}/api/events/england/football`, { cache: "no-store" }),
+      fetch(`${base}/api/events/england/rugby`, { cache: "no-store" }),
     ]);
 
     let events: any[] = [];
@@ -67,6 +68,21 @@ export async function GET(req: Request) {
 
       events = [...events, ...footballEvents];
     }
+
+    // rugby events
+    if (rugbyRes.status === "fulfilled" && rugbyRes.value.ok) {
+      const json = await rugbyRes.value.json();
+
+      const rugbyEvents = (json.matches ?? []).map((m: any) => ({
+        city: m.city,
+        region: m.region,
+        lat: m.location?.lat,
+        lng: m.location?.lng,
+      }));
+
+      events = [...events, ...rugbyEvents];
+    }
+
 
     // ────────────────────────────────
     // 2) 좌표가 있는 이벤트만 필터링

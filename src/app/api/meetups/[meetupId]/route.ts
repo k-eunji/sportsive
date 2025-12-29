@@ -64,7 +64,7 @@ export async function GET(
       .map((u) => u.avatar);
 
     // -----------------------------
-    // 3) 이벤트 정보 가져오기
+    // 3) 이벤트 정보 가져오기 (football + rugby)
     // -----------------------------
     const targetEventId = data.eventId || data.selectedEventId;
 
@@ -79,26 +79,37 @@ export async function GET(
     let upcomingEvents: any[] = [];
 
     try {
-      const eventRes = await fetch(`${baseUrl}/api/events/england/football`, {
-        cache: "no-store",
+      const [footballRes, rugbyRes] = await Promise.all([
+        fetch(`${baseUrl}/api/events/england/football`, { cache: "no-store" }),
+        fetch(`${baseUrl}/api/events/england/rugby`, { cache: "no-store" }),
+      ]);
+
+      let allMatches: any[] = [];
+
+      if (footballRes.ok) {
+        const json = await footballRes.json();
+        allMatches = [...allMatches, ...(json.matches ?? [])];
+      }
+
+      if (rugbyRes.ok) {
+        const json = await rugbyRes.json();
+        allMatches = [...allMatches, ...(json.matches ?? [])];
+      }
+
+      // 선택된 이벤트
+      eventData = allMatches.find(
+        (m: any) => String(m.id) === String(targetEventId)
+      );
+
+      // 향후 7일 이벤트
+      const now = new Date();
+      const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+      upcomingEvents = allMatches.filter((m: any) => {
+        const d = new Date(m.date || m.utcDate);
+        return d >= now && d <= nextWeek;
       });
 
-      if (eventRes.ok) {
-        const json = await eventRes.json();
-        const matches = json.matches ?? [];
-
-        eventData = matches.find(
-          (m: any) => String(m.id) === String(targetEventId)
-        );
-
-        const now = new Date();
-        const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-
-        upcomingEvents = matches.filter((m: any) => {
-          const d = new Date(m.date || m.utcDate);
-          return d >= now && d <= nextWeek;
-        });
-      }
     } catch (e) {
       console.error("⚠️ Failed loading event info:", e);
     }

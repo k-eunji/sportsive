@@ -12,12 +12,19 @@ export async function GET(req: NextRequest) {
   try {
     const base = process.env.NEXT_PUBLIC_BASE_URL;
 
-    // 1) 경기 정보
-    const matchesRes = await fetch(`${base}/api/events/england/football`, {
-      cache: "no-store",
-    });
-    const matchesJson = await matchesRes.json();
-    const matches = matchesJson.matches ?? [];
+    // 1) 경기 정보 (football + rugby)
+    const [footballRes, rugbyRes] = await Promise.all([
+      fetch(`${base}/api/events/england/football`, { cache: "no-store" }),
+      fetch(`${base}/api/events/england/rugby`, { cache: "no-store" }),
+    ]);
+
+    const footballJson = footballRes.ok ? await footballRes.json() : { matches: [] };
+    const rugbyJson = rugbyRes.ok ? await rugbyRes.json() : { matches: [] };
+
+    const matches = [
+      ...(footballJson.matches ?? []),
+      ...(rugbyJson.matches ?? []),
+    ];
 
     // 2) FanHub 게시글
     const postsRes = await fetch(`${base}/api/fanhub/list?sort=latest`, {

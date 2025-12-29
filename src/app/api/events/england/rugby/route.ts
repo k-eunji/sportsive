@@ -1,4 +1,4 @@
-// src/app/api/events/[eventId]/[sport]/route.ts
+// src/app/api/events/england/rugby/route.ts
 
 import { NextResponse } from "next/server";
 import { supabase } from "../../../../../lib/supabaseServer";
@@ -6,24 +6,10 @@ import { supabase } from "../../../../../lib/supabaseServer";
 const cleanTeamName = (name?: string | null) =>
   (name ?? "").replace(/\b(FC|AFC|CF)\b/gi, "").trim();
 
-export async function GET(
-  _req: Request,
-  context: { params: Promise<{ eventId: string; sport: string }> }
-) {
-  const { eventId, sport } = await context.params;
-
-  const region = eventId.toLowerCase();
-  const normalizedSport = sport.toLowerCase();
-
-  // ✅ 핵심: sport에 따라 테이블 선택
-  const matchTable =
-    normalizedSport === "rugby"
-      ? "england_rugby_matches"
-      : "england_pl_football_matches";
-
+export async function GET() {
   try {
     const { data: matches, error } = await supabase
-      .from(matchTable)
+      .from("england_rugby_matches")
       .select(`
         id,
         date,
@@ -50,8 +36,6 @@ export async function GET(
           logo_url
         )
       `)
-      .eq("region", region)
-      .eq("sport", normalizedSport)
       .order("date", { ascending: true });
 
     if (error || !matches) {
@@ -61,10 +45,10 @@ export async function GET(
 
     const formattedMatches = matches.map((m: any) => ({
       id: String(m.id),
-      sport: m.sport || normalizedSport,
       date: m.date,
       status: m.status,
       competition: m.competition,
+      sport: "rugby",
 
       homeTeamId: m.home_team_id,
       awayTeamId: m.away_team_id,
@@ -84,6 +68,10 @@ export async function GET(
       homepageUrl: m.home_team?.homepage_url,
 
       isPaid: m.is_paid === 1,
+      teams: [
+        cleanTeamName(m.home_team?.name),
+        cleanTeamName(m.away_team?.name),
+      ],
       title: `${cleanTeamName(m.home_team?.name)} vs ${cleanTeamName(
         m.away_team?.name
       )}`,
@@ -92,6 +80,6 @@ export async function GET(
     return NextResponse.json({ matches: formattedMatches });
   } catch (err) {
     console.error("❌ events error:", err);
-    return NextResponse.json({ matches: [] }, { status: 500 });
+    return NextResponse.json({ matches: [] });
   }
 }

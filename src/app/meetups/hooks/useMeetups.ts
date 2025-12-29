@@ -143,23 +143,31 @@ export function useMeetups() {
   useEffect(() => {
     const loadEvents = async () => {
       try {
-        const res = await fetch("/api/events/england/football");
-        const data = await res.json();
+        const [footballRes, rugbyRes] = await Promise.all([
+          fetch("/api/events/england/football"),
+          fetch("/api/events/england/rugby"),
+        ]);
+
+        const footballData = await footballRes.json();
+        const rugbyData = await rugbyRes.json();
 
         const now = new Date();
         const sevenDaysLater = new Date();
         sevenDaysLater.setDate(now.getDate() + 7);
 
-        const upcoming = data.matches.filter((m: Event) => {
-          const matchDate = new Date(m.date);
-          return matchDate >= now && matchDate <= sevenDaysLater;
-        });
+        const upcoming = [...footballData.matches, ...rugbyData.matches].filter(
+          (m: Event) => {
+            const matchDate = new Date(m.date);
+            return matchDate >= now && matchDate <= sevenDaysLater;
+          }
+        );
 
         setEvents(upcoming);
       } catch (err) {
         console.error("❌ 이벤트 불러오기 실패:", err);
       }
     };
+
     loadEvents();
   }, []);
 

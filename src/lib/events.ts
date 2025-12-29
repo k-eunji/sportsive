@@ -9,6 +9,12 @@ import { supabase } from "../lib/supabaseServer";
 const cleanTeamName = (name?: string | null) =>
   (name ?? "").replace(/\b(FC|AFC|CF)\b/gi, "").trim();
 
+function getMatchTable(sport?: string) {
+  return sport?.toLowerCase() === "rugby"
+    ? "england_rugby_matches"
+    : "england_pl_football_matches";
+}
+
 function formatMatch(m: any) {
   return {
     id: String(m.id),
@@ -57,9 +63,12 @@ const BASE_SELECT = `
 /* API functions */
 /* ────────────────────────── */
 
-export async function getEventById(eventId: string) {
+export async function getEventById(
+  eventId: string,
+  sport: "football" | "rugby" = "football"
+) {
   const { data, error } = await supabase
-    .from("england_pl_football_matches")
+    .from(getMatchTable(sport))
     .select(BASE_SELECT)
     .eq("id", eventId)
     .single();
@@ -74,11 +83,14 @@ export async function getEventById(eventId: string) {
 
 /* ────────────────────────── */
 
-export async function getUpcomingEvents(limit = 5) {
+export async function getUpcomingEvents(
+  sport: "football" | "rugby" = "football",
+  limit = 5
+) {
   const now = new Date().toISOString();
 
   const { data, error } = await supabase
-    .from("england_pl_football_matches")
+    .from(getMatchTable(sport))
     .select(BASE_SELECT)
     .gte("date", now)
     .order("date", { ascending: true })
@@ -94,13 +106,15 @@ export async function getUpcomingEvents(limit = 5) {
 
 /* ────────────────────────── */
 
-export async function getTodaysEvents() {
+export async function getTodaysEvents(
+  sport: "football" | "rugby" = "football"
+) {
   const today = new Date();
   const start = today.toISOString().slice(0, 10) + "T00:00:00.000Z";
   const end = today.toISOString().slice(0, 10) + "T23:59:59.999Z";
 
   const { data, error } = await supabase
-    .from("england_pl_football_matches")
+    .from(getMatchTable(sport))
     .select(BASE_SELECT)
     .gte("date", start)
     .lte("date", end)
@@ -116,12 +130,14 @@ export async function getTodaysEvents() {
 
 /* ────────────────────────── */
 
-export async function getEventsWithin7Days() {
+export async function getEventsWithin7Days(
+  sport: "football" | "rugby" = "football"
+) {
   const now = new Date();
   const end = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
   const { data, error } = await supabase
-    .from("england_pl_football_matches")
+    .from(getMatchTable(sport))
     .select(BASE_SELECT)
     .gte("date", now.toISOString())
     .lte("date", end.toISOString())
@@ -137,9 +153,11 @@ export async function getEventsWithin7Days() {
 
 /* ────────────────────────── */
 
-export async function getAllEvents() {
+export async function getAllEvents(
+  sport: "football" | "rugby" = "football"
+) {
   const { data, error } = await supabase
-    .from("england_pl_football_matches")
+    .from(getMatchTable(sport))
     .select(BASE_SELECT)
     .order("date", { ascending: true });
 

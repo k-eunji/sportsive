@@ -53,10 +53,12 @@ export default function ExploreNearby() {
   // --- 3) API 이벤트 수집 ---
   useEffect(() => {
     async function load() {
-      const [baseRes, footballRes] = await Promise.allSettled([
+      const [baseRes, footballRes, rugbyRes] = await Promise.allSettled([
         fetch("/api/events"),
         fetch("/api/events/england/football"),
+        fetch("/api/events/england/rugby"),
       ]);
+
 
       let baseEvents: any[] = [];
       if (baseRes.status === "fulfilled" && baseRes.value.ok) {
@@ -81,7 +83,24 @@ export default function ExploreNearby() {
         }));
       }
 
-      const merged = [...baseEvents, ...footballEvents];
+      let rugbyEvents: any[] = [];
+        if (rugbyRes.status === "fulfilled" && rugbyRes.value.ok) {
+          const data = await rugbyRes.value.json();
+          rugbyEvents = (data.matches ?? []).map((m: any) => ({
+            id: m.id,
+            date: m.date,
+            title: `${m.homeTeam} vs ${m.awayTeam}`,
+            homeTeam: m.homeTeam,
+            awayTeam: m.awayTeam,
+            competition: m.competition,
+            city: m.city,
+            region: m.region,
+            venue: m.venue,
+            location: m.location, // rugby도 동일 구조
+          }));
+        }
+
+      const merged = [...baseEvents, ...footballEvents, ...rugbyEvents];
 
       const deduped = Array.from(
         new Map(

@@ -1,16 +1,17 @@
-// src/hooks/useFootballEvents.ts
-
+// src/hooks/useSportEvents.ts
 import { useEffect, useState } from "react";
 import type { Event } from "@/types";
 
-// 반환 타입 정의
-interface UseFootballEventsReturn {
+interface UseSportEventsReturn {
   events: Event[];
   loading: boolean;
   error: string | null;
 }
 
-export function useFootballEvents(selectedTeamId?: string): UseFootballEventsReturn {
+export function useSportEvents(
+  sport: "football" | "rugby",
+  selectedTeamId?: string
+): UseSportEventsReturn {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -21,8 +22,8 @@ export function useFootballEvents(selectedTeamId?: string): UseFootballEventsRet
         setLoading(true);
 
         const url = selectedTeamId
-          ? `/api/events/england/london/football?teamId=${selectedTeamId}`
-          : `/api/events/england/london/football`;
+          ? `/api/events/england/london/${sport}?teamId=${selectedTeamId}`
+          : `/api/events/england/london/${sport}`;
 
         const res = await fetch(url);
         if (!res.ok) throw new Error("Failed to fetch matches");
@@ -33,18 +34,17 @@ export function useFootballEvents(selectedTeamId?: string): UseFootballEventsRet
           id: m.id.toString(),
           title: `${m.homeTeam} vs ${m.awayTeam}`,
           date: m.date,
-          category: "Football",
+          category: sport === "rugby" ? "Rugby" : "Football",
           description: `${m.competition} at ${m.venue || "Unknown Venue"}`,
-          location: m.location, // DB에서 가져온 실제 위치 사용
+          location: m.location,
           free: true,
           organizerId: "",
           attendees: [],
-          tags: ["football", "london"],
+          tags: [sport, "london"],
           homeTeam: m.homeTeam,
           awayTeam: m.awayTeam,
           teams: [m.homeTeam, m.awayTeam],
           homepageUrl: m.homepageUrl || undefined,
-           // ★ 실제 경기 장소 기준 타임존
           timeZone: m.timeZone || "UTC",
         }));
 
@@ -58,7 +58,7 @@ export function useFootballEvents(selectedTeamId?: string): UseFootballEventsRet
     }
 
     fetchAll();
-  }, [selectedTeamId]); // teamId가 바뀌면 다시 fetch
+  }, [sport, selectedTeamId]); // ✅ sport도 의존성
 
   return { events, loading, error };
 }

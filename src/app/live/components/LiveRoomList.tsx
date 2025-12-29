@@ -4,6 +4,7 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import { usePathname } from "next/navigation";
 
 interface LiveRoom {
   id: string;
@@ -17,22 +18,26 @@ interface LiveRoom {
 export default function LiveRoomList() {
   const [rooms, setRooms] = useState<LiveRoom[]>([])
   const [loading, setLoading] = useState(true)
+  const pathname = usePathname() ?? "";
+  const sport = pathname.split("/")[2] ?? "football";
+
 
   useEffect(() => {
     async function fetchRooms() {
       try {
-        const res = await fetch('/api/live/football/rooms', { cache: 'no-store' })
-        if (!res.ok) throw new Error('Failed to fetch rooms')
+        const res = await fetch(`/api/live/rooms/${sport}`, { cache: "no-store" })
+        if (!res.ok) throw new Error("Failed to fetch rooms")
         const data = await res.json()
         setRooms(data.rooms ?? [])
       } catch (err) {
-        console.error('Error loading live rooms:', err)
+        console.error("Error loading live rooms:", err)
       } finally {
         setLoading(false)
       }
     }
+
     fetchRooms()
-  }, [])
+  }, [sport]) // ✅ sport 변경 시마다 다시 fetch
 
   if (loading) {
     return (

@@ -50,24 +50,34 @@ export default function PredictionList() {
 
   useEffect(() => {
     async function load() {
-      const res = await fetch("/api/events/england/football");
-      const json = await res.json();
+      const [footballRes, rugbyRes] = await Promise.all([
+        fetch("/api/events/england/football"),
+        fetch("/api/events/england/rugby"),
+      ]);
+
+      const footballJson = await footballRes.json();
+      const rugbyJson = await rugbyRes.json();
+
+      const allMatches = [
+        ...(footballJson.matches ?? []),
+        ...(rugbyJson.matches ?? []),
+      ];
 
       const now = new Date();
       const todayKey = now.toISOString().slice(0, 10);
 
       const threeDaysLater = new Date(now);
-      threeDaysLater.setUTCDate(now.getUTCDate() + 3); // 오늘 포함 3일: 20,21,22
+      threeDaysLater.setUTCDate(now.getUTCDate() + 3);
       const limitKey = threeDaysLater.toISOString().slice(0, 10);
 
-      // 오늘~3일 뒤 경기만
-      const upcoming = json.matches.filter((m: any) => {
+      const upcoming = allMatches.filter((m: any) => {
         const matchKey = new Date(m.date).toISOString().slice(0, 10);
         return matchKey >= todayKey && matchKey <= limitKey;
       });
 
       setMatches(upcoming);
     }
+
     load();
   }, []);
 

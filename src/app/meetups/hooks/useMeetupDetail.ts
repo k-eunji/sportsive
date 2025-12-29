@@ -94,7 +94,9 @@ export const useMeetupDetail = (meetupId?: string) => {
         };
 
         // ✅ 이벤트 정보 연결
-        const res = await fetch("/api/events/england/football");
+        const sport = (snapData.sport ?? "football").toLowerCase();
+        const res = await fetch(`/api/events/england/${sport}`);
+
         const eventData = await res.json();
         const eventInfo = eventData.matches.find(
           (m: any) => m.id === meetupData.eventId

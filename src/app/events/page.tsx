@@ -46,9 +46,10 @@ export default function EventsPage() {
     async function fetchAllEvents() {
       setLoading(true);
         try {
-          const [baseRes, footballRes] = await Promise.allSettled([
+          const [baseRes, footballRes, rugbyRes] = await Promise.allSettled([
             fetch('/api/events'),
             fetch('/api/events/england/football'),
+            fetch('/api/events/england/rugby'),
           ]);
 
           let baseEvents: Event[] = [];
@@ -80,8 +81,32 @@ export default function EventsPage() {
             }));
           }
 
+          let rugbyEvents: Event[] = [];
+            if (rugbyRes.status === 'fulfilled' && rugbyRes.value.ok) {
+              const data = await rugbyRes.value.json();
+              rugbyEvents = (data.matches ?? []).map((m: any) => ({
+                id: m.id,
+                date: m.date,
+                competition: m.competition ?? 'Unknown',
+                homeTeam: m.homeTeam ?? 'Unknown Home',
+                awayTeam: m.awayTeam ?? 'Unknown Away',
+                homeTeamLogo: m.homeTeamLogo ?? '',
+                awayTeamLogo: m.awayTeamLogo ?? '',
+                venue: m.venue ?? 'Unknown Stadium',
+                status: m.status,
+                teams: [m.homeTeam ?? '', m.awayTeam ?? ''],
+                location: m.location ?? null,
+                title: m.title ?? `${m.homeTeam} vs ${m.awayTeam}`,
+                city: m.city ?? '',
+                region: m.region ?? '',
+                category: 'rugby', // ✅ 중요
+                homepageUrl: m.homepageUrl ?? undefined,
+              }));
+            }
+
+
           // ⭐⭐⭐ 여기서 중복 제거
-          const merged = [...baseEvents, ...footballEvents];
+          const merged = [...baseEvents, ...footballEvents, ...rugbyEvents];
 
           const uniqueEvents = Array.from(
             new Map(
