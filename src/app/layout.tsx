@@ -14,7 +14,7 @@ const inter = Inter({
 
 export const metadata = {
   title: "Sportsive",
-  description: "Sportsive Community Platform",
+  description: "Discover sports you can actually attend near you",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
