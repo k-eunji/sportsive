@@ -6,6 +6,8 @@ import Providers from "./Providers";
 import "@/lib/firebase";
 import ClientShell from "./ClientShell";
 import GoogleMapsProvider from "@/components/GoogleMapsProvider";
+import { Analytics } from "@vercel/analytics/react";
+
 
 const inter = Inter({
   subsets: ["latin"],
@@ -30,6 +32,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </GoogleMapsProvider>
 
         </Providers>
+
+        {/* 🔥 Vercel Analytics (이 줄 추가) */}
+        <Analytics />
       </body>
     </html>
   );
