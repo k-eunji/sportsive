@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import { auth, db } from '@/lib/firebase';
 import {
   signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
 } from 'firebase/auth';
 import {
   doc,
@@ -27,8 +26,6 @@ export default function LoginPage() {
   // 입력 상태
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [authorNickname, setAuthorNickname] = useState('');
-  const [isRegister, setIsRegister] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -50,13 +47,6 @@ export default function LoginPage() {
     }
   };
 
-  /** 닉네임 중복 여부 확인 */
-  const checkNicknameExists = async (nickname: string) => {
-    const q = query(collection(db, 'users'), where('authorNickname', '==', nickname));
-    const snapshot = await getDocs(q);
-    return !snapshot.empty;
-  };
-
   /** Firestore에서 사용자 데이터 가져오기 */
   const getUserData = async (uid: string) => {
     const userDoc = await getDoc(doc(db, 'users', uid));
@@ -64,62 +54,21 @@ export default function LoginPage() {
   };
 
   /** 로그인/회원가입 처리 */
+  /** 로그인 처리 (로그인 전용) */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
     try {
-      if (isRegister) {
-        // --- 회원가입 모드 ---
-        if (!authorNickname.trim()) throw new Error('Please enter a nickname.');
-        if (password.length < 6) throw new Error('Password must be at least 6 characters.');
+      // 🔥 로그인만 한다
+      await signInWithEmailAndPassword(auth!, email, password);
 
-        const nicknameTaken = await checkNicknameExists(authorNickname.trim());
-        if (nicknameTaken) throw new Error('This nickname is already taken.');
+      // ❌ setUserContext 절대 호출하지 마라
+      // ❌ Firestore 직접 읽지 마라
+      // Firebase onIdTokenChanged가 user를 세팅함
 
-        // Firebase Auth 계정 생성
-        const userCredential = await createUserWithEmailAndPassword(auth!, email, password);
-        const user = userCredential.user;
-
-        // Firestore에 사용자 정보 저장
-        await setDoc(doc(db, 'users', user.uid), {
-          email: user.email,
-          authorNickname: authorNickname.trim(),
-          createdAt: serverTimestamp(),
-          userId: user.uid,
-        });
-
-        // Context 업데이트
-        setUserContext({
-          uid: user.uid,
-          userId: user.uid,
-          authorNickname: authorNickname.trim(),
-          displayName: user.displayName || '',
-          email: user.email || '',
-        });
-
-        alert('Registration successful!');
-      } else {
-        // --- 로그인 모드 ---
-        const userCredential = await signInWithEmailAndPassword(auth!, email, password);
-        const user = userCredential.user;
-
-        const userData = await getUserData(user.uid);
-        if (!userData) throw new Error('User data not found.');
-
-        setUserContext({
-          uid: user.uid,
-          userId: user.uid,
-          authorNickname: userData.authorNickname || '',
-          displayName: userData.displayName || '',
-          email: user.email || '',
-        });
-
-        alert('Login successful!');
-      }
-
-      router.push('/');
+      router.replace('/'); // 로그인 성공 → 메인
     } catch (err: any) {
       setError(err.message || getErrorMessage(err.code));
     } finally {
@@ -130,23 +79,13 @@ export default function LoginPage() {
   return (
     <main className="min-h-dvh flex flex-col items-center justify-center bg-white text-gray-900 px-6 py-10 font-sans">
       <h1 className="text-4xl font-semibold mb-8 tracking-tight">
-        {isRegister ? 'Create an Account' : 'Welcome Back'}
+        Welcome Back
       </h1>
 
       <form
         onSubmit={handleSubmit}
         className="w-full max-w-sm space-y-4 bg-gray-50/60 p-6 rounded-2xl shadow-sm border border-gray-200"
       >
-        {isRegister && (
-          <input
-            type="text"
-            placeholder="Nickname"
-            value={authorNickname}
-            onChange={(e) => setAuthorNickname(e.target.value)}
-            required
-            className="block w-full rounded-lg border border-gray-300 bg-gray-100 px-3 py-2 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder:text-gray-400"
-          />
-        )}
         <input
           type="email"
           placeholder="Email"
@@ -155,6 +94,7 @@ export default function LoginPage() {
           required
           className="block w-full rounded-lg border border-gray-300 bg-gray-100 px-3 py-2 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder:text-gray-400"
         />
+
         <input
           type="password"
           placeholder="Password"
@@ -165,7 +105,9 @@ export default function LoginPage() {
         />
 
         {error && (
-          <p className="text-red-600 text-sm animate-fade-in">{error}</p>
+          <p className="text-red-600 text-sm animate-fade-in">
+            {error}
+          </p>
         )}
 
         <button
@@ -176,23 +118,20 @@ export default function LoginPage() {
           {loading ? (
             <>
               <span className="size-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              {isRegister ? 'Registering...' : 'Logging in...'}
+              Logging in...
             </>
-          ) : isRegister ? (
-            'Register'
           ) : (
             'Login'
           )}
         </button>
 
+        {/* 🔥 회원가입은 "페이지 이동" */}
         <button
           type="button"
-          onClick={() => setIsRegister(!isRegister)}
+          onClick={() => router.push('/auth/register')}
           className="w-full text-sm text-blue-600 underline hover:text-blue-700 transition-colors"
         >
-          {isRegister
-            ? 'Already have an account? Login'
-            : "Don't have an account? Register"}
+          Don’t have an account? Register
         </button>
       </form>
     </main>

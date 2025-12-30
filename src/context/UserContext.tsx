@@ -104,7 +104,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     if (!auth) return;
     await signOut(auth);
     setUser(null);
-    setAuthReady(false);
+    //setAuthReady(false);
     if (typeof window !== 'undefined') {
       localStorage.removeItem('user');
     }

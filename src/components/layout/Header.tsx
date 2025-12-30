@@ -11,6 +11,7 @@ import { motion } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 import useScrollDirection from "@/hooks/useScrollDirection";
 import { usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 export default function Header({ showLogo = false, disableHide = false }) {
   const { user } = useUser();
@@ -93,10 +94,19 @@ export default function Header({ showLogo = false, disableHide = false }) {
 /* --------------------------------------------------------- */
 
 function PlusMenu() {
-  const { user } = useUser();
+  const { user, authReady, logout } = useUser();
   const [open, setOpen] = useState(false);
+  const router = useRouter(); // 🔥 추가
+
+  if (!authReady) return null;
 
   const toggle = () => setOpen(!open);
+
+  const handleLogout = async () => {
+    await logout();        // Firebase signOut
+    setOpen(false);        // 메뉴 닫기
+    router.replace("/");  // 🔥 메인으로 이동 (히스토리 깔끔)
+  };
 
   return (
     <div className="relative">
@@ -113,48 +123,46 @@ function PlusMenu() {
         +
       </button>
 
-      {/* DROPDOWN */}
       {open && (
-        <div
-          className="
-            absolute left-0 mt-2 w-36
-            bg-white dark:bg-gray-900 
-            border border-border rounded-lg shadow-lg
-            py-2 z-50
-          "
-        >
-          {/* ─────────────────────────────────────────────── */}
-          {/* 로그인하지 않은 경우: Login / Register */}
-          {!user && (
+        <div className="
+          absolute left-0 mt-2 w-36
+          bg-white dark:bg-gray-900 
+          border border-border rounded-lg shadow-lg
+          py-2 z-50
+        ">
+          {authReady && !user && (
             <>
-              <Link
-                href="/auth/login"
-                className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800"
-                onClick={() => setOpen(false)}
-              >
+              <Link href="/auth/login" onClick={() => setOpen(false)}
+                className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800">
                 Login
               </Link>
-
-              <Link
-                href="/auth/register"
-                className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800"
-                onClick={() => setOpen(false)}
-              >
+              <Link href="/auth/register" onClick={() => setOpen(false)}
+                className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800">
                 Register
               </Link>
             </>
           )}
 
-          {/* ─────────────────────────────────────────────── */}
-          {/* 로그인한 경우: My Page */}
-          {user && (
-            <Link
-              href={`/profile/${user.uid}`}
-              className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800"
-              onClick={() => setOpen(false)}
-            >
-              My Page
-            </Link>
+          {authReady && user && (
+            <>
+              <Link
+                href={`/profile/${user.uid}`}
+                onClick={() => setOpen(false)}
+                className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800"
+              >
+                My Page
+              </Link>
+
+              <button
+                onClick={handleLogout}
+                className="
+                  w-full text-left px-4 py-2
+                  text-red-600 hover:bg-gray-100 dark:hover:bg-gray-800
+                "
+              >
+                Logout
+              </button>
+            </>
           )}
         </div>
       )}

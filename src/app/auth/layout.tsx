@@ -1,12 +1,15 @@
 // src/app/auth/layout.tsx
-import type { Metadata } from 'next';
 
-export const metadata: Metadata = {
-  title: 'Auth | Sportsive',
-  description: 'Login or register to Sportsive',
-};
+'use client';
+
+import { useUser } from '@/context/UserContext';
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
+  const { authReady } = useUser();
+
+  // auth 확인 전에는 렌더 X
+  if (!authReady) return null;
+
   return (
     <main className="min-h-dvh flex items-center justify-center bg-gray-50/60 px-4 py-8 font-sans text-gray-900">
       <section className="w-full max-w-md bg-white border border-gray-200 shadow-sm rounded-2xl p-8">
