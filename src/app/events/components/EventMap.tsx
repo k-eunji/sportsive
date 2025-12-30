@@ -73,10 +73,31 @@ export default function EventMap({
     return new google.maps.Marker(options);
   };
 
+  // 🔴 마커 제거 (AdvancedMarker / 기존 Marker 모두 대응)
+  const removeMarker = (m: any) => {
+    if (!m) return;
+    if ('map' in m) m.map = null;     // AdvancedMarkerElement
+    else m.setMap?.(null);            // google.maps.Marker
+  };
+
+  // 🔴 InfoWindow 열기 (AdvancedMarker 대응)
+  const openInfoWindow = (
+    info: google.maps.InfoWindow,
+    marker: any
+  ) => {
+    if (!mapRef.current) return;
+
+    if (supportsAdvancedMarker) {
+      info.open({ map: mapRef.current, anchor: marker });
+    } else {
+      info.open(mapRef.current, marker);
+    }
+  };
+
   const showCurrentMarker = (loc: { lat: number; lng: number }) => {
     if (!mapRef.current) return;
     if (currentMarkerRef.current) {
-      currentMarkerRef.current.setMap?.(null);
+      removeMarker(currentMarkerRef.current);
     }
 
     const marker = createMarker({
@@ -116,7 +137,7 @@ export default function EventMap({
   const renderMarkers = (center?: { lat: number; lng: number }) => {
     if (!mapRef.current) return;
 
-    markersRef.current.forEach((m) => m.setMap?.(null));
+    markersRef.current.forEach(removeMarker);
     markersRef.current = [];
 
     const bounds = new google.maps.LatLngBounds();
@@ -151,7 +172,7 @@ export default function EventMap({
       });
 
       marker.addListener('click', () => {
-        info.open(mapRef.current, marker);
+        openInfoWindow(info, marker);
         setSelectedEvent(e);
       });
 
@@ -221,9 +242,38 @@ export default function EventMap({
       title: selectedEvent.title,
     });
 
-    marker.addListener('click', () => info.open(mapRef.current, marker));
-    markersRef.current.forEach((m) => m.setMap?.(null));
+    marker.addListener('click', () => {
+      openInfoWindow(info, marker);
+    });
+    markersRef.current.forEach(removeMarker);
     markersRef.current = [marker];
+
+  }, [selectedEvent]);
+
+  // ✅ selectedEvent 해제 시 지도 완전 리셋
+  useEffect(() => {
+    if (selectedEvent !== null) return;
+    if (!mapRef.current) return;
+
+    // 🔴 1️⃣ 사용자 중심 모드 해제 (이게 핵심)
+    setIsUserCentered(false);
+
+    // 🔴 2️⃣ 내 위치 마커 제거 (이게 핵심)
+    if (currentMarkerRef.current) {
+      removeMarker(currentMarkerRef.current);
+      currentMarkerRef.current = null;
+    }
+
+    // 기존 이벤트 마커 제거
+    markersRef.current.forEach(removeMarker);
+    markersRef.current = [];
+
+    // 지도 기본 상태
+    mapRef.current.setZoom(8);
+    mapRef.current.panTo(DEFAULT_LOCATION);
+
+    // 전체 이벤트 다시 표시
+    renderMarkers(undefined);
   }, [selectedEvent]);
 
   return (
