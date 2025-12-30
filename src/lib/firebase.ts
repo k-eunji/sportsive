@@ -7,6 +7,9 @@ console.log(
 
 console.log("🔥 firebase.ts loaded");
 
+console.log("🔥 firebase.ts loaded");
+
+
 
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth, connectAuthEmulator } from "firebase/auth";
@@ -19,6 +22,7 @@ import {
 import { getStorage } from "firebase/storage";
 import { getFunctions } from "firebase/functions";
 import { getDatabase } from "firebase/database";
+import { getAnalytics, isSupported } from "firebase/analytics";
 
 // Firebase config
 const firebaseConfig = {
@@ -84,3 +88,12 @@ export const onSnapshot = (ref: any, ...rest: any[]) => {
   // 🔴 타입 오버로드 때문에 반드시 any 캐스팅
   return (_onSnapshot as any)(ref, ...rest);
 };
+
+// ===============================
+// 🔥 Firebase Analytics (Client only)
+// ===============================
+export const analytics =
+  typeof window !== "undefined"
+    ? isSupported().then((yes) => (yes ? getAnalytics(app) : null))
+    : null;
+
