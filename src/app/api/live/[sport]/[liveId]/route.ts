@@ -1,6 +1,7 @@
 // src/app/api/live/[sport]/[liveId]/route.ts
 
 export const runtime = "nodejs";
+
 import { NextResponse } from "next/server";
 import { getEventById } from "@/lib/events";
 import { adminDb } from "@/lib/firebaseAdmin";
@@ -9,9 +10,10 @@ export async function GET(
   req: Request,
   { params }: { params: Promise<{ sport: string; liveId: string }> }
 ) {
-  const { sport, liveId } = await params; // ★ 반드시 await
+  const { sport, liveId } = await params;
 
   try {
+    // 1️⃣ 이벤트 기본 정보
     const event = await getEventById(liveId);
 
     if (!event) {
@@ -21,17 +23,18 @@ export async function GET(
       );
     }
 
-    const liveDoc = await adminDb
+    // 2️⃣ 🔥 presence 문서 개수 = 실제 참여자 수
+    const presenceSnap = await adminDb
       .collection("live_events")
       .doc(sport)
       .collection("events")
       .doc(liveId)
+      .collection("presence")
       .get();
 
-    const participants = liveDoc.exists
-      ? liveDoc.data()?.participants ?? 0
-      : 0;
+    const participants = presenceSnap.size;
 
+    // 3️⃣ 응답
     return NextResponse.json({
       ...event,
       title: `${event.homeTeam} vs ${event.awayTeam} Live`,

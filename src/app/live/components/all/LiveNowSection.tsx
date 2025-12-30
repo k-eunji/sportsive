@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";          // ✅ 추가
 import { doc, onSnapshot } from "firebase/firestore"; // ✅ 추가
 import { db } from "@/lib/firebase";                  // ✅ 추가
 import { getSportIcon } from "../../components/sportIcon";
+import { collection } from "firebase/firestore"; // ⬅️ 추가
 
 interface LiveRoom {
   id: string;
@@ -23,24 +24,31 @@ export default function LiveNowSection({ rooms }: { rooms: LiveRoom[] }) {
   const router = useRouter();
 
   // 🔥 rooms를 로컬 상태로 관리 (participants 실시간 반영용)  ✅ 추가
-  const [liveRoomsState, setLiveRoomsState] = useState<LiveRoom[]>(rooms);
+  const [liveRoomsState, setLiveRoomsState] = useState<LiveRoom[]>(
+    rooms.map(r => ({ ...r, participants: 0 }))
+  );
+
 
   // 🔥 Firestore 실시간 구독 (각 room마다)  ✅ 추가
   useEffect(() => {
-    // rooms가 바뀔 때마다 새로 구독
     const unsubscribes = rooms.map((room) => {
       if (!room.sport) return () => {};
 
-      const ref = doc(db, "live_events", room.sport, "events", room.id);
+      const ref = collection(
+        db,
+        "live_events",
+        room.sport,
+        "events",
+        room.id,
+        "presence"
+      );
 
       return onSnapshot(ref, (snap) => {
-        if (!snap.exists()) return;
-        const data = snap.data() as any;
-        const count = data.participants ?? 0;
+        const count = snap.size; // ✅ presence 개수
 
         setLiveRoomsState((prev) =>
           prev.map((r) =>
-            r.id === room.id ? { ...r, participants: count ?? r.participants } : r
+            r.id === room.id ? { ...r, participants: count } : r
           )
         );
       });

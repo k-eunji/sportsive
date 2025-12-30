@@ -57,14 +57,18 @@ export async function GET(
     // ✅ 4. Live rooms 생성
     const rooms = await Promise.all(
       filtered.map(async (event: any) => {
-        const liveDoc = await adminDb
+        const sportKey =
+          normalizedSport === "all" ? event.sport : normalizedSport;
+
+        const presenceSnap = await adminDb
           .collection("live_events")
-          .doc(normalizedSport === "all" ? event.sport : normalizedSport)
+          .doc(sportKey)
           .collection("events")
           .doc(String(event.id))
+          .collection("presence")
           .get();
 
-        const participants = Number(liveDoc.data()?.participants ?? 0);
+        const participants = presenceSnap.size;
 
         return {
           id: event.id,
