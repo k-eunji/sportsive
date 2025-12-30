@@ -51,12 +51,13 @@ export const useNotifications = () => {
 };
 
 export function NotificationProvider({ children }: { children: ReactNode }) {
-  const { user } = useUser();
+  const { user, authReady } = useUser();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
   // ✅ 실시간 알림 구독
   useEffect(() => {
+    if (!authReady) return;        // 🔥 추가
     if (!user?.userId) return;
 
     const q = query(
@@ -74,7 +75,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     });
 
     return () => unsub();
-  }, [user]);
+  }, [authReady, user]);
 
   // ✅ 개별 알림 읽음 처리
   const markAsRead = async (id: string) => {

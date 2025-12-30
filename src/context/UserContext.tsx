@@ -2,15 +2,25 @@
 
 'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { auth, db } from '@/lib/firebase';
-import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+} from 'react';
+import { auth } from '@/lib/firebase';
+import {
+  onIdTokenChanged,
+  signOut,
+  User as FirebaseUser,
+} from 'firebase/auth';
 import { CustomUser } from '@/types/user';
 
 type UserContextType = {
   user: CustomUser | null;
   loading: boolean;
+  authReady: boolean; // 🔥 추가
   logout: () => Promise<void>;
   setUserContext: (user: CustomUser) => void;
 };
@@ -18,6 +28,7 @@ type UserContextType = {
 export const UserContext = createContext<UserContextType>({
   user: null,
   loading: true,
+  authReady: false,
   logout: async () => {},
   setUserContext: () => {},
 });
@@ -25,60 +36,66 @@ export const UserContext = createContext<UserContextType>({
 export function UserProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<CustomUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authReady, setAuthReady] = useState(false); // 🔥 추가
 
   useEffect(() => {
     if (!auth) return;
 
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
-      setLoading(true);
+    const unsubscribe = onIdTokenChanged(
+      auth,
+      async (firebaseUser: FirebaseUser | null) => {
+        setLoading(true);
 
-      if (firebaseUser) {
+        // =========================
+        // 로그아웃 상태
+        // =========================
+        if (!firebaseUser) {
+          setUser(null);
+          setAuthReady(true); // 🔥 auth는 끝났음
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('user');
+          }
+          setLoading(false);
+          return;
+        }
+
         try {
-          // ✅ 토큰은 여기서 가져와야 함
+          // ✅ 이 시점: Auth + Firestore 인증 컨텍스트 확정
           const token = await firebaseUser.getIdToken();
 
-          // Firestore에서 user 데이터 가져오기
-          const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-          const data = userDoc.exists() ? userDoc.data() : null;
-
           const u: CustomUser = {
-            uid: firebaseUser.uid,
-            userId: firebaseUser.uid,
-            authorNickname:
-              (data as any)?.authorNickname ||   // ✅ 기존
-              (data as any)?.nickname ||         // ✅ 추가
-              (data as any)?.username ||         // ✅ 추가
-              (data as any)?.displayName ||      // ✅ 추가
-              firebaseUser.displayName ||        // ✅ Fallback
-              'guest',
-            displayName:
-              (data as any)?.displayName ||
-              firebaseUser.displayName ||
-              '',
-            email: firebaseUser.email || '',
-            token,
-          };
-
-          setUser(u);
-          if (typeof window !== 'undefined')
-            localStorage.setItem('user', JSON.stringify(u));
-        } catch (err) {
-          console.error('Failed to fetch user data:', err);
-          setUser({
             uid: firebaseUser.uid,
             userId: firebaseUser.uid,
             authorNickname: firebaseUser.displayName || 'guest',
             displayName: firebaseUser.displayName || '',
             email: firebaseUser.email || '',
-          });
-        }
-      } else {
-        setUser(null);
-        if (typeof window !== 'undefined') localStorage.removeItem('user');
-      }
+            token,
+          };
 
-      setLoading(false);
-    });
+          setUser(u);
+
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('user', JSON.stringify(u));
+          }
+        } catch (err) {
+            console.error('Failed to initialize user:', err);
+
+            const fallback: CustomUser = {
+              uid: firebaseUser.uid,
+              userId: firebaseUser.uid,
+              authorNickname: firebaseUser.displayName || 'guest',
+              displayName: firebaseUser.displayName || '',
+              email: firebaseUser.email || '',
+            };
+
+            setUser(fallback);
+          }
+
+
+        setAuthReady(true); // 🔥 Firestore 써도 되는 시점
+        setLoading(false);
+      }
+    );
 
     return () => unsubscribe();
   }, []);
@@ -87,17 +104,23 @@ export function UserProvider({ children }: { children: ReactNode }) {
     if (!auth) return;
     await signOut(auth);
     setUser(null);
-    if (typeof window !== 'undefined') localStorage.removeItem('user');
+    setAuthReady(false);
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('user');
+    }
   };
 
   const setUserContext = (user: CustomUser) => {
     setUser(user);
-    if (typeof window !== 'undefined')
+    if (typeof window !== 'undefined') {
       localStorage.setItem('user', JSON.stringify(user));
+    }
   };
 
   return (
-    <UserContext.Provider value={{ user, loading, logout, setUserContext }}>
+    <UserContext.Provider
+      value={{ user, loading, authReady, logout, setUserContext }}
+    >
       {children}
     </UserContext.Provider>
   );

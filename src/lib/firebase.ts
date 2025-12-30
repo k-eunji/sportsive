@@ -1,11 +1,24 @@
 // src/lib/firebase.ts
 
+console.log(
+  "🔥 EMULATOR FLAG:",
+  process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR
+);
+
+console.log("🔥 firebase.ts loaded");
+
+
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth, connectAuthEmulator } from "firebase/auth";
-import { getFirestore, connectFirestoreEmulator, Firestore } from "firebase/firestore";
+import {
+  getFirestore,
+  connectFirestoreEmulator,
+  Firestore,
+  onSnapshot as _onSnapshot,
+} from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getFunctions } from "firebase/functions";
-import { getDatabase } from "firebase/database"; // 추가
+import { getDatabase } from "firebase/database";
 
 // Firebase config
 const firebaseConfig = {
@@ -18,23 +31,56 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID!,
 };
 
-// Firebase App 초기화 (서버/클라이언트 공통)
+// 🔥🔥🔥 여기 추가 🔥🔥🔥
+console.log("🔥 Firebase projectId from ENV:", firebaseConfig.projectId);
+
+// Firebase App 초기화
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
-// Firestore (서버/클라이언트 공통)
+// Firestore
 export const db: Firestore = getFirestore(app);
 
-// Auth, Storage, Functions (클라이언트 전용)
+// Client-only services
 export const auth = typeof window !== "undefined" ? getAuth(app) : null;
 export const storage = typeof window !== "undefined" ? getStorage(app) : null;
 export const functions = typeof window !== "undefined" ? getFunctions(app) : null;
+export const rtdb = typeof window !== "undefined" ? getDatabase(app) : null;
 
-// 에뮬레이터 연결 (옵션)
+// Emulator
 if (process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR === "true") {
-  if (auth) connectAuthEmulator(auth, "http://127.0.0.1:9099", { disableWarnings: true });
+  if (auth) {
+    connectAuthEmulator(auth, "http://127.0.0.1:9099", {
+      disableWarnings: true,
+    });
+  }
   connectFirestoreEmulator(db, "127.0.0.1", 8080);
 }
 
 export { app };
 
-export const rtdb = typeof window !== "undefined" ? getDatabase(app) : null;
+// ===============================
+// 🔥 onSnapshot 전역 디버깅 래퍼
+// ===============================
+export const onSnapshot = (ref: any, ...rest: any[]) => {
+  if (typeof window === "undefined") {
+    console.warn("❌ onSnapshot called on SERVER");
+  }
+
+  try {
+    if (ref?.path) {
+      console.log("🚨 onSnapshot path:", ref.path);
+    } else if (ref?._query?.path?.segments) {
+      console.log(
+        "🚨 onSnapshot query path:",
+        ref._query.path.segments
+      );
+    } else {
+      console.log("🚨 onSnapshot unknown ref:", ref);
+    }
+  } catch (e) {
+    console.log("🚨 onSnapshot inspect error:", e);
+  }
+
+  // 🔴 타입 오버로드 때문에 반드시 any 캐스팅
+  return (_onSnapshot as any)(ref, ...rest);
+};

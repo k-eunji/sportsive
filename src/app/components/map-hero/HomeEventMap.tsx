@@ -14,7 +14,11 @@ const FOCUS_ZOOM = 13;
 export default function HomeEventMap({ events }: { events: Event[] }) {
   const mapRef = useRef<google.maps.Map | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const markersRef = useRef<google.maps.Marker[]>([]);
+
+  // 🔥 Marker → AdvancedMarkerElement
+  const markersRef =
+    useRef<google.maps.marker.AdvancedMarkerElement[]>([]);
+
   const defaultCenterRef = useRef(DEFAULT_LOCATION);
 
   const { isLoaded } = useGoogleMaps();
@@ -30,6 +34,7 @@ export default function HomeEventMap({ events }: { events: Event[] }) {
   useEffect(() => {
     if (!isLoaded || !containerRef.current) return;
 
+    // 지도 최초 생성
     if (!mapRef.current) {
       mapRef.current = new google.maps.Map(containerRef.current, {
         center: DEFAULT_LOCATION,
@@ -42,15 +47,22 @@ export default function HomeEventMap({ events }: { events: Event[] }) {
       mapRef.current.addListener('click', resetMap);
     }
 
+    // =========================
     // 기존 마커 제거
-    markersRef.current.forEach((m) => m.setMap(null));
+    // (AdvancedMarkerElement 방식)
+    // =========================
+    markersRef.current.forEach((m) => {
+      m.map = null;
+    });
     markersRef.current = [];
 
-    // 마커 다시 그림
+    // =========================
+    // 마커 다시 생성
+    // =========================
     events.forEach((e) => {
       if (!e.location) return;
 
-      const marker = new google.maps.Marker({
+      const marker = new google.maps.marker.AdvancedMarkerElement({
         position: e.location,
         map: mapRef.current!,
         title: e.title,
