@@ -16,6 +16,7 @@ interface ChatRoomProps {
 
 interface Message {
   id: string;
+  userId: string;   // 🔥 추가
   user: string;
   text: string;
   timestamp?: string | Date;
@@ -70,6 +71,7 @@ export default function ChatRoom({ sport, liveId }: ChatRoomProps) {
         const d = doc.data() as any;
         return {
           id: doc.id,
+          userId: d.userId, 
           user: d.user,
           text: d.text,
           timestamp: d.timestamp instanceof Timestamp ? d.timestamp.toDate() : d.timestamp,
@@ -115,6 +117,7 @@ export default function ChatRoom({ sport, liveId }: ChatRoomProps) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        userId: user.userId,     
         user: user.authorNickname ?? "guest",
         text,
       }),
@@ -135,7 +138,8 @@ export default function ChatRoom({ sport, liveId }: ChatRoomProps) {
           {messages.map((msg, idx) => {
             const prev = messages[idx - 1];
             const sameUser = prev?.user === msg.user;
-            const isMe = user?.authorNickname === msg.user;
+            const isMe = msg.userId === user?.userId;
+
 
             return (
               <div key={msg.id}>

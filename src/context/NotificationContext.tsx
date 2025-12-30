@@ -59,6 +59,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!authReady) return;        // 🔥 추가
     if (!user?.userId) return;
+    if (user.role === 'guest') return;
 
     const q = query(
       collection(db, "notifications"),

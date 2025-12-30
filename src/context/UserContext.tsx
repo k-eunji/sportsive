@@ -25,6 +25,12 @@ type UserContextType = {
   setUserContext: (user: CustomUser) => void;
 };
 
+interface User {
+  id: string;
+  displayName: string;
+  role: 'user' | 'guest';
+}
+
 export const UserContext = createContext<UserContextType>({
   user: null,
   loading: true,
@@ -47,14 +53,43 @@ export function UserProvider({ children }: { children: ReactNode }) {
         setLoading(true);
 
         // =========================
-        // 로그아웃 상태
+        // 로그아웃 상태 → guest 생성
         // =========================
         if (!firebaseUser) {
-          setUser(null);
-          setAuthReady(true); // 🔥 auth는 끝났음
-          if (typeof window !== 'undefined') {
-            localStorage.removeItem('user');
+          // 1️⃣ 이미 guest 있으면 재사용
+          const savedGuest = typeof window !== 'undefined'
+            ? localStorage.getItem('guestUser')
+            : null;
+
+          if (savedGuest) {
+            setUser(JSON.parse(savedGuest));
+            setAuthReady(true);
+            setLoading(false);
+            return;
           }
+
+          // 2️⃣ 없으면 서버에서 guest 발급
+          try {
+            const res = await fetch('/api/guest', { method: 'POST' });
+            const guest = await res.json();
+
+            const guestUser: CustomUser = {
+              uid: guest.id,
+              userId: guest.id,
+              authorNickname: guest.displayName,
+              displayName: guest.displayName,
+              email: '',
+              role: 'guest', // 🔥 구분용
+            };
+
+            setUser(guestUser);
+            localStorage.setItem('guestUser', JSON.stringify(guestUser));
+          } catch (e) {
+            console.error('Failed to create guest:', e);
+            setUser(null);
+          }
+
+          setAuthReady(true);
           setLoading(false);
           return;
         }

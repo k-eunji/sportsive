@@ -46,11 +46,11 @@ export async function POST(
   const { sport, liveId } = await params;
 
   try {
-    const { user, text } = await req.json();
+    const { userId, user, text } = await req.json();
 
-    if (!user?.trim() || !text?.trim()) {
+    if (!userId || !user?.trim() || !text?.trim()) {
       return NextResponse.json(
-        { error: "Missing user or text" },
+        { error: "Missing userId, user or text" },
         { status: 400 }
       );
     }
@@ -64,6 +64,7 @@ export async function POST(
       .doc(liveId)
       .collection("messages")
       .add({
+        userId,  
         user,
         text,
         timestamp: now,

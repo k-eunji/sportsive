@@ -10,21 +10,31 @@ import { useUser } from "@/context/UserContext";
 import NotificationPopup from "./NotificationPopup";
 
 export default function NotificationBell() {
-  const { user } = useUser();
+  const { user, authReady } = useUser(); // 🔥 authReady 사용
   const [unreadCount, setUnreadCount] = useState(0);
   const [open, setOpen] = useState(false);
 
-  // ✅ 실시간 알림 수 불러오기
+  // 🚫 guest면 아예 렌더링 안 함
+  if (!authReady || user?.role === "guest") {
+    return null;
+  }
+
+  // ✅ 로그인 유저만 Firestore 구독
   useEffect(() => {
     if (!user?.userId) return;
+
     const q = query(
       collection(db, "notifications"),
       where("userId", "==", user.userId),
       where("read", "==", false)
     );
-    const unsub = onSnapshot(q, (snap) => setUnreadCount(snap.size));
+
+    const unsub = onSnapshot(q, (snap) => {
+      setUnreadCount(snap.size);
+    });
+
     return () => unsub();
-  }, [user]);
+  }, [user?.userId]);
 
   return (
     <div className="relative">
@@ -60,9 +70,7 @@ export default function NotificationBell() {
         )}
       </button>
 
-      {open && (
-        <NotificationPopup onClose={() => setOpen(false)} />
-      )}
+      {open && <NotificationPopup onClose={() => setOpen(false)} />}
     </div>
   );
 }

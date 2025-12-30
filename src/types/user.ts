@@ -9,6 +9,7 @@ export type CustomUser = {
   displayName?: string | null;
   email?: string | null;
   token?: string;
+  role?: 'user' | 'guest'; 
 };
 
 // ✅ 프로필 페이지 전용 유저 타입
