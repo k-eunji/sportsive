@@ -16,14 +16,15 @@ export default function HelpShapeSportsive() {
       </p>
 
       <p className="leading-relaxed">
-        Sportsive is an early-stage experiment exploring how people discover
-        local sports.
-        <br />
-        I’m testing this in London first.
+        Sportsive is an early-stage experiment about how people find local
+        sports.
         <br />
         <br />
-        If you’ve struggled to find local sports near you — or you’re involved
-        in a local or niche sport — I’d genuinely love to hear from you.
+        If it’s ever been harder than it should be to figure out what’s
+        happening near you, I’d genuinely love to hear about it.
+        <br />
+        If you’re involved in a local or niche sport, I’d love to hear from you
+        too.
       </p>
 
       <div className="flex justify-center gap-4 text-sm">
