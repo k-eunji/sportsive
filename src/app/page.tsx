@@ -4,6 +4,7 @@ import WhatIsSportsive from "./components/WhatIsSportsive";
 import SituationHero from "./components/SituationHero";
 import PlatformActivity from "./components/PlatformActivity";
 import LivePreview from "./components/LivePreview";
+import HelpShapeSportsive from "./components/HelpShapeSportsive";
 import MapHero from "./components/map-hero/MapHero";
 import { getUpcomingEvents } from "@/lib/events";
 
@@ -33,6 +34,9 @@ export default async function Home() {
 
       {/* 4️⃣ Live matches as a feature */}
       <LivePreview />
+
+      {/* 4.5️⃣ Help shape Sportsive (feedback / match submissions) */}
+      <HelpShapeSportsive />
 
       {/* 5️⃣ Locked future (meetups later) */}
       <section className="text-center text-gray-500 text-sm max-w-xl mx-auto">
