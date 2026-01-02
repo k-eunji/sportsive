@@ -2,7 +2,13 @@
 
 export default function HelpShapeSportsive() {
   return (
-    <section className="max-w-xl mx-auto text-center text-sm text-gray-600 space-y-4">
+    <section className="
+      max-w-xl mx-auto
+      text-center text-sm text-gray-600
+      space-y-4
+      pt-8
+      border-t border-border/60
+    ">
       <p className="font-medium text-gray-800 dark:text-gray-200">
         This is still early
       </p>
