@@ -25,7 +25,7 @@ export default function LivePreview() {
   useEffect(() => {
     async function fetchRooms() {
       try {
-        const res = await fetch("/api/live/rooms/football?limit=3", {
+        const res = await fetch("/api/live/rooms/football", {
           cache: "no-store",
         });
         if (!res.ok) throw new Error("Failed to fetch live rooms");
@@ -40,21 +40,72 @@ export default function LivePreview() {
 
   if (!rooms.length) return null;
 
+  const now = new Date();
+  const startOfToday = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate()
+  );
+  const endOfToday = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate() + 1
+  );
+
+  const activeRooms = rooms.filter(
+    (room) => room.status !== "END"
+  );
+
+  const liveRooms = activeRooms.filter(
+    (room) => room.status === "LIVE"
+  );
+
+  const todayRooms = activeRooms.filter((room) => {
+    const time = new Date(room.datetime);
+    return time >= startOfToday && time < endOfToday;
+  });
+
+  // 🔑 노출용 리스트 (최대 3개)
+  const prioritizedRooms = [...activeRooms]
+    .sort((a, b) => {
+      if (a.status === "LIVE" && b.status !== "LIVE") return -1;
+      if (a.status !== "LIVE" && b.status === "LIVE") return 1;
+      return (
+        new Date(a.datetime).getTime() -
+        new Date(b.datetime).getTime()
+      );
+    })
+    .slice(0, 3);
+
+  if (!prioritizedRooms.length) return null;
+
+  // 🔤 헤더 문구 결정
+  let headerTitle = "Upcoming matches";
+  let headerDesc = "Matches people are gathering around.";
+
+  if (liveRooms.length > 0) {
+    headerTitle = "Happening now";
+    headerDesc = "Live matches people are watching together.";
+  } else if (todayRooms.length > 0) {
+    headerTitle = "Coming up today";
+    headerDesc = "Matches happening later today.";
+  }
+
   return (
     <section className="mt-14 max-w-3xl mx-auto text-left">
       {/* Header */}
       <div className="mb-4">
         <h2 className="text-xl font-medium tracking-tight">
-          Live match chats
+          {headerTitle}
         </h2>
         <p className="text-sm text-muted-foreground">
-          Chat rooms open shortly before kickoff and close after the match.
+          {headerDesc}
         </p>
       </div>
 
-      {/* 🔒 Preview-only list (NOT clickable per room) */}
+      {/* Preview-only list */}
       <div className="divide-y divide-border/60 border-t border-border/60">
-        {rooms.map((room) => {
+        {prioritizedRooms.map((room) => {
           const startTime = new Date(room.datetime);
 
           return (
@@ -69,7 +120,6 @@ export default function LivePreview() {
             >
               {/* LEFT */}
               <div className="flex items-center gap-3 min-w-0">
-                {/* Logos */}
                 <div className="flex items-center gap-1 shrink-0">
                   {room.homeTeamLogo && (
                     <img
@@ -87,12 +137,10 @@ export default function LivePreview() {
                   )}
                 </div>
 
-                {/* Text */}
                 <div className="flex flex-col min-w-0">
                   <span className="font-medium text-sm truncate">
                     {room.homeTeam} vs {room.awayTeam}
                   </span>
-
                   <span className="text-xs text-muted-foreground truncate">
                     {formatEventTimeWithOffsetUTC(startTime)} • 👥{" "}
                     {room.participants ?? 0}
@@ -100,7 +148,6 @@ export default function LivePreview() {
                 </div>
               </div>
 
-              {/* RIGHT */}
               {room.status === "LIVE" && (
                 <span className="text-xs text-red-600 shrink-0">
                   ● LIVE
