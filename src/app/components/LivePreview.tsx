@@ -5,6 +5,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { formatEventTimeWithOffsetUTC } from "@/utils/date";
+import { motion } from "framer-motion";
 
 interface LiveRoom {
   id: string;
@@ -41,62 +42,42 @@ export default function LivePreview() {
   if (!rooms.length) return null;
 
   const now = new Date();
-  const startOfToday = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate()
-  );
-  const endOfToday = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate() + 1
-  );
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
 
-  const activeRooms = rooms.filter(
-    (room) => room.status !== "END"
-  );
-
-  const liveRooms = activeRooms.filter(
-    (room) => room.status === "LIVE"
-  );
-
+  const activeRooms = rooms.filter((room) => room.status !== "END");
+  const liveRooms = activeRooms.filter((room) => room.status === "LIVE");
   const todayRooms = activeRooms.filter((room) => {
     const time = new Date(room.datetime);
     return time >= startOfToday && time < endOfToday;
   });
 
-  // 🔑 노출용 리스트 (최대 3개)
   const prioritizedRooms = [...activeRooms]
     .sort((a, b) => {
       if (a.status === "LIVE" && b.status !== "LIVE") return -1;
       if (a.status !== "LIVE" && b.status === "LIVE") return 1;
-      return (
-        new Date(a.datetime).getTime() -
-        new Date(b.datetime).getTime()
-      );
+      return new Date(a.datetime).getTime() - new Date(b.datetime).getTime();
     })
     .slice(0, 3);
 
   if (!prioritizedRooms.length) return null;
 
-  // 🔤 헤더 문구 결정
-  // 헤더 결정 부분만 변경
   let headerTitle = "Upcoming matches";
-  let headerDesc = "Some people are already here.";
+  let headerDesc = "People gather around specific games — quietly.";
 
   if (liveRooms.length > 0) {
     headerTitle = "Happening now";
-    headerDesc = "These matches aren’t empty.";
+    headerDesc = "These matches have people in the room.";
   } else if (todayRooms.length > 0) {
     headerTitle = "Later today";
-    headerDesc = "A few games people are planning around.";
+    headerDesc = "A few games people are already circling.";
   }
 
   return (
     <section className="mt-14 max-w-3xl mx-auto text-left">
       {/* Header */}
       <div className="mb-4">
-        <h2 className="text-xl font-medium tracking-tight">
+        <h2 className="text-xl font-semibold tracking-tight">
           {headerTitle}
         </h2>
         <p className="text-sm text-muted-foreground">
@@ -108,6 +89,7 @@ export default function LivePreview() {
       <div className="divide-y divide-border/60 border-t border-border/60">
         {prioritizedRooms.map((room) => {
           const startTime = new Date(room.datetime);
+          const people = room.participants ?? 0;
 
           return (
             <div
@@ -115,8 +97,6 @@ export default function LivePreview() {
               className="
                 flex items-center justify-between gap-3
                 py-3 px-2
-                opacity-80
-                cursor-default
               "
             >
               {/* LEFT */}
@@ -139,19 +119,27 @@ export default function LivePreview() {
                 </div>
 
                 <div className="flex flex-col min-w-0">
-                  <span className="font-medium text-sm truncate">
+                  <span className="font-semibold text-sm truncate">
                     {room.homeTeam} vs {room.awayTeam}
                   </span>
                   <span className="text-xs text-muted-foreground truncate">
-                    {formatEventTimeWithOffsetUTC(startTime)} • 👥{" "}
-                    {room.participants ?? 0}
+                    {formatEventTimeWithOffsetUTC(startTime)} • 👥 {people}
                   </span>
                 </div>
               </div>
 
-              {room.status === "LIVE" && (
-                <span className="text-xs text-red-600 shrink-0">
+              {/* RIGHT */}
+              {room.status === "LIVE" ? (
+                <motion.span
+                  className="text-xs text-red-600 font-semibold shrink-0"
+                  animate={{ opacity: [1, 0.35, 1] }}
+                  transition={{ repeat: Infinity, duration: 1.2 }}
+                >
                   ● LIVE
+                </motion.span>
+              ) : (
+                <span className="text-xs text-gray-500 shrink-0">
+                  Scheduled
                 </span>
               )}
             </div>
@@ -165,7 +153,7 @@ export default function LivePreview() {
           href="/live"
           className="
             inline-flex items-center gap-1
-            text-sm font-medium
+            text-sm font-semibold
             text-blue-600
             hover:underline
             underline-offset-4

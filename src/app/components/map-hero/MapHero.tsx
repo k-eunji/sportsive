@@ -7,6 +7,7 @@ import HomeEventMap, { HomeEventMapRef } from "./HomeEventMap";
 import DiscoveryStatus from "./DiscoveryStatus";
 import type { Event } from "@/types";
 import { logEvent } from "@/lib/analytics";
+import TomorrowTease from "./TomorrowTease";
 
 const STORAGE_KEY_V2 = "sportsive_discovery_v2";
 const COPY_VARIANT_KEY = "sportsive_home_copy_variant";
@@ -57,26 +58,30 @@ function pickStableVariant(): CopyVariant {
 function getCopy(variant: CopyVariant, returning: boolean) {
   const first = {
     A: {
+      kicker: "Local sport is happening — quietly.",
       title: "See what sport looks like near you today",
-      subtitle: "Try to discover 3 real matches around you.",
+      subtitle: "Discover 3 real matches around you. No sign-up.",
       cta: "Surprise me nearby →",
     },
     B: {
+      kicker: "Not teams. Not hype. Real local matches.",
       title: "What’s happening in your area?",
-      subtitle: "Explore a few local matches — no sign-up needed.",
+      subtitle: "Explore a few nearby games — it changes every day.",
       cta: "Pick one for me →",
     },
   };
 
   const back = {
     A: {
+      kicker: "Yesterday was one snapshot.",
       title: "See what changed since yesterday",
       subtitle: "Today shows a different side of local sport.",
       cta: "Show me today’s matches →",
     },
     B: {
+      kicker: "New day. New map.",
       title: "New day, different games",
-      subtitle: "Local sport changes daily — take a quick look.",
+      subtitle: "Local sport shifts daily — take a 20-second look.",
       cta: "Surprise me today →",
     },
   };
@@ -128,7 +133,7 @@ export default function MapHero() {
 
   useEffect(() => {
     async function load() {
-      const res = await fetch("/api/events?limit=20");
+      const res = await fetch("/api/events?limit=40");
       const data = await res.json();
 
       const now = new Date();
@@ -146,19 +151,37 @@ export default function MapHero() {
   }, []);
 
   const handleDiscover = (eventId: string) => {
-    setDiscoveredIds((prev) =>
-      prev.includes(eventId) ? prev : [...prev, eventId]
-    );
+    setDiscoveredIds((prev) => (prev.includes(eventId) ? prev : [...prev, eventId]));
     logEvent("match_discovered");
   };
 
   const copy = useMemo(() => getCopy(variant, returning), [variant, returning]);
+
+  const ritualLine = useMemo(() => {
+    if (!returning) return null;
+
+    // “어제의 흔적”을 짧게 상기 (무의식용)
+    if (yesterdayCount > 0 && discoveredIds.length === 0) {
+      return `Yesterday you explored ${yesterdayCount}. Today will look different.`;
+    }
+
+    // 이미 오늘도 조금 봤으면 “루프” 강화
+    if (discoveredIds.length > 0) {
+      return `Your map is building. Check again tomorrow for a new snapshot.`;
+    }
+
+    return `This changes daily. A quick look tomorrow feels different.`;
+  }, [returning, yesterdayCount, discoveredIds.length]);
 
   if (!events.length) return null;
 
   return (
     <section id="map" className="mt-6 space-y-4">
       <div className="max-w-3xl mx-auto text-center space-y-3">
+        <p className="text-xs uppercase tracking-widest text-red-600 font-medium">
+          {copy.kicker}
+        </p>
+
         <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">
           {copy.title}
         </h1>
@@ -174,22 +197,42 @@ export default function MapHero() {
           returning={returning}
         />
 
-        <button
-          onClick={() => {
-            logEvent("surprise_clicked");
-            mapRef.current?.surprise();
-          }}
-          className="text-sm font-medium text-blue-600 hover:underline"
-        >
-          {copy.cta}
-        </button>
+        {/* CTA: 리듬감 있는 행동 유도 */}
+        <div className="flex items-center justify-center gap-4 pt-1">
+          <button
+            onClick={() => {
+              logEvent("surprise_clicked");
+              mapRef.current?.surprise();
+            }}
+            className="
+              inline-flex items-center
+              text-sm font-semibold text-blue-600
+              hover:underline underline-offset-4
+            "
+          >
+            {copy.cta}
+          </button>
 
-        {returning && (
-          <p className="text-xs text-gray-500">
-            Each day shows a different snapshot of local sport.
+          <span className="text-xs text-gray-300">|</span>
+
+          <a
+            href="/events"
+            className="text-sm font-medium text-gray-700 dark:text-gray-200 hover:underline underline-offset-4"
+          >
+            Open full map →
+          </a>
+        </div>
+
+        {/* “어제의 흔적”/“내일 루프” 메시지 */}
+        {ritualLine && (
+          <p className="text-xs text-gray-500 pt-1">
+            {ritualLine}
           </p>
         )}
       </div>
+
+      {/* ✅ Tomorrow Tease: “내일은 다르다”를 경험으로 */}
+      <TomorrowTease events={events} />
 
       <HomeEventMap ref={mapRef} events={events} onDiscover={handleDiscover} />
     </section>
