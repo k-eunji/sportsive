@@ -21,11 +21,7 @@ function hour(d: Date) {
   return d.getHours();
 }
 
-export default function TomorrowTease({
-  events,
-}: {
-  events: Event[];
-}) {
+export default function TomorrowTease({ events }: { events: Event[] }) {
   const tease = useMemo(() => {
     const now = new Date();
     const today = startOfDay(now);
@@ -73,19 +69,17 @@ export default function TomorrowTease({
   return (
     <div
       className="
-        max-w-3xl mx-auto
+        pointer-events-none
         rounded-xl
         px-4 py-3
-        text-left
         bg-gradient-to-r
-        from-gray-50/80 to-white/40
-        dark:from-white/5 dark:to-white/0
-        backdrop-blur-sm
-        shadow-[0_1px_0_rgba(0,0,0,0.04)]
+        from-white/90 to-white/60
+        dark:from-black/60 dark:to-black/40
+        backdrop-blur-md
+        shadow-[0_8px_24px_rgba(0,0,0,0.08)]
       "
     >
       <div className="flex items-start gap-3">
-        {/* 왼쪽 accent */}
         <div className="w-[3px] rounded-full bg-red-500/70 mt-1" />
 
         <div className="flex-1 flex items-center justify-between gap-4">
@@ -119,10 +113,6 @@ export default function TomorrowTease({
           </span>
         </p>
       )}
-
-      <p className="text-[11px] text-gray-400 mt-2 ml-[18px]">
-        Preview only — full details unlock tomorrow.
-      </p>
     </div>
   );
 }

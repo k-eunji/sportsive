@@ -26,8 +26,10 @@ const HomeEventMap = forwardRef<
   {
     events: Event[];
     onDiscover: (eventId: string) => void;
+    children?: React.ReactNode;
   }
->(({ events, onDiscover }, ref) => {
+>(({ events, onDiscover, children }, ref) => {
+
   const mapRef = useRef<google.maps.Map | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const markersRef =
@@ -128,12 +130,21 @@ const HomeEventMap = forwardRef<
   return (
     <div className="relative w-full h-[520px] rounded-2xl overflow-hidden border">
       {/* 지도 */}
-      <div
-        ref={containerRef}
-        className="absolute inset-0"
-      />
+      <div ref={containerRef} className="absolute inset-0" />
 
-      {/* 🔒 모바일: 지도 활성화 오버레이 */}
+      {/* 🔮 Tomorrow Tease overlay slot */}
+      <div
+        className="
+          absolute top-3 left-1/2 -translate-x-1/2
+          z-20
+          w-[calc(100%-24px)]
+          max-w-3xl
+        "
+      >
+        {/* 여기에 TomorrowTease가 들어옴 */}
+        {/** children **/}
+      </div>
+
       {!mapActive && (
         <button
           onClick={() => setMapActive(true)}
@@ -148,15 +159,12 @@ const HomeEventMap = forwardRef<
         </button>
       )}
 
-      {/* Snap Card */}
       {selectedEvent && (
-        <HomeMapSnapCard
-          event={selectedEvent}
-          onClose={resetMap}
-        />
+        <HomeMapSnapCard event={selectedEvent} onClose={resetMap} />
       )}
     </div>
   );
+
 });
 
 export default HomeEventMap;

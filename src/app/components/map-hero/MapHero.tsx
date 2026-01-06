@@ -234,7 +234,14 @@ export default function MapHero() {
       {/* ✅ Tomorrow Tease: “내일은 다르다”를 경험으로 */}
       <TomorrowTease events={events} />
 
-      <HomeEventMap ref={mapRef} events={events} onDiscover={handleDiscover} />
+      <HomeEventMap
+        ref={mapRef}
+        events={events}
+        onDiscover={handleDiscover}
+      >
+        <TomorrowTease events={events} />
+      </HomeEventMap>
+
     </section>
   );
 }
