@@ -14,12 +14,13 @@ export default async function Home() {
   return (
     <main
       className="
-        relative mx-auto max-w-6xl
-        px-6 pt-6 pb-[140px]
+        relative
+        pt-6 pb-[140px]
         space-y-28
         transition-colors duration-500
       "
     >
+
       {/* ✅ 1) Start with action: map + daily exploration loop */}
       <MapHero />
 
