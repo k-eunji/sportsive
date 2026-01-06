@@ -80,15 +80,16 @@ export default function LivePreview() {
   if (!prioritizedRooms.length) return null;
 
   // 🔤 헤더 문구 결정
+  // 헤더 결정 부분만 변경
   let headerTitle = "Upcoming matches";
-  let headerDesc = "Matches people are gathering around.";
+  let headerDesc = "Some people are already here.";
 
   if (liveRooms.length > 0) {
     headerTitle = "Happening now";
-    headerDesc = "Live matches people are watching together.";
+    headerDesc = "These matches aren’t empty.";
   } else if (todayRooms.length > 0) {
-    headerTitle = "Coming up today";
-    headerDesc = "Matches happening later today.";
+    headerTitle = "Later today";
+    headerDesc = "A few games people are planning around.";
   }
 
   return (

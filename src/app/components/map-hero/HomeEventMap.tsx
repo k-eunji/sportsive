@@ -1,8 +1,14 @@
-//src/app/components/map-hero/HomeEventMap.tsx
+// src/app/components/map-hero/HomeEventMap.tsx
 
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  forwardRef,
+  useImperativeHandle,
+} from 'react';
 import type { Event } from '@/types';
 import { useGoogleMaps } from '@/components/GoogleMapsProvider';
 import HomeMapSnapCard from './HomeMapSnapCard';
@@ -11,54 +17,93 @@ const DEFAULT_LOCATION = { lat: 51.5074, lng: -0.1278 };
 const DEFAULT_ZOOM = 8;
 const FOCUS_ZOOM = 13;
 
-export default function HomeEventMap({ events }: { events: Event[] }) {
+export interface HomeEventMapRef {
+  surprise: () => void;
+}
+
+const HomeEventMap = forwardRef<
+  HomeEventMapRef,
+  {
+    events: Event[];
+    onDiscover: (eventId: string) => void;
+  }
+>(({ events, onDiscover }, ref) => {
   const mapRef = useRef<google.maps.Map | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
-
-  // 🔥 Marker → AdvancedMarkerElement
   const markersRef =
     useRef<google.maps.marker.AdvancedMarkerElement[]>([]);
 
-  const defaultCenterRef = useRef(DEFAULT_LOCATION);
-
   const { isLoaded } = useGoogleMaps();
-  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
 
-  /** 🔁 전체 지도 상태로 복원 */
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [mapActive, setMapActive] = useState(false); // ⭐ 핵심
+
   const resetMap = () => {
     setSelectedEvent(null);
-    mapRef.current?.panTo(defaultCenterRef.current);
+    setMapActive(false);
+    mapRef.current?.panTo(DEFAULT_LOCATION);
     mapRef.current?.setZoom(DEFAULT_ZOOM);
   };
+
+  // 🎲 Surprise API
+  useImperativeHandle(ref, () => ({
+    surprise() {
+      if (!mapRef.current) return;
+
+      setMapActive(true);
+
+      const bounds = mapRef.current.getBounds();
+      if (!bounds) return;
+
+      const visible = events.filter((e) => {
+        if (!e.location) return false;
+        return bounds.contains(
+          new google.maps.LatLng(e.location.lat, e.location.lng)
+        );
+      });
+
+      if (!visible.length) return;
+
+      const picked =
+        visible[Math.floor(Math.random() * visible.length)];
+
+      setSelectedEvent(picked);
+      onDiscover(picked.id);
+
+      mapRef.current.panTo(picked.location!);
+      mapRef.current.setZoom(FOCUS_ZOOM);
+    },
+  }));
 
   useEffect(() => {
     if (!isLoaded || !containerRef.current) return;
 
-    // 지도 최초 생성
     if (!mapRef.current) {
       mapRef.current = new google.maps.Map(containerRef.current, {
         center: DEFAULT_LOCATION,
         zoom: DEFAULT_ZOOM,
         clickableIcons: false,
         mapId: process.env.NEXT_PUBLIC_MAP_ID_WEB,
+
+        // ⭐ 모바일 UX 핵심 옵션
+        gestureHandling: mapActive ? 'greedy' : 'none',
+        draggable: mapActive,
       });
 
-      // 🟢 지도 빈 공간 클릭 시 전체로 복귀
-      mapRef.current.addListener('click', resetMap);
+      mapRef.current.addListener('click', () => {
+        if (mapActive) resetMap();
+      });
+    } else {
+      // 상태 변경 시 옵션 업데이트
+      mapRef.current.setOptions({
+        gestureHandling: mapActive ? 'greedy' : 'none',
+        draggable: mapActive,
+      });
     }
 
-    // =========================
-    // 기존 마커 제거
-    // (AdvancedMarkerElement 방식)
-    // =========================
-    markersRef.current.forEach((m) => {
-      m.map = null;
-    });
+    markersRef.current.forEach((m) => (m.map = null));
     markersRef.current = [];
 
-    // =========================
-    // 마커 다시 생성
-    // =========================
     events.forEach((e) => {
       if (!e.location) return;
 
@@ -69,19 +114,41 @@ export default function HomeEventMap({ events }: { events: Event[] }) {
       });
 
       marker.addListener('click', () => {
+        setMapActive(true);
         setSelectedEvent(e);
+        onDiscover(e.id);
         mapRef.current?.panTo(e.location!);
         mapRef.current?.setZoom(FOCUS_ZOOM);
       });
 
       markersRef.current.push(marker);
     });
-  }, [isLoaded, events]);
+  }, [isLoaded, events, mapActive]);
 
   return (
     <div className="relative w-full h-[520px] rounded-2xl overflow-hidden border">
-      <div ref={containerRef} className="absolute inset-0" />
+      {/* 지도 */}
+      <div
+        ref={containerRef}
+        className="absolute inset-0"
+      />
 
+      {/* 🔒 모바일: 지도 활성화 오버레이 */}
+      {!mapActive && (
+        <button
+          onClick={() => setMapActive(true)}
+          className="
+            absolute inset-0 z-10
+            flex items-center justify-center
+            bg-black/10 backdrop-blur-[1px]
+            text-sm font-medium text-gray-900
+          "
+        >
+          Tap to explore the map
+        </button>
+      )}
+
+      {/* Snap Card */}
       {selectedEvent && (
         <HomeMapSnapCard
           event={selectedEvent}
@@ -90,4 +157,6 @@ export default function HomeEventMap({ events }: { events: Event[] }) {
       )}
     </div>
   );
-}
+});
+
+export default HomeEventMap;

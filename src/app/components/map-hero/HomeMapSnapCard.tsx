@@ -63,7 +63,7 @@ export default function HomeMapSnapCard({
               underline-offset-4
             "
           >
-            View match more →
+            Open match details →
           </Link>
         </div>
       </div>
