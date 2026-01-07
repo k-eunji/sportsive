@@ -43,26 +43,22 @@ export default {
         muted: "var(--color-muted)",
         "muted-foreground": "var(--color-muted-foreground)",
       },
-
-      extend: {
-        keyframes: {
-          emojiFloat: {
-            '0%': { transform: 'translateY(0)', opacity: '1' },
-            '100%': { transform: 'translateY(-60px)', opacity: '0' },
-          },
-          chatIn: {
-            '0%': { opacity: '0', transform: 'translateY(3px)' },
-            '100%': { opacity: '1', transform: 'translateY(0)' },
-          },
+      keyframes: {
+        emojiFloat: {
+          "0%": { transform: "translateY(0)", opacity: "1" },
+          "100%": { transform: "translateY(-60px)", opacity: "0" },
         },
-        animation: {
-          'emoji-float': 'emojiFloat 1.3s ease-out forwards',
-          'chat': 'chatIn 0.15s ease-out',
+        chatIn: {
+          "0%": { opacity: "0", transform: "translateY(3px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
         },
-      }
+      },
+      animation: {
+        "emoji-float": "emojiFloat 1.3s ease-out forwards",
+        chat: "chatIn 0.15s ease-out",
+      },
     },
   },
-  
   plugins: [tailwindcssAnimate],
 };
 

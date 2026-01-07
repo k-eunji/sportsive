@@ -1,53 +1,204 @@
 // src/app/page.tsx
 
-import WhatIsSportsive from "./components/WhatIsSportsive";
-import PlatformActivity from "./components/PlatformActivity";
-import LivePreview from "./components/LivePreview";
-import MapHero from "./components/map-hero/MapHero";
-import HomeFooterFeedback from "./components/HomeFooterFeedback";
-import { getUpcomingEvents } from "@/lib/events";
+"use client";
 
-export default async function Home() {
-  const events = await getUpcomingEvents();
-  const safeEvents = JSON.parse(JSON.stringify(events));
+import { useEffect, useMemo, useState, useRef } from "react";
+import { useSearchParams } from "next/navigation";
+import type { Event } from "@/types";
+
+import MobileHero from "./components/home/MobileHero";
+import TodayDiscoveryList from "./components/home/TodayDiscoveryList";
+import DiscoveryProgress from "./components/home/DiscoveryProgress";
+import HomeFooterFeedback from "./components/HomeFooterFeedback";
+import HomeMapStage from "./components/home/HomeMapStage";
+import StampsBar from "./components/home/StampsBar";
+import RadiusFilter from "./components/home/RadiusFilter";
+import { useDistanceUnit } from "./components/home/useDistanceUnit";
+
+import { useDailyDiscovery } from "./components/home/useDailyDiscovery";
+import { addStamp } from "./components/home/stamps";
+import { track } from "@/lib/track";
+
+// 이미 있는 컴포넌트(네가 올린 파일에 존재)
+import LivePreview from "./components/LivePreview";
+import WhatIsSportsiveCompact from "./components/WhatIsSportsiveCompact";
+
+// 신규
+import First15Overlay from "./components/home/First15Overlay";
+
+export default function Home() {
+  const params = useSearchParams();
+  const isDemo = params?.get("mode") === "demo";
+
+  const [events, setEvents] = useState<Event[]>([]);
+  const [showMap, setShowMap] = useState(false);
+  const [radiusOpen, setRadiusOpen] = useState(false);
+
+  const { unit, toggle } = useDistanceUnit();
+  const [radiusKm, setRadiusKm] = useState(10);
+
+  const [focusEventId, setFocusEventId] = useState<string | null>(null);
+  const [pendingSurprise, setPendingSurprise] = useState(false);
+
+  const { discoveredIds, justCelebrated, ritualLine, returning, addDiscover } =
+    useDailyDiscovery();
+
+  useEffect(() => {
+    track("home_loaded");
+    (async () => {
+      const res = await fetch("/api/events?limit=60");
+      const data = await res.json();
+      setEvents(data.events ?? []);
+    })();
+  }, []);
+
+  const mapStageRef = useRef<HTMLDivElement | null>(null);
+
+  const eventById = useMemo(() => {
+    const m = new Map<string, any>();
+    (events as any[]).forEach((e) => m.set(e.id, e));
+    return m;
+  }, [events]);
+
+  const onDiscover = (eventId: string) => {
+    addDiscover(eventId);
+    const e = eventById.get(eventId);
+    if (e) addStamp(e);
+  };
+
+  const handlePickFromList = (id: string) => {
+    setFocusEventId(id);
+    setShowMap(true);
+    setPendingSurprise(false);
+    onDiscover(id);
+    track("map_opened", { source: "list_pick" });
+  };
+
+  const handleHeroSurprise = () => {
+    setShowMap(true);
+    setFocusEventId(null);
+    setPendingSurprise(true);
+
+    requestAnimationFrame(() => {
+      mapStageRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+
+    track("map_opened", { source: "hero_surprise" });
+  };
+
+  if (!events.length) return null;
 
   return (
-    <main
-      className="
-        relative
-        pt-6 pb-[140px]
-        space-y-28
-        transition-colors duration-500
-      "
-    >
+    <main className="pb-[120px] space-y-6">
+      {/* ✅ 첫 방문 15초 오버레이 (1회만) */}
+      {!isDemo && <First15Overlay />}
 
-      {/* ✅ 1) Start with action: map + daily exploration loop */}
-      <MapHero />
+      {/* 1) Primary action */}
+      <MobileHero onSurprise={handleHeroSurprise} />
 
-      {/* ✅ 2) Proof that this is alive */}
+      {/* 2) “지금” 신호 (조용한 활동/라이브) */}
       <LivePreview />
 
-      {/* ✅ 3) Explain later (after they’ve already explored) */}
-      <WhatIsSportsive />
+      {/* 4) 필터는 보조로 내려서 ‘결정 피로’ 줄이기 */}
+      <RadiusFilter
+        valueKm={radiusKm}
+        onOpen={() => setRadiusOpen(true)}
+      />
 
-      {/* ✅ 4) Trust signals */}
-      <PlatformActivity />
+      {radiusOpen && (
+      <div className="fixed inset-0 z-50">
+        {/* backdrop */}
+        <button
+          className="absolute inset-0 bg-black/40"
+          onClick={() => setRadiusOpen(false)}
+          aria-label="Close radius filter"
+        />
 
-      {/* ✅ 5) Feedback CTA only when it makes sense (client-side) */}
-      <HomeFooterFeedback />
+        {/* sheet */}
+        <div
+          className="
+            absolute bottom-0 left-0 right-0
+            rounded-t-3xl
+            bg-background
+            px-5 pt-4 pb-[calc(16px+env(safe-area-inset-bottom))]
+          "
+        >
+          <p className="text-sm font-semibold mb-3">Search area</p>
 
-      {/* (Optional) keep / remove this section. Leaving it is fine, but it reads as "future" */}
-      <section className="text-center text-gray-500 text-sm max-w-xl mx-auto">
-        <p className="font-medium text-gray-700 dark:text-gray-300">
-          Offline participation emerges only where activity already exists
-        </p>
-        <p className="mt-2">
-          When enough fans gather around a match,
-          <br />
-          offline Together unlock naturally.
-        </p>
-        <p className="mt-1 text-xs opacity-70">Available in active cities only.</p>
-      </section>
+          {[
+            { label: "Nearby", km: 5 },
+            { label: "Around me", km: 10 },
+            { label: "Wider area", km: 20 },
+          ].map((o) => (
+            <button
+              key={o.km}
+              onClick={() => {
+                setRadiusKm(o.km);
+                setRadiusOpen(false);
+              }}
+              className={`
+                w-full text-left
+                px-4 py-3 rounded-2xl
+                text-sm font-medium
+                ${
+                  Math.abs(radiusKm - o.km) < 0.5
+                    ? "bg-black text-white"
+                    : "bg-muted/40"
+                }
+              `}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    )}
+
+
+      {/* 3) 선택지(리스트) */}
+      <TodayDiscoveryList
+        events={events}
+        radiusKm={radiusKm}
+        onPick={handlePickFromList}
+      />
+
+      {/* 5) 소프트 리텐션(스탬프/리추얼/축하) */}
+      <StampsBar discoveredToday={discoveredIds.length} />
+
+      <DiscoveryProgress
+        count={discoveredIds.length}
+        justCelebrated={justCelebrated}
+        ritualLine={ritualLine}
+      />
+
+      {/* 6) Map stage (의도 있을 때만) */}
+      {showMap && (
+        <div ref={mapStageRef} className="pt-1">
+          <HomeMapStage
+            key={pendingSurprise ? "map-surprise" : "map-normal"}
+            events={events}
+            focusEventId={focusEventId}
+            autoSurprise={pendingSurprise}
+            onClose={() => {
+              setShowMap(false);
+              setPendingSurprise(false);
+              setFocusEventId(null);
+            }}
+            onSurprise={() => {}}
+            onDiscoverFromMap={onDiscover}
+          />
+
+        </div>
+      )}
+
+      {/* ✅ demo 모드에서만 “설명 카드” 노출 */}
+      {isDemo && <WhatIsSportsiveCompact />}
+
+      {/* returning 유저만 피드백 */}
+      {returning && <HomeFooterFeedback />}
     </main>
   );
 }

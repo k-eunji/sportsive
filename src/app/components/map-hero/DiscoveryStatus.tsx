@@ -15,30 +15,24 @@ export default function DiscoveryStatus({
   justCelebrated = false,
   returning = false,
 }: Props) {
-  return (
-    <div className="flex flex-col items-center gap-2 text-sm text-gray-600">
-      <p>
-        Today: <strong>{discoveredCount}</strong> matches explored
-        {yesterdayCount > 0 && (
-          <span className="opacity-70"> · Yesterday {yesterdayCount}</span>
-        )}
-      </p>
+  const line =
+    discoveredCount === 0
+      ? returning && yesterdayCount > 0
+        ? `Yesterday you explored ${yesterdayCount}. Today might feel different.`
+        : "Start anywhere. A match will surface."
+      : discoveredCount === 1
+      ? "One place uncovered."
+      : discoveredCount === 2
+      ? "Today is taking shape."
+      : "Snapshot complete.";
 
-      {discoveredCount === 0 && (
-        <p className="text-xs opacity-70">
-          Most of these don’t appear on major sports platforms.
-        </p>
-      )}
+  return (
+    <div className="flex flex-col items-center gap-1 text-sm text-muted-foreground">
+      <p className="text-foreground font-medium">{line}</p>
 
       {justCelebrated && (
-        <p className="text-sm font-medium text-green-700">
-          🎉 You’ve seen how sport looks in your area today.
-        </p>
-      )}
-
-      {returning && discoveredCount === 0 && yesterdayCount > 0 && (
-        <p className="text-xs opacity-70">
-          Yesterday was active — today might be different.
+        <p className="text-sm font-semibold text-emerald-700">
+          🎉 You’ve seen your area today.
         </p>
       )}
     </div>

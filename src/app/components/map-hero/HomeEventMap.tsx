@@ -1,6 +1,6 @@
 // src/app/components/map-hero/HomeEventMap.tsx
 
-'use client';
+"use client";
 
 import {
   useEffect,
@@ -8,10 +8,10 @@ import {
   useState,
   forwardRef,
   useImperativeHandle,
-} from 'react';
-import type { Event } from '@/types';
-import { useGoogleMaps } from '@/components/GoogleMapsProvider';
-import HomeMapSnapCard from './HomeMapSnapCard';
+} from "react";
+import type { Event } from "@/types";
+import { useGoogleMaps } from "@/components/GoogleMapsProvider";
+import HomeMapSnapCard from "./HomeMapSnapCard";
 
 const DEFAULT_LOCATION = { lat: 51.5074, lng: -0.1278 };
 const DEFAULT_ZOOM = 8;
@@ -19,6 +19,7 @@ const FOCUS_ZOOM = 13;
 
 export interface HomeEventMapRef {
   surprise: () => void;
+  focus: (eventId: string) => void;
 }
 
 const HomeEventMap = forwardRef<
@@ -29,16 +30,15 @@ const HomeEventMap = forwardRef<
     children?: React.ReactNode;
   }
 >(({ events, onDiscover, children }, ref) => {
-
   const mapRef = useRef<google.maps.Map | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const markersRef =
-    useRef<google.maps.marker.AdvancedMarkerElement[]>([]);
-
+  const markersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([]);
   const { isLoaded } = useGoogleMaps();
 
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-  const [mapActive, setMapActive] = useState(false); // ⭐ 핵심
+  const [showSnap, setShowSnap] = useState(false);
+
+  const [mapActive, setMapActive] = useState(false);
 
   const resetMap = () => {
     setSelectedEvent(null);
@@ -47,7 +47,27 @@ const HomeEventMap = forwardRef<
     mapRef.current?.setZoom(DEFAULT_ZOOM);
   };
 
-  // 🎲 Surprise API
+  const focusById = (eventId: string) => {
+    if (!mapRef.current) return;
+    const picked = (events as any[]).find((x) => x.id === eventId);
+    if (!picked?.location) return;
+
+    setMapActive(true);
+
+    mapRef.current.panTo(picked.location);
+    mapRef.current.setZoom(FOCUS_ZOOM);
+
+    setTimeout(() => {
+      setSelectedEvent(picked);
+      setShowSnap(true);
+    }, 350);
+
+    onDiscover(picked.id);
+
+    mapRef.current.panTo(picked.location);
+    mapRef.current.setZoom(FOCUS_ZOOM);
+  };
+
   useImperativeHandle(ref, () => ({
     surprise() {
       if (!mapRef.current) return;
@@ -57,7 +77,7 @@ const HomeEventMap = forwardRef<
       const bounds = mapRef.current.getBounds();
       if (!bounds) return;
 
-      const visible = events.filter((e) => {
+      const visible = (events as any[]).filter((e) => {
         if (!e.location) return false;
         return bounds.contains(
           new google.maps.LatLng(e.location.lat, e.location.lng)
@@ -66,14 +86,22 @@ const HomeEventMap = forwardRef<
 
       if (!visible.length) return;
 
-      const picked =
-        visible[Math.floor(Math.random() * visible.length)];
+      const picked = visible[Math.floor(Math.random() * visible.length)];
+      if (!picked?.location) return;
 
-      setSelectedEvent(picked);
-      onDiscover(picked.id);
-
-      mapRef.current.panTo(picked.location!);
+      mapRef.current.panTo(picked.location);
       mapRef.current.setZoom(FOCUS_ZOOM);
+
+      // ⭐ 핵심
+      setTimeout(() => {
+        setSelectedEvent(picked);
+        setShowSnap(true);
+      }, 350);
+
+      onDiscover(picked.id);
+    },
+    focus(eventId: string) {
+      focusById(eventId);
     },
   }));
 
@@ -87,26 +115,26 @@ const HomeEventMap = forwardRef<
         clickableIcons: false,
         mapId: process.env.NEXT_PUBLIC_MAP_ID_WEB,
 
-        // ⭐ 모바일 UX 핵심 옵션
-        gestureHandling: mapActive ? 'greedy' : 'none',
-        draggable: mapActive,
+        // 모바일 스크롤 충돌 완화:
+        // 기본은 cooperative (스크롤 우선), 활성화될 때만 greedy
+        gestureHandling: mapActive ? "greedy" : "cooperative",
+        draggable: true,
       });
 
-      mapRef.current.addListener('click', () => {
+      mapRef.current.addListener("click", () => {
         if (mapActive) resetMap();
       });
     } else {
-      // 상태 변경 시 옵션 업데이트
       mapRef.current.setOptions({
-        gestureHandling: mapActive ? 'greedy' : 'none',
-        draggable: mapActive,
+        gestureHandling: mapActive ? "greedy" : "cooperative",
+        draggable: true,
       });
     }
 
     markersRef.current.forEach((m) => (m.map = null));
     markersRef.current = [];
 
-    events.forEach((e) => {
+    (events as any[]).forEach((e) => {
       if (!e.location) return;
 
       const marker = new google.maps.marker.AdvancedMarkerElement({
@@ -115,11 +143,11 @@ const HomeEventMap = forwardRef<
         title: e.title,
       });
 
-      marker.addListener('click', () => {
+      marker.addListener("click", () => {
         setMapActive(true);
         setSelectedEvent(e);
         onDiscover(e.id);
-        mapRef.current?.panTo(e.location!);
+        mapRef.current?.panTo(e.location);
         mapRef.current?.setZoom(FOCUS_ZOOM);
       });
 
@@ -128,43 +156,38 @@ const HomeEventMap = forwardRef<
   }, [isLoaded, events, mapActive]);
 
   return (
-    <div className="relative w-full h-[520px] rounded-2xl overflow-hidden border">
-      {/* 지도 */}
+    <div className="relative w-full h-[60vh] max-h-[520px] min-h-[420px] rounded-2xl overflow-hidden border">
       <div ref={containerRef} className="absolute inset-0" />
 
-      {/* 🔮 Tomorrow Tease overlay slot */}
       <div
         className="
           absolute top-3 left-1/2 -translate-x-1/2
-          z-20
-          w-[calc(100%-24px)]
-          max-w-3xl
+          z-20 w-[calc(100%-24px)] max-w-3xl
         "
       >
-        {/* 여기에 TomorrowTease가 들어옴 */}
-        {/** children **/}
+        {children}
       </div>
 
       {!mapActive && (
-        <button
-          onClick={() => setMapActive(true)}
+        <div
           className="
-            absolute inset-0 z-10
-            flex items-center justify-center
-            bg-black/10 backdrop-blur-[1px]
-            text-sm font-medium text-gray-900
+            absolute bottom-3 left-1/2 -translate-x-1/2
+            z-10 rounded-full
+            bg-black/55 text-white
+            text-xs px-3 py-1.5
+            pointer-events-none
           "
         >
-          Tap to explore the map
-        </button>
+          Drag anywhere. Tap a pin. Or hit Surprise.
+        </div>
       )}
 
-      {selectedEvent && (
+      {showSnap && selectedEvent && (
         <HomeMapSnapCard event={selectedEvent} onClose={resetMap} />
       )}
+
     </div>
   );
-
 });
 
 export default HomeEventMap;

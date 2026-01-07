@@ -1,68 +1,39 @@
 // src/app/components/PlatformActivity.tsx
-
 "use client";
 
-import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import type { Event } from "@/types/event";
-import type { MeetupWithEvent } from "@/types/event";
 
 export default function PlatformActivity() {
-  const [stats, setStats] = useState({
-    totalEvents: 0,
-    totalMeetups: 0,
-    activeCities: 0,
-  });
-
-  useEffect(() => {
-    async function loadStats() {
-      try {
-        const eventsRes = await fetch("/api/events");
-        const eventsData = await eventsRes.json();
-        const events: Event[] = eventsData.events ?? [];
-
-        const meetupsRes = await fetch("/api/meetups");
-        const meetupsData = await meetupsRes.json();
-        const meetups: MeetupWithEvent[] = meetupsData.meetups ?? [];
-
-        const uniqueCities = new Set(
-          [
-            ...events.map((e) => e.city),
-            ...meetups.map((m) => m.location?.city),
-          ].filter(Boolean)
-        );
-
-        setStats({
-          totalEvents: events.length,
-          totalMeetups: meetups.length,
-          activeCities: uniqueCities.size,
-        });
-      } catch (err) {
-        console.error("Failed to load platform stats:", err);
-      }
-    }
-
-    loadStats();
-  }, []);
-
   return (
     <motion.section
-      className="mt-12 text-center text-sm text-gray-500"
+      className="px-6"
       initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.4 }}
+      whileInView={{ opacity: 1 }}
+      viewport={{ once: true, amount: 0.4 }}
+      transition={{ duration: 0.35 }}
     >
-      <span>
-        {stats.totalEvents} matches indexed
-      </span>
-      <span className="mx-2">·</span>
-      <span>
-        Active in {stats.activeCities} cities
-      </span>
-      <span className="mx-2">·</span>
-      <span>
-        Live & scheduled tracking
-      </span>
+      <div
+        className="
+          w-full md:max-w-3xl md:mx-auto
+          rounded-2xl
+          border border-border/60
+          bg-background/60
+          backdrop-blur
+          shadow-sm shadow-black/5
+          px-5 py-4
+          text-sm
+          text-gray-600 dark:text-gray-300
+          flex flex-col md:flex-row md:items-center md:justify-between
+          gap-2
+        "
+      >
+        <p className="font-medium text-gray-900 dark:text-gray-100">
+          The map keeps moving.
+        </p>
+        <p className="text-xs md:text-sm text-gray-500">
+          Matches shift daily · Explore first · Join only if you feel it
+        </p>
+      </div>
     </motion.section>
   );
 }

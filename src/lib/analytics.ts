@@ -1,16 +1,31 @@
 //src/lib/analytics.ts
 
-type EventName =
+export type EventName =
   | "home_loaded"
   | "surprise_clicked"
   | "match_discovered"
-  | "daily_discovery_completed";
+  | "daily_discovery_completed"
+  | "map_opened"
+  | "map_closed"
+  | "stamp_earned"
+  | "details_opened"
+  | "live_opened";
 
-export function logEvent(name: EventName) {
+export type EventProps = Record<string, string>;
+
+export function logEvent(
+  name: EventName | string, // ⭐ 여기만 바뀜
+  props?: EventProps
+) {
   if (process.env.NODE_ENV !== "production") {
-    console.log(`[analytics] ${name}`);
+    if (props && Object.keys(props).length > 0) {
+      console.log(`[analytics] ${name}`, props);
+    } else {
+      console.log(`[analytics] ${name}`);
+    }
   }
 
-  // 나중에 여기만 바꾸면 GA / PostHog / 자체 API 연결 가능
-  // fetch("/api/log", { method: "POST", body: JSON.stringify({ name }) })
+  // 미래:
+  // GA4: logEvent(name, props)
+  // PostHog: posthog.capture(name, props)
 }

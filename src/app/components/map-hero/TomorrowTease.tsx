@@ -1,5 +1,4 @@
-//src/app/components/map-hero/TomorrowTease.tsx
-
+// src/app/components/map-hero/TomorrowTease.tsx
 "use client";
 
 import { useMemo } from "react";
@@ -17,10 +16,6 @@ function isSameDay(a: Date, b: Date) {
   );
 }
 
-function hour(d: Date) {
-  return d.getHours();
-}
-
 export default function TomorrowTease({ events }: { events: Event[] }) {
   const tease = useMemo(() => {
     const now = new Date();
@@ -28,34 +23,13 @@ export default function TomorrowTease({ events }: { events: Event[] }) {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    const todayEvents = events.filter((e: any) => {
-      const dt = new Date(e.date ?? e.utcDate);
-      return isSameDay(dt, today);
-    });
-
     const tomorrowEvents = events.filter((e: any) => {
       const dt = new Date(e.date ?? e.utcDate);
       return isSameDay(dt, tomorrow);
     });
 
-    const tomorrowEvening = tomorrowEvents.filter((e: any) => {
-      const dt = new Date(e.date ?? e.utcDate);
-      return hour(dt) >= 18;
-    });
-
-    const todaySports = new Set(
-      todayEvents.map((e: any) => (e.sport ?? e.league ?? "").toString()).filter(Boolean)
-    );
-    const tomorrowSports = new Set(
-      tomorrowEvents.map((e: any) => (e.sport ?? e.league ?? "").toString()).filter(Boolean)
-    );
-
-    const newSport = [...tomorrowSports].find((s) => !todaySports.has(s));
-
     return {
       tomorrowCount: tomorrowEvents.length,
-      tomorrowEveningCount: tomorrowEvening.length,
-      newSport,
       dateLabel: tomorrow.toLocaleDateString(undefined, {
         weekday: "short",
         month: "short",
@@ -69,50 +43,27 @@ export default function TomorrowTease({ events }: { events: Event[] }) {
   return (
     <div
       className="
-        pointer-events-none
-        rounded-xl
+        rounded-2xl
+        border border-border/60
+        bg-background/60
+        backdrop-blur
+        shadow-sm shadow-black/5
         px-4 py-3
-        bg-gradient-to-r
-        from-white/90 to-white/60
-        dark:from-black/60 dark:to-black/40
-        backdrop-blur-md
-        shadow-[0_8px_24px_rgba(0,0,0,0.08)]
       "
     >
-      <div className="flex items-start gap-3">
-        <div className="w-[3px] rounded-full bg-red-500/70 mt-1" />
+      <p className="text-[11px] uppercase tracking-widest text-gray-500">
+        Tomorrow near you · {tease.dateLabel}
+      </p>
 
-        <div className="flex-1 flex items-center justify-between gap-4">
-          <div>
-            <p className="text-[11px] uppercase tracking-widest text-gray-500">
-              Tomorrow near you · {tease.dateLabel}
-            </p>
-            <p className="text-sm text-gray-800 dark:text-gray-200 mt-1">
-              A different snapshot is forming.
-            </p>
-          </div>
-
-          <div className="text-right shrink-0">
-            <p className="text-sm font-medium">
-              {tease.tomorrowCount} matches
-            </p>
-            <p className="text-xs text-gray-500">
-              {tease.tomorrowEveningCount > 0
-                ? `${tease.tomorrowEveningCount} start in the evening`
-                : "New timings show up"}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {tease.newSport && (
-        <p className="text-xs text-gray-500 mt-2 ml-[18px]">
-          A different sport may appear:{" "}
-          <span className="font-medium text-gray-800 dark:text-gray-200">
-            {tease.newSport}
-          </span>
+      <div className="mt-1 flex items-end justify-between gap-4">
+        <p className="text-sm text-gray-900 dark:text-gray-100">
+          A different snapshot is forming.
         </p>
-      )}
+
+        <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 shrink-0">
+          {tease.tomorrowCount} matches
+        </p>
+      </div>
     </div>
   );
 }

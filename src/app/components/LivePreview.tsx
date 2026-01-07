@@ -1,8 +1,7 @@
 // src/app/components/LivePreview.tsx
-
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { formatEventTimeWithOffsetUTC } from "@/utils/date";
 import { motion } from "framer-motion";
@@ -24,143 +23,131 @@ export default function LivePreview() {
   const [rooms, setRooms] = useState<LiveRoom[]>([]);
 
   useEffect(() => {
-    async function fetchRooms() {
+    let mounted = true;
+    (async function fetchRooms() {
       try {
-        const res = await fetch("/api/live/rooms/football", {
-          cache: "no-store",
-        });
-        if (!res.ok) throw new Error("Failed to fetch live rooms");
+        const res = await fetch("/api/live/rooms/football", { cache: "no-store" });
+        if (!res.ok) return;
         const data = await res.json();
+        if (!mounted) return;
         setRooms(data.rooms ?? []);
-      } catch (err) {
-        console.error(err);
+      } catch {
+        // silent
       }
-    }
-    fetchRooms();
+    })();
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  if (!rooms.length) return null;
-
-  const now = new Date();
-  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-
-  const activeRooms = rooms.filter((room) => room.status !== "END");
-  const liveRooms = activeRooms.filter((room) => room.status === "LIVE");
-  const todayRooms = activeRooms.filter((room) => {
-    const time = new Date(room.datetime);
-    return time >= startOfToday && time < endOfToday;
-  });
-
-  const prioritizedRooms = [...activeRooms]
-    .sort((a, b) => {
+  const view = useMemo(() => {
+    const active = rooms.filter((r) => r.status !== "END");
+    const sorted = [...active].sort((a, b) => {
       if (a.status === "LIVE" && b.status !== "LIVE") return -1;
       if (a.status !== "LIVE" && b.status === "LIVE") return 1;
       return new Date(a.datetime).getTime() - new Date(b.datetime).getTime();
-    })
-    .slice(0, 3);
+    });
 
-  if (!prioritizedRooms.length) return null;
+    const top = sorted.slice(0, 2);
+    const liveCount = active.filter((r) => r.status === "LIVE").length;
 
-  let headerTitle = "Upcoming matches";
-  let headerDesc = "People gather around specific games — quietly.";
+    return { top, liveCount, activeCount: active.length };
+  }, [rooms]);
 
-  if (liveRooms.length > 0) {
-    headerTitle = "Happening now";
-    headerDesc = "These matches have people in the room.";
-  } else if (todayRooms.length > 0) {
-    headerTitle = "Later today";
-    headerDesc = "A few games people are already circling.";
-  }
+  if (!view.top.length) return null;
+
+  const headerTitle = view.liveCount > 0 ? "Happening now" : "Circling today";
+  const headerDesc =
+    view.liveCount > 0
+      ? "People are already in these rooms."
+      : "A few matches people are quietly watching.";
 
   return (
-    <section className="mt-14 max-w-3xl mx-auto text-left">
-      {/* Header */}
-      <div className="mb-4">
-        <h2 className="text-xl font-semibold tracking-tight">
-          {headerTitle}
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          {headerDesc}
-        </p>
-      </div>
+    <section className="px-6">
+      <div className="w-full md:max-w-3xl md:mx-auto">
+        <div className="mb-3 space-y-1">
+          <div
+            onClick={() => window.location.href = "/live"}
+            className="cursor-pointer space-y-1"
+          >
+            <h2 className="text-lg font-semibold tracking-tight">
+              {headerTitle}
+            </h2>
 
-      {/* Preview-only list */}
-      <div className="divide-y divide-border/60 border-t border-border/60">
-        {prioritizedRooms.map((room) => {
-          const startTime = new Date(room.datetime);
-          const people = room.participants ?? 0;
+            <p className="text-sm text-muted-foreground">
+              {headerDesc}
+            </p>
 
-          return (
-            <div
-              key={room.id}
-              className="
-                flex items-center justify-between gap-3
-                py-3 px-2
-              "
-            >
-              {/* LEFT */}
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="flex items-center gap-1 shrink-0">
-                  {room.homeTeamLogo && (
-                    <img
-                      src={room.homeTeamLogo}
-                      alt={room.homeTeam}
-                      className="w-6 h-6 rounded-full object-cover"
-                    />
-                  )}
-                  {room.awayTeamLogo && (
-                    <img
-                      src={room.awayTeamLogo}
-                      alt={room.awayTeam}
-                      className="w-6 h-6 rounded-full object-cover"
-                    />
+            <p className="text-xs font-medium text-blue-600">
+              Tap to open live
+            </p>
+          </div>
+
+        </div>
+
+        <div className="grid gap-3">
+          {view.top.map((room) => {
+            const startTime = new Date(room.datetime);
+            const people = room.participants ?? 0;
+
+            return (
+              <Link
+                key={room.id}
+                href="/live"
+                className="
+                  rounded-2xl
+                  border border-border/60
+                  bg-background/60
+                  backdrop-blur
+                  shadow-sm shadow-black/5
+                  px-4 py-3
+                  hover:bg-background/80
+                  transition
+                "
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex items-center gap-1 shrink-0">
+                      {room.homeTeamLogo && (
+                        <img
+                          src={room.homeTeamLogo}
+                          alt={room.homeTeam}
+                          className="w-7 h-7 rounded-full object-cover"
+                        />
+                      )}
+                      {room.awayTeamLogo && (
+                        <img
+                          src={room.awayTeamLogo}
+                          alt={room.awayTeam}
+                          className="w-7 h-7 rounded-full object-cover"
+                        />
+                      )}
+                    </div>
+
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold truncate">
+                        {room.homeTeam} vs {room.awayTeam}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {formatEventTimeWithOffsetUTC(startTime)} · 👥 {people}
+                      </p>
+                    </div>
+                  </div>
+
+                  {room.status === "LIVE" && (
+                    <motion.span
+                      className="ml-auto text-xs text-red-600 font-semibold"
+                      animate={{ opacity: [1, 0.35, 1] }}
+                      transition={{ repeat: Infinity, duration: 1.2 }}
+                    >
+                      ● LIVE
+                    </motion.span>
                   )}
                 </div>
-
-                <div className="flex flex-col min-w-0">
-                  <span className="font-semibold text-sm truncate">
-                    {room.homeTeam} vs {room.awayTeam}
-                  </span>
-                  <span className="text-xs text-muted-foreground truncate">
-                    {formatEventTimeWithOffsetUTC(startTime)} • 👥 {people}
-                  </span>
-                </div>
-              </div>
-
-              {/* RIGHT */}
-              {room.status === "LIVE" ? (
-                <motion.span
-                  className="text-xs text-red-600 font-semibold shrink-0"
-                  animate={{ opacity: [1, 0.35, 1] }}
-                  transition={{ repeat: Infinity, duration: 1.2 }}
-                >
-                  ● LIVE
-                </motion.span>
-              ) : (
-                <span className="text-xs text-gray-500 shrink-0">
-                  Scheduled
-                </span>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* CTA */}
-      <div className="pt-4 flex justify-end">
-        <Link
-          href="/live"
-          className="
-            inline-flex items-center gap-1
-            text-sm font-semibold
-            text-blue-600
-            hover:underline
-            underline-offset-4
-          "
-        >
-          Explore live chats →
-        </Link>
+              </Link>
+            );
+          })}
+        </div>
       </div>
     </section>
   );

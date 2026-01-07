@@ -1,5 +1,4 @@
 // src/app/components/map-hero/MapHero.tsx
-
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -8,9 +7,9 @@ import DiscoveryStatus from "./DiscoveryStatus";
 import type { Event } from "@/types";
 import { logEvent } from "@/lib/analytics";
 import TomorrowTease from "./TomorrowTease";
+import SoftButton from "@/components/ui/SoftButton";
 
 const STORAGE_KEY_V2 = "sportsive_discovery_v2";
-const COPY_VARIANT_KEY = "sportsive_home_copy_variant";
 
 function dayKey(offset = 0) {
   const d = new Date();
@@ -41,61 +40,12 @@ function saveStore(next: DiscoveryStoreV2) {
   localStorage.setItem(STORAGE_KEY_V2, JSON.stringify(next));
 }
 
-type CopyVariant = "A" | "B";
-
-function pickStableVariant(): CopyVariant {
-  try {
-    const existing = localStorage.getItem(COPY_VARIANT_KEY) as CopyVariant | null;
-    if (existing === "A" || existing === "B") return existing;
-    const v: CopyVariant = Math.random() < 0.5 ? "A" : "B";
-    localStorage.setItem(COPY_VARIANT_KEY, v);
-    return v;
-  } catch {
-    return "A";
-  }
-}
-
-function getCopy(variant: CopyVariant, returning: boolean) {
-  const first = {
-    A: {
-      kicker: "Local sport is happening — quietly.",
-      title: "See what sport looks like near you today",
-      subtitle: "Discover 3 real matches around you. No sign-up.",
-      cta: "Surprise me nearby →",
-    },
-    B: {
-      kicker: "Not teams. Not hype. Real local matches.",
-      title: "What’s happening in your area?",
-      subtitle: "Explore a few nearby games — it changes every day.",
-      cta: "Pick one for me →",
-    },
-  };
-
-  const back = {
-    A: {
-      kicker: "Yesterday was one snapshot.",
-      title: "See what changed since yesterday",
-      subtitle: "Today shows a different side of local sport.",
-      cta: "Show me today’s matches →",
-    },
-    B: {
-      kicker: "New day. New map.",
-      title: "New day, different games",
-      subtitle: "Local sport shifts daily — take a 20-second look.",
-      cta: "Surprise me today →",
-    },
-  };
-
-  return returning ? back[variant] : first[variant];
-}
-
 export default function MapHero() {
   const [events, setEvents] = useState<Event[]>([]);
   const [discoveredIds, setDiscoveredIds] = useState<string[]>([]);
   const [yesterdayCount, setYesterdayCount] = useState(0);
   const [justCelebrated, setJustCelebrated] = useState(false);
   const [returning, setReturning] = useState(false);
-  const [variant, setVariant] = useState<CopyVariant>("A");
 
   const mapRef = useRef<HomeEventMapRef | null>(null);
 
@@ -111,8 +61,6 @@ export default function MapHero() {
 
     const keys = Object.keys(store.days ?? {});
     setReturning(keys.some((k) => k !== today));
-
-    setVariant(pickStableVariant());
   }, []);
 
   useEffect(() => {
@@ -133,7 +81,7 @@ export default function MapHero() {
 
   useEffect(() => {
     async function load() {
-      const res = await fetch("/api/events?limit=40");
+      const res = await fetch("/api/events?limit=60");
       const data = await res.json();
 
       const now = new Date();
@@ -155,93 +103,82 @@ export default function MapHero() {
     logEvent("match_discovered");
   };
 
-  const copy = useMemo(() => getCopy(variant, returning), [variant, returning]);
-
   const ritualLine = useMemo(() => {
     if (!returning) return null;
-
-    // “어제의 흔적”을 짧게 상기 (무의식용)
     if (yesterdayCount > 0 && discoveredIds.length === 0) {
       return `Yesterday you explored ${yesterdayCount}. Today will look different.`;
     }
-
-    // 이미 오늘도 조금 봤으면 “루프” 강화
     if (discoveredIds.length > 0) {
-      return `Your map is building. Check again tomorrow for a new snapshot.`;
+      return `This changes daily. Come back tomorrow for a new snapshot.`;
     }
-
-    return `This changes daily. A quick look tomorrow feels different.`;
+    return `A quick look tomorrow feels different.`;
   }, [returning, yesterdayCount, discoveredIds.length]);
 
   if (!events.length) return null;
 
   return (
-    <section id="map" className="mt-6 space-y-4">
-      <div className="max-w-3xl mx-auto text-center space-y-3">
-        <p className="text-xs uppercase tracking-widest text-red-600 font-medium">
-          {copy.kicker}
-        </p>
+    <section id="map" className="mt-2 space-y-4">
+      {/* A compact “control row” instead of a big hero block */}
+      <div className="px-6">
+        <div className="w-full md:max-w-3xl md:mx-auto flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
+              Explore the next 7 days near you
+            </p>
+            <p className="text-xs text-gray-500 truncate">
+              Tap pins to open a match · Discover 3 for a daily snapshot
+            </p>
+          </div>
 
-        <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">
-          {copy.title}
-        </h1>
+          <div className="flex items-center gap-2 shrink-0">
+            <SoftButton
+              as="button"
+              onClick={() => {
+                logEvent("surprise_clicked");
+                mapRef.current?.surprise();
+              }}
+              className="px-4 py-2"
+            >
+              Surprise →
+            </SoftButton>
 
-        <p className="text-sm text-gray-600">
-          {copy.subtitle} <span className="opacity-70">· Next 7 days</span>
-        </p>
-
-        <DiscoveryStatus
-          discoveredCount={discoveredIds.length}
-          yesterdayCount={yesterdayCount}
-          justCelebrated={justCelebrated}
-          returning={returning}
-        />
-
-        {/* CTA: 리듬감 있는 행동 유도 */}
-        <div className="flex items-center justify-center gap-4 pt-1">
-          <button
-            onClick={() => {
-              logEvent("surprise_clicked");
-              mapRef.current?.surprise();
-            }}
-            className="
-              inline-flex items-center
-              text-sm font-semibold text-blue-600
-              hover:underline underline-offset-4
-            "
-          >
-            {copy.cta}
-          </button>
-
-          <span className="text-xs text-gray-300">|</span>
-
-          <a
-            href="/events"
-            className="text-sm font-medium text-gray-700 dark:text-gray-200 hover:underline underline-offset-4"
-          >
-            Open full map →
-          </a>
+            <SoftButton as="link" href="/events" className="px-4 py-2">
+              Full map →
+            </SoftButton>
+          </div>
         </div>
 
-        {/* “어제의 흔적”/“내일 루프” 메시지 */}
-        {ritualLine && (
-          <p className="text-xs text-gray-500 pt-1">
-            {ritualLine}
-          </p>
+        {/* Show “status” only AFTER they’ve discovered something */}
+        {discoveredIds.length > 0 && (
+          <div className="pt-3 flex flex-col items-center">
+            <DiscoveryStatus
+              discoveredCount={discoveredIds.length}
+              yesterdayCount={yesterdayCount}
+              justCelebrated={justCelebrated}
+              returning={returning}
+            />
+            {ritualLine && (
+              <p className="text-xs text-gray-500 pt-2 text-center">
+                {ritualLine}
+              </p>
+            )}
+          </div>
         )}
       </div>
 
-      {/* ✅ Tomorrow Tease: “내일은 다르다”를 경험으로 */}
-      <TomorrowTease events={events} />
+      {/* Tomorrow tease: minimal + visual, not essay */}
+      <div className="px-6">
+        <div className="w-full md:max-w-3xl md:mx-auto">
+          <TomorrowTease events={events} />
+        </div>
+      </div>
 
-      <HomeEventMap
-        ref={mapRef}
-        events={events}
-        onDiscover={handleDiscover}
-      >
-        <TomorrowTease events={events} />
-      </HomeEventMap>
-
+      {/* Map */}
+      <div className="px-6">
+        <div className="w-full md:max-w-3xl md:mx-auto">
+          <HomeEventMap ref={mapRef} events={events} onDiscover={handleDiscover} />
+        </div>
+      </div>
     </section>
   );
 }
