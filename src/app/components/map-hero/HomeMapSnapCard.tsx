@@ -16,6 +16,29 @@ interface LiveRoom {
   status?: "Scheduled" | "LIVE" | "END";
 }
 
+function logLocalEventView(eventId: string) {
+  try {
+    const key = `sportsive_event_views_${eventId}`;
+    const raw = localStorage.getItem(key);
+    const n = raw ? Number(raw) : 0;
+    localStorage.setItem(key, String(n + 1));
+  } catch {}
+}
+
+function getLocalEventViewLabel(eventId: string) {
+  try {
+    const raw = localStorage.getItem(`sportsive_event_views_${eventId}`);
+    const n = raw ? Number(raw) : 0;
+
+    if (n <= 0) return "Quiet — no recent activity";
+    if (n === 1) return "Someone checked this recently";
+    if (n <= 3) return "A few people looked at this";
+    return "People are circling this match";
+  } catch {
+    return null;
+  }
+}
+
 export default function HomeMapSnapCard({
   event,
   onClose,
@@ -53,6 +76,11 @@ export default function HomeMapSnapCard({
     if (room && room.status !== "END" && people > 0) return true;
     return false;
   }, [isLive, room, people]);
+
+  useEffect(() => {
+    logLocalEventView(e.id);
+  }, [e.id]);
+
 
   return (
     <div
@@ -92,9 +120,28 @@ export default function HomeMapSnapCard({
                 {isLive ? "LIVE" : "UPCOMING"}
               </span>
 
-              <span className="text-[11px] font-semibold px-2 py-1 rounded-full border text-gray-700 bg-gray-50 border-gray-200">
-                👥 {people}
-              </span>
+              <p className="mt-2 text-[11px] text-muted-foreground">
+                {getLocalEventViewLabel(e.id)}
+              </p>
+
+              {showChatCta && (
+                <button
+                  onClick={() => {
+                    track("chat_badge_clicked", { eventId: e.id, people });
+                    window.location.href = `/live/football?eventId=${e.id}`;
+                  }}
+                  className="
+                    text-[11px] font-semibold px-2 py-1 rounded-full border
+                    text-red-600 bg-red-50 border-red-200
+                    hover:bg-red-100
+                    transition
+                  "
+                  aria-label="Open live chat"
+                >
+                  💬 {people}
+                </button>
+              )}
+
             </div>
           </div>
 

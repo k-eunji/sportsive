@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useMemo } from "react";
 import type { Event } from "@/types";
 import HomeEventMap, { HomeEventMapRef } from "@/app/components/map-hero/HomeEventMap";
 import SoftButton from "@/components/ui/SoftButton";
@@ -25,6 +25,18 @@ export default function HomeMapStage({
 }) {
   const mapRef = useRef<HomeEventMapRef | null>(null);
 
+  const filteredEvents = useMemo(() => {
+    const now = new Date();
+    const in7 = new Date();
+    in7.setDate(now.getDate() + 7);
+
+    return events.filter((e: any) => {
+      const d = new Date(e.date ?? e.utcDate);
+      return d >= now && d <= in7;
+    });
+  }, [events]);
+
+
   useEffect(() => {
     if (!focusEventId) return;
     mapRef.current?.focus?.(focusEventId);
@@ -35,7 +47,7 @@ export default function HomeMapStage({
 
     const t = setTimeout(() => {
       mapRef.current?.surprise();
-    }, 400); // ⬅️ 늘려라
+    }, 800); // ⬅️ 늘려라
 
     return () => clearTimeout(t);
   }, [autoSurprise]);
@@ -78,7 +90,12 @@ export default function HomeMapStage({
           </div>
         </div>
 
-        <HomeEventMap ref={mapRef} events={events} onDiscover={onDiscoverFromMap} />
+        <HomeEventMap
+          ref={mapRef}
+          events={filteredEvents}
+          onDiscover={onDiscoverFromMap}
+        />
+
       </div>
     </section>
   );

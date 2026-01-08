@@ -1,4 +1,4 @@
-//src/app/components/home/DiscoveryProgress.tsx
+// src/app/components/home/DiscoveryProgress.tsx
 
 "use client";
 
@@ -22,6 +22,12 @@ export default function DiscoveryProgress({
       ? "You’re seeing the shape of today."
       : "Today feels complete.";
 
+  const line =
+    ritualLine ??
+    (count === 0
+      ? "You don’t need a reason. Just look around."
+      : "This changes daily. A quick look tomorrow feels different.");
+
   return (
     <section className="px-6">
       <div className="md:max-w-3xl mx-auto text-center space-y-2">
@@ -38,7 +44,7 @@ export default function DiscoveryProgress({
         )}
 
         <p className="text-[11px] text-muted-foreground">
-          {ritualLine ?? "This changes daily. A quick look tomorrow feels different."}
+          {line}
         </p>
       </div>
     </section>

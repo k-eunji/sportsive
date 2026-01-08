@@ -9,9 +9,10 @@ import { useMemo, useState } from "react";
 import { getVibe, vibeClass } from "@/lib/vibe";
 import { useUserLocation, haversineKm } from "./useUserLocation";
 import { track } from "@/lib/track";
-import type { RadiusKm } from "./RadiusFilter";
+import type { ViewScope } from "./RadiusFilter";
 import { formatDistance } from "@/lib/distance";
 import { useDistanceUnit } from "./useDistanceUnit";
+import { scopeToKm } from "@/lib/scopeDistance";
 
 function startOfDay(d: Date) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -23,11 +24,11 @@ function sameDay(a: Date, b: Date) {
 export default function TodayDiscoveryList({
   events,
   onPick,
-  radiusKm,
+  scope,
 }: {
   events: Event[];
   onPick: (id: string) => void;
-  radiusKm: RadiusKm;
+  scope: ViewScope;
 }) {
   const [mode, setMode] = useState<"today" | "week">("today");
   const { pos } = useUserLocation();
@@ -53,11 +54,24 @@ export default function TodayDiscoveryList({
     return { todayList, weekList };
   }, [events]);
 
-  const list = (mode === "today" ? view.todayList : view.weekList).filter((e: any) => {
-    if (!pos || !e.location?.lat || !e.location?.lng) return true;
-    const d = haversineKm(pos, { lat: e.location.lat, lng: e.location.lng });
-    return d <= radiusKm;
-    });
+  const list = (mode === "today" ? view.todayList : view.weekList).filter(
+    (e: any) => {
+      if (scope === "global") return true;
+
+      // ✅ 위치 아직 없으면 필터 안 함
+      if (!pos) return true;
+
+      if (!e.location?.lat || !e.location?.lng) return false;
+
+      const d = haversineKm(pos, {
+        lat: e.location.lat,
+        lng: e.location.lng,
+      });
+
+      return d <= scopeToKm(scope);
+    }
+  );
+  console.log("pos:", pos);
 
   return (
     <section className="px-6">
@@ -65,8 +79,15 @@ export default function TodayDiscoveryList({
         <div className="flex items-end justify-between gap-3">
           <div className="min-w-0">
             <p className="text-sm font-semibold truncate">
-              {mode === "today" ? "Today near you" : "Next 7 days near you"}
+              {scope === "global"
+                ? mode === "today"
+                  ? "Happening around the world today"
+                  : "Next 7 days around the world"
+                : mode === "today"
+                ? "Today around you"
+                : "Next 7 days around you"}
             </p>
+
             <p className="text-xs text-gray-500 truncate">Tap a match to jump into the map</p>
           </div>
 
@@ -133,7 +154,9 @@ export default function TodayDiscoveryList({
 
                     <p className="text-xs text-muted-foreground truncate mt-0.5">
                       {e.homeTeam} vs {e.awayTeam} · {formatEventTimeWithOffsetUTC(dt)}
-                      {typeof dist === "number" ? ` · ${formatDistance(dist, unit)}` : ""}
+                      {scope !== "global" && typeof dist === "number"
+                        ? ` · ${formatDistance(dist, unit)}`
+                        : ""}
                     </p>
 
                     <div className="mt-2 flex items-center gap-2">
@@ -157,11 +180,27 @@ export default function TodayDiscoveryList({
           })}
 
           {list.length === 0 && (
-            <div className="rounded-2xl border px-4 py-4 text-sm text-gray-500">
-              Nothing showing in this window. Try switching to <strong>7 days</strong>.
+            <div className="rounded-2xl border px-4 py-4 text-sm text-gray-500 space-y-1">
+              <p>
+                {scope === "global"
+                  ? "Nothing surfaced globally right now."
+                  : "This area is quiet right now."}
+              </p>
+              <p className="text-xs">
+                {scope === "global"
+                  ? "Try switching back to nearby or city."
+                  : "It usually doesn’t stay that way."}
+              </p>
             </div>
           )}
+
         </div>
+        <button
+          onClick={() => setMode("week")}
+          className="text-xs font-semibold text-blue-600 hover:underline"
+        >
+          Show the next 7 days →
+        </button>
 
         <Link
           href="/events"

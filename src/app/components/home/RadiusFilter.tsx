@@ -1,21 +1,23 @@
 // src/app/components/home/RadiusFilter.tsx
 "use client";
 
-export type RadiusKm = number;
+export type ViewScope = "nearby" | "city" | "country" | "global";
 
 export default function RadiusFilter({
-  valueKm,
+  scope,
   onOpen,
 }: {
-  valueKm: RadiusKm;
+  scope: ViewScope;
   onOpen: () => void;
 }) {
   const label =
-    valueKm <= 5
+    scope === "nearby"
       ? "Nearby"
-      : valueKm <= 10
+      : scope === "city"
       ? "Around me"
-      : "Wider area";
+      : scope === "country"
+      ? "Wider"
+      : "Global";
 
   return (
     <div className="px-6">
@@ -32,7 +34,7 @@ export default function RadiusFilter({
           backdrop-blur
         "
       >
-        <span>Within {label}</span>
+        <span>Showing {label}</span>
         <span className="text-xs text-muted-foreground">Change</span>
       </button>
     </div>

@@ -2,8 +2,38 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
+
+function logPlatformVisit() {
+  try {
+    const key = "sportsive_platform_visits";
+    const raw = localStorage.getItem(key);
+    const n = raw ? Number(raw) : 0;
+    localStorage.setItem(key, String(n + 1));
+  } catch {}
+}
+
+function getPlatformVisitLine() {
+  try {
+    const raw = localStorage.getItem("sportsive_platform_visits");
+    const n = raw ? Number(raw) : 0;
+
+    if (n <= 1) return "You’re early here.";
+    if (n <= 3) return "A few people have checked this recently.";
+    return "People have been passing through here today.";
+  } catch {
+    return null;
+  }
+}
 
 export default function PlatformActivity() {
+  const [line, setLine] = useState<string | null>(null);
+
+  useEffect(() => {
+    logPlatformVisit();
+    setLine(getPlatformVisitLine());
+  }, []);
+
   return (
     <motion.section
       className="px-6"
@@ -33,6 +63,12 @@ export default function PlatformActivity() {
         <p className="text-xs md:text-sm text-gray-500">
           Matches shift daily · Explore first · Join only if you feel it
         </p>
+
+        {line && (
+          <p className="text-xs text-gray-500">
+            {line}
+          </p>
+        )}
       </div>
     </motion.section>
   );

@@ -13,6 +13,7 @@ import HomeFooterFeedback from "./components/HomeFooterFeedback";
 import HomeMapStage from "./components/home/HomeMapStage";
 import StampsBar from "./components/home/StampsBar";
 import RadiusFilter from "./components/home/RadiusFilter";
+import type { ViewScope } from "./components/home/RadiusFilter";
 import { useDistanceUnit } from "./components/home/useDistanceUnit";
 
 import { useDailyDiscovery } from "./components/home/useDailyDiscovery";
@@ -35,10 +36,19 @@ export default function Home() {
   const [radiusOpen, setRadiusOpen] = useState(false);
 
   const { unit, toggle } = useDistanceUnit();
-  const [radiusKm, setRadiusKm] = useState(10);
+  const [scope, setScope] = useState<ViewScope>("nearby");
 
   const [focusEventId, setFocusEventId] = useState<string | null>(null);
   const [pendingSurprise, setPendingSurprise] = useState(false);
+
+  const scopeLabel =
+    scope === "global"
+      ? "Worldwide"
+      : scope === "country"
+      ? "Across your country"
+      : scope === "city"
+      ? "Around your city"
+      : "Near you";
 
   const { discoveredIds, justCelebrated, ritualLine, returning, addDiscover } =
     useDailyDiscovery();
@@ -89,6 +99,22 @@ export default function Home() {
     track("map_opened", { source: "hero_surprise" });
   };
 
+  useEffect(() => {
+    const saved = localStorage.getItem("sportsive_view_scope");
+    if (
+      saved === "nearby" ||
+      saved === "city" ||
+      saved === "country" ||
+      saved === "global"
+    ) {
+      setScope(saved);
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("sportsive_view_scope", scope);
+  }, [scope]);
+
   if (!events.length) return null;
 
   return (
@@ -104,7 +130,7 @@ export default function Home() {
 
       {/* 4) 필터는 보조로 내려서 ‘결정 피로’ 줄이기 */}
       <RadiusFilter
-        valueKm={radiusKm}
+        scope={scope}
         onOpen={() => setRadiusOpen(true)}
       />
 
@@ -129,30 +155,36 @@ export default function Home() {
           <p className="text-sm font-semibold mb-3">Search area</p>
 
           {[
-            { label: "Nearby", km: 5 },
-            { label: "Around me", km: 10 },
-            { label: "Wider area", km: 20 },
+            { label: "Nearby", scope: "nearby", desc: "Walking distance" },
+            { label: "Around me", scope: "city", desc: "Your city" },
+            { label: "Wider", scope: "country", desc: "This country" },
+            { label: "Global", scope: "global", desc: "Everywhere" },
           ].map((o) => (
             <button
-              key={o.km}
+              key={o.scope}
               onClick={() => {
-                setRadiusKm(o.km);
+                setScope(o.scope as ViewScope);
                 setRadiusOpen(false);
+                track("scope_changed", { scope: o.scope });
               }}
               className={`
                 w-full text-left
                 px-4 py-3 rounded-2xl
                 text-sm font-medium
                 ${
-                  Math.abs(radiusKm - o.km) < 0.5
+                  scope === o.scope
                     ? "bg-black text-white"
                     : "bg-muted/40"
                 }
               `}
             >
-              {o.label}
+              <div className="flex justify-between items-center">
+                <span>{o.label}</span>
+                <span className="text-xs opacity-70">{o.desc}</span>
+              </div>
             </button>
           ))}
+
         </div>
       </div>
     )}
@@ -161,7 +193,7 @@ export default function Home() {
       {/* 3) 선택지(리스트) */}
       <TodayDiscoveryList
         events={events}
-        radiusKm={radiusKm}
+        scope={scope}
         onPick={handlePickFromList}
       />
 
