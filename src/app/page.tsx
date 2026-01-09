@@ -56,7 +56,7 @@ export default function Home() {
   useEffect(() => {
     track("home_loaded");
     (async () => {
-      const res = await fetch("/api/events?limit=60");
+      const res = await fetch("/api/events?window=7d");
       const data = await res.json();
       setEvents(data.events ?? []);
     })();

@@ -25,18 +25,6 @@ export default function HomeMapStage({
 }) {
   const mapRef = useRef<HomeEventMapRef | null>(null);
 
-  const filteredEvents = useMemo(() => {
-    const now = new Date();
-    const in7 = new Date();
-    in7.setDate(now.getDate() + 7);
-
-    return events.filter((e: any) => {
-      const d = new Date(e.date ?? e.utcDate);
-      return d >= now && d <= in7;
-    });
-  }, [events]);
-
-
   useEffect(() => {
     if (!focusEventId) return;
     mapRef.current?.focus?.(focusEventId);
@@ -92,7 +80,7 @@ export default function HomeMapStage({
 
         <HomeEventMap
           ref={mapRef}
-          events={filteredEvents}
+          events={events}
           onDiscover={onDiscoverFromMap}
         />
 

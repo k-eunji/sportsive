@@ -13,6 +13,8 @@ import type { ViewScope } from "./RadiusFilter";
 import { formatDistance } from "@/lib/distance";
 import { useDistanceUnit } from "./useDistanceUnit";
 import { scopeToKm } from "@/lib/scopeDistance";
+import { formatEventTimeCard } from "@/utils/formatEventTimeCard";
+import { getEventTimingLabel } from "@/utils/getEventTimingLabel";
 
 function startOfDay(d: Date) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -88,7 +90,7 @@ export default function TodayDiscoveryList({
                 : "Next 7 days around you"}
             </p>
 
-            <p className="text-xs text-gray-500 truncate">Tap a match to jump into the map</p>
+            <p className="text-xs text-gray-500 truncate">Tap a match to view on the map</p>
           </div>
 
           <div className="flex gap-2 shrink-0">
@@ -129,8 +131,10 @@ export default function TodayDiscoveryList({
                 : null;
 
             return (
-              <button
+              <div
                 key={e.id}
+                role="button"
+                tabIndex={0}
                 onClick={() => {
                   track("list_item_clicked", { eventId: e.id });
                   onPick(e.id);
@@ -143,25 +147,42 @@ export default function TodayDiscoveryList({
                   px-4 py-3
                   hover:bg-background/80
                   transition
+                  cursor-pointer
                 "
               >
-                <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-3">
                   <div className="min-w-0">
                     {/* ✅ 1. vibe를 카드의 제목으로 승격 */}
-                    <p className="text-sm font-semibold truncate">
-                      {vibe.emoji ? `${vibe.emoji} ` : ""}{vibe.label}
+                    <p className="text-sm font-semibold leading-snug line-clamp-2">
+                      {e.homeTeam} vs {e.awayTeam}
                     </p>
 
-                    <p className="text-xs text-muted-foreground truncate mt-0.5">
-                      {e.homeTeam} vs {e.awayTeam} · {formatEventTimeWithOffsetUTC(dt)}
-                      {scope !== "global" && typeof dist === "number"
-                        ? ` · ${formatDistance(dist, unit)}`
-                        : ""}
-                    </p>
+                    <div className="mt-1 text-xs text-muted-foreground space-y-0.5">
+                      {/* 시간 */}
+                      <div className="leading-snug">
+                        {formatEventTimeCard(dt, e.region)}
+                      </div>
 
-                    <div className="mt-2 flex items-center gap-2">
+                      {/* 거리 + 종목 */}
+                      <div className="flex flex-wrap gap-x-2 gap-y-0.5">
+                        {typeof dist === "number" && (
+                          <span>{formatDistance(dist, unit)}</span>
+                        )}
+
+                        {e.sport && (
+                          <span className="font-medium">
+                            {e.sport === "football" && "⚽ Football"}
+                            {e.sport === "rugby" && "🏉 Rugby"}
+                            {e.sport === "tennis" && "🎾 Tennis"}
+                            {e.sport === "f1" && "🏎️ F1"}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="mt-2 flex flex-wrap gap-2">
                       <span className={`text-[11px] font-semibold px-2 py-1 rounded-full border ${vibeClass(vibe.tone)}`}>
-                        {mode === "today" ? "Today" : "Next 7 days"}
+                        {getEventTimingLabel(dt)}
                       </span>
 
                       <span className={`text-[11px] font-semibold px-2 py-1 rounded-full border ${
@@ -172,10 +193,36 @@ export default function TodayDiscoveryList({
                     </div>
                   </div>
 
-                  <span className="text-sm font-semibold text-blue-600 shrink-0">Open →</span>
+                  <button
+                    type="button"
+                    onClick={(ev) => {
+                      ev.stopPropagation(); // ✅ 카드 onClick(지도 열기) 막기
+                      track("directions_clicked", { eventId: e.id });
+
+                      const lat = e.location?.lat;
+                      const lng = e.location?.lng;
+                      if (!lat || !lng) return;
+
+                      // Google Maps directions
+                      const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+                      window.open(url, "_blank");
+                    }}
+                    className="
+                      ml-auto
+                      self-start
+                      rounded-full
+                      px-3 py-1.5
+                      text-xs font-semibold
+                      text-blue-600
+                      hover:bg-blue-50
+                    "
+                  >
+                    Directions →
+                  </button>
+
 
                 </div>
-              </button>
+              </div>
             );
           })}
 
