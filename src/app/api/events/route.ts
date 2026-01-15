@@ -3,45 +3,50 @@
 import { NextResponse } from "next/server";
 import { GET as getFootballEvents } from "./england/football/route";
 import { GET as getRugbyEvents } from "./england/rugby/route";
+import { GET as getTennisEvents } from "./england/tennis/route"; // ✅ 추가
+import { isEventActiveInWindow } from "@/lib/events/lifecycle";
 
 export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
-    const window = url.searchParams.get("window") ?? "7d"; // 기본 7일
+    const window = url.searchParams.get("window") ?? "7d";
 
-    const [footballRes, rugbyRes] = await Promise.all([
+    const [footballRes, rugbyRes, tennisRes] = await Promise.all([
       getFootballEvents(),
       getRugbyEvents(),
+      getTennisEvents(),
     ]);
 
     const footballData = await footballRes.json();
     const rugbyData = await rugbyRes.json();
+    const tennisData = await tennisRes.json();
 
     const merged = [
       ...(footballData.matches ?? []),
       ...(rugbyData.matches ?? []),
+      ...(tennisData.matches ?? []),
     ];
 
     const now = new Date();
-    const end = new Date(now);
+    const windowEnd = new Date(now);
 
     if (window === "today") {
-      end.setHours(23, 59, 59, 999);
+      windowEnd.setHours(23, 59, 59, 999);
     } else if (window === "7d") {
-      end.setDate(end.getDate() + 7);
+      windowEnd.setDate(windowEnd.getDate() + 7);
     } else if (window === "30d") {
-      end.setDate(end.getDate() + 30);
+      windowEnd.setDate(windowEnd.getDate() + 30);
     }
 
     const filtered = merged
+      .filter((e: any) =>
+        isEventActiveInWindow(e, now, windowEnd)
+      )
       .map((e: any) => ({
         ...e,
-        startAtUtc: e.startAtUtc ?? e.date, // ⭐ 단일 시간 필드
+        // ⭐ discovery & sorting용 단일 기준
+        startAtUtc: e.date,
       }))
-      .filter((e: any) => {
-        const d = new Date(e.startAtUtc);
-        return d >= now && d <= end; // 🔥 과거 제거
-      })
       .sort(
         (a: any, b: any) =>
           new Date(a.startAtUtc).getTime() -

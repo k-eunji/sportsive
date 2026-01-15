@@ -1,4 +1,5 @@
 // src/app/components/home/PulseStrip.tsx
+
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -7,6 +8,7 @@ import { motion } from "framer-motion";
 
 type LiveRoom = {
   id: string;
+  sport?: string;
   participants?: number;
   status?: "Scheduled" | "LIVE" | "END";
 };
@@ -16,17 +18,24 @@ export default function PulseStrip() {
 
   useEffect(() => {
     let mounted = true;
+
     (async () => {
       try {
-        const res = await fetch("/api/live/rooms/football", { cache: "no-store" });
+        // ✅ football + rugby + tennis 전부 포함
+        const res = await fetch("/api/live/rooms/all", {
+          cache: "no-store",
+        });
         if (!res.ok) return;
+
         const data = await res.json();
         if (!mounted) return;
+
         setRooms(data.rooms ?? []);
       } catch {
         // fail silently
       }
     })();
+
     return () => {
       mounted = false;
     };
@@ -35,26 +44,29 @@ export default function PulseStrip() {
   const pulse = useMemo(() => {
     const active = rooms.filter((r) => r.status !== "END");
     const live = active.filter((r) => r.status === "LIVE");
-    const people = active.reduce((sum, r) => sum + (r.participants ?? 0), 0);
+    const people = active.reduce(
+      (sum, r) => sum + (r.participants ?? 0),
+      0
+    );
 
     if (live.length > 0) {
       return {
         label: `Live now · ${people} ${
           people === 1 ? "person" : "people"
-        } around local matches`,
+        } around local sports`,
         tone: "live" as const,
       };
     }
 
     if (active.length > 0) {
       return {
-        label: `Today · People are already circling a few matches`,
+        label: `Today · People are already circling a few sports`,
         tone: "today" as const,
       };
     }
 
     return {
-      label: `Local matches happen quietly — explore what’s near you`,
+      label: `Local sports happen quietly — explore what’s near you`,
       tone: "quiet" as const,
     };
   }, [rooms]);

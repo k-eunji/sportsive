@@ -81,7 +81,14 @@ export default function Home() {
     setShowMap(true);
     setPendingSurprise(false);
     onDiscover(id);
-    track("map_opened", { source: "list_pick" });
+
+    // ⭐ 지도 영역으로 자동 스크롤
+    requestAnimationFrame(() => {
+      mapStageRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
   };
 
   const handleHeroSurprise = () => {

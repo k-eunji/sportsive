@@ -16,15 +16,32 @@ import {
 import { db } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 
-interface LiveEvent {
+interface MatchLiveEvent {
   id: string;
+  kind: "match";
+  date: string;
+  participants: number;
+
   homeTeam: string;
   awayTeam: string;
   homeTeamLogo?: string;
   awayTeamLogo?: string;
-  date: string;
-  participants: number;
 }
+
+interface SessionLiveEvent {
+  id: string;
+  kind: "session";
+  date: string;              // anchor (오늘)
+  participants: number;
+
+  title: string;
+  venue?: string;
+
+  startDate?: string;
+  endDate?: string;
+}
+
+type LiveEvent = MatchLiveEvent | SessionLiveEvent;
 
 export default function LiveRoomPage({
   params,
@@ -61,8 +78,15 @@ export default function LiveRoomPage({
   // 2️⃣ LIVE / END 상태 계산
   useEffect(() => {
     if (!event) return;
-    const start = new Date(event.date);
+
     const now = new Date();
+
+    if (event.kind === "session") {
+      setStatus("LIVE"); // 당일 항상 LIVE
+      return;
+    }
+
+    const start = new Date(event.date);
     const end = new Date(start.getTime() + 2 * 3600 * 1000);
 
     if (now >= start && now <= end) setStatus("LIVE");
@@ -118,24 +142,81 @@ export default function LiveRoomPage({
 
       {/* HEADER */}
       <div className="shrink-0 border-b px-4 py-3">
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-start gap-3">
 
-          <div className="flex items-center gap-2">
-            <img src={event.homeTeamLogo} className="w-6 h-6 rounded-full" />
-            <span className="font-semibold text-sm">{event.homeTeam}</span>
-            <span className="mx-1">vs</span>
-            <span className="font-semibold text-sm">{event.awayTeam}</span>
-            <img src={event.awayTeamLogo} className="w-6 h-6 rounded-full" />
+          {/* LEFT */}
+          <div className="flex flex-col min-w-0">
+
+            {/* 🎾 SESSION HEADER */}
+            {event.kind === "session" ? (
+              <>
+                <span className="text-sm font-semibold truncate">
+                  🎾 {event.title}
+                </span>
+
+                {event.venue && (
+                  <span className="text-xs text-muted-foreground mt-0.5 truncate">
+                    {event.venue}
+                  </span>
+                )}
+              </>
+            ) : (
+              /* ⚽️ MATCH HEADER */
+              <div className="flex items-center gap-2 min-w-0">
+                {event.homeTeamLogo && (
+                  <img
+                    src={event.homeTeamLogo}
+                    className="w-6 h-6 rounded-full"
+                  />
+                )}
+
+                <span className="font-semibold text-sm truncate">
+                  {event.homeTeam}
+                </span>
+
+                <span className="mx-1 text-sm">vs</span>
+
+                <span className="font-semibold text-sm truncate">
+                  {event.awayTeam}
+                </span>
+
+                {event.awayTeamLogo && (
+                  <img
+                    src={event.awayTeamLogo}
+                    className="w-6 h-6 rounded-full"
+                  />
+                )}
+              </div>
+            )}
           </div>
 
-          <div className="flex flex-col items-end text-xs">
-            <span className="text-red-500 font-semibold">
+          {/* RIGHT */}
+          <div className="flex flex-col items-end text-xs shrink-0">
+            <span
+              className={`font-semibold ${
+                status === "LIVE" ? "text-red-500" : "text-muted-foreground"
+              }`}
+            >
               {status}
             </span>
+
             <span className="text-muted-foreground">
               {event.participants} chatting
             </span>
-            <button onClick={() => router.push("/live")}>🗣️</button>
+
+            <button
+              onClick={() => router.back()}
+              className="
+                mt-1
+                text-sm
+                font-medium
+                text-muted-foreground
+                hover:text-foreground
+                transition
+              "
+            >
+              ← Back
+            </button>
           </div>
         </div>
 

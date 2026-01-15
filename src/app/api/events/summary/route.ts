@@ -1,7 +1,7 @@
 // src/app/api/events/summary/route.ts
 
 import { NextResponse } from "next/server";
-import { supabase } from "../../../../lib/supabaseServer";
+import { isEventActiveInWindow } from "@/lib/events/lifecycle";
 
 export async function GET() {
   try {
@@ -25,66 +25,50 @@ export async function GET() {
       startOfToday.getTime() + 7 * 24 * 60 * 60 * 1000
     );
 
-    // ──────────────────────────
-    // 7일 이내 경기 (football + rugby)
-    // ──────────────────────────
-    const [{ count: football7d }, { count: rugby7d }] = await Promise.all([
-      supabase
-        .from("england_pl_football_matches")
-        .select("*", { count: "exact", head: true })
-        .gte("date", startOfToday.toISOString())
-        .lt("date", in7days.toISOString()),
+    // ✅ England 전체 이벤트 카탈로그 로드
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_BASE_URL}/api/events/england/all`,
+      { cache: "no-store" }
+    );
 
-      supabase
-        .from("england_rugby_matches")
-        .select("*", { count: "exact", head: true })
-        .gte("date", startOfToday.toISOString())
-        .lt("date", in7days.toISOString()),
-    ]);
+    if (!res.ok) {
+      throw new Error("Failed to load england events");
+    }
+
+    const { matches } = await res.json();
+    const events = matches ?? [];
 
     // ──────────────────────────
-    // 오늘 경기
+    // 오늘 활성 이벤트
     // ──────────────────────────
-    const [{ count: footballToday }, { count: rugbyToday }] =
-      await Promise.all([
-        supabase
-          .from("england_pl_football_matches")
-          .select("*", { count: "exact", head: true })
-          .gte("date", startOfToday.toISOString())
-          .lt("date", startOfTomorrow.toISOString()),
-
-        supabase
-          .from("england_rugby_matches")
-          .select("*", { count: "exact", head: true })
-          .gte("date", startOfToday.toISOString())
-          .lt("date", startOfTomorrow.toISOString()),
-      ]);
+    const today = events.filter((e: any) =>
+      isEventActiveInWindow(e, startOfToday, startOfTomorrow)
+    ).length;
 
     // ──────────────────────────
-    // LIVE 경기
+    // 7일 내 활성 이벤트
     // ──────────────────────────
-    const [{ count: footballLive }, { count: rugbyLive }] =
-      await Promise.all([
-        supabase
-          .from("england_pl_football_matches")
-          .select("*", { count: "exact", head: true })
-          .in("status", ["LIVE", "IN_PLAY"]),
+    const upcoming7d = events.filter((e: any) =>
+      isEventActiveInWindow(e, startOfToday, in7days)
+    ).length;
 
-        supabase
-          .from("england_rugby_matches")
-          .select("*", { count: "exact", head: true })
-          .in("status", ["LIVE", "IN_PLAY"]),
-      ]);
+    // ──────────────────────────
+    // LIVE 개념 = "지금 이 순간 활성"
+    // (match / session / round 공통)
+    // ──────────────────────────
+    const live = events.filter((e: any) =>
+      isEventActiveInWindow(e, now, now)
+    ).length;
 
     return NextResponse.json({
-      upcoming7d: (football7d ?? 0) + (rugby7d ?? 0),
-      today: (footballToday ?? 0) + (rugbyToday ?? 0),
-      live: (footballLive ?? 0) + (rugbyLive ?? 0),
+      today,
+      upcoming7d,
+      live,
     });
   } catch (err) {
     console.error("❌ summary error:", err);
     return NextResponse.json(
-      { upcoming7d: 0, today: 0, live: 0 },
+      { today: 0, upcoming7d: 0, live: 0 },
       { status: 500 }
     );
   }

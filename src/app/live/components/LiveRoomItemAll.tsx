@@ -4,92 +4,104 @@
 
 import { useRouter } from 'next/navigation'
 import { formatEventTimeWithOffsetUTC } from '@/utils/date'
+import { sportEmoji } from '@/lib/sportEmoji'
+import { toast } from "react-hot-toast";
 
-export default function LiveRoomItemAll({ room }: { room: any }) {
+export default function LiveRoomItemAll({
+  room,
+  mode = "live",
+}: {
+  room: any;
+  mode?: "live" | "upcoming";
+}) {
   const router = useRouter()
+  const startTime = new Date(room.datetime)
 
-  // 1️⃣ 시간 파싱 (UTC 안전)
-  const startTime = new Date(Date.parse(room.datetime))
-  const now = new Date()
+  const isTeamMatch =
+    room.kind !== "session" &&
+    (room.sport === "football" || room.sport === "rugby")
 
-  // 2️⃣ 오픈 / 종료 정책
-  const openTime = new Date(startTime.getTime() - 2 * 60 * 60 * 1000)
-  const liveEndTime = new Date(startTime.getTime() + 2 * 60 * 60 * 1000)
-  const closeTime = new Date(liveEndTime.getTime() + 30 * 60 * 1000)
+  const SPORT_LABEL_MAP: Record<string, string> = {
+    football: "Football",
+    rugby: "Rugby",
+    tennis: "Tennis",
+    f1: "F1",
+    cricket: "Cricket",
+    golf: "Golf",
+    horseracing: "Horse Racing",
+  };
 
-  // 3️⃣ 입장 가능 여부
-  const isOpen = now >= openTime && now <= closeTime
-
-  // 4️⃣ 디버그 (지금은 꼭 찍어라)
-  console.log('[LiveRoomItemAll]', {
-    id: room.id,
-    datetime: room.datetime,
-    startTime,
-    now,
-    openTime,
-    closeTime,
-    isOpen,
-  })
-
-  // 5️⃣ 클릭 제어
   const handleClick = () => {
-    if (isOpen) {
-      router.push(`/live/${room.sport}/${room.id}`)
-    } else if (now < openTime) {
-      alert(
-        `Chat opens at ${openTime.toLocaleTimeString([], {
-          hour: '2-digit',
-          minute: '2-digit',
-        })}`
-      )
-    } else {
-      alert('This chat has ended.')
+    if (mode === "upcoming") {
+      toast("This chat opens on match day.");
+      return;
     }
-  }
+
+    router.push(`/live/${room.sport}/${room.id}`);
+  };
+
+
+  const sportLabel = SPORT_LABEL_MAP[room.sport ?? ""] ?? "Sport";
 
   return (
     <div
       onClick={handleClick}
-      className={`flex items-center justify-between py-3 px-3 transition-colors text-[13px] md:text-[14px]
-        ${isOpen ? 'cursor-pointer hover:bg-muted/40' : 'opacity-60 cursor-not-allowed'}
+      className={`
+        flex items-start gap-3 py-3 px-3
+        transition-colors
+        ${
+          mode === "upcoming"
+            ? "cursor-not-allowed opacity-60"
+            : "cursor-pointer hover:bg-muted/40"
+        }
       `}
     >
-      {/* LEFT */}
-      <div className="flex items-center gap-2 min-w-0">
-        {/* LOGOS */}
-        <div className="flex items-center gap-1 shrink-0">
-          {room.homeTeamLogo && (
-            <img
-              src={room.homeTeamLogo}
-              alt={room.homeTeam}
-              className="w-6 h-6 rounded-full object-cover md:w-7 md:h-7"
-            />
-          )}
-          {room.awayTeamLogo && (
-            <img
-              src={room.awayTeamLogo}
-              alt={room.awayTeam}
-              className="w-6 h-6 rounded-full object-cover md:w-7 md:h-7"
-            />
-          )}
-        </div>
+      {/* LEFT ZONE */}
+      <div className="flex flex-col items-center gap-1 shrink-0 min-w-[44px]">
 
-        {/* TEXT */}
-        <div className="flex flex-col min-w-0">
-          <span className="font-medium flex items-center gap-1 min-w-0">
-            <span className="truncate max-w-[70px] md:max-w-[110px]">
-              {room.homeTeam}
-            </span>
-            <span className="shrink-0">vs</span>
-            <span className="truncate max-w-[70px] md:max-w-[110px]">
-              {room.awayTeam}
-            </span>
-          </span>
+        {/* 팀 로고 (팀 매치만) */}
+        {isTeamMatch && (
+          <div className="flex items-center gap-1">
+            {room.homeTeamLogo && (
+              <img
+                src={room.homeTeamLogo}
+                alt={room.homeTeam}
+                className="w-6 h-6 rounded-full object-cover"
+              />
+            )}
+            {room.awayTeamLogo && (
+              <img
+                src={room.awayTeamLogo}
+                alt={room.awayTeam}
+                className="w-6 h-6 rounded-full object-cover"
+              />
+            )}
+          </div>
+        )}
 
-          <span className="text-[11px] text-muted-foreground truncate md:text-xs">
-            {formatEventTimeWithOffsetUTC(startTime)} • 👥 {room.participants}
-          </span>
-        </div>
+        {/* 스포츠 배지 (이모지 + 텍스트) */}
+        <span
+          className="
+            px-1.5 py-0.5 rounded
+            text-[10px] font-semibold tracking-wide
+            bg-muted/40 text-muted-foreground
+          "
+        >
+          {sportEmoji[room.sport ?? ""]} {sportLabel.toUpperCase()}
+        </span>
+      </div>
+
+      {/* CONTENT */}
+      <div className="flex flex-col min-w-0">
+        <span className="font-semibold truncate">
+          {isTeamMatch
+            ? `${room.homeTeam} vs ${room.awayTeam}`
+            : room.title}
+        </span>
+
+        <span className="text-[11px] text-muted-foreground truncate">
+          {formatEventTimeWithOffsetUTC(startTime)} • 👥 {room.participants}
+        </span>
       </div>
     </div>
   )

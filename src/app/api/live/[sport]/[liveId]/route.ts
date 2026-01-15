@@ -13,8 +13,8 @@ export async function GET(
   const { sport, liveId } = await params;
 
   try {
-    // 1️⃣ 이벤트 기본 정보
-    const event = await getEventById(liveId);
+    // ✅ sport 전달
+    const event = await getEventById(liveId, sport as any);
 
     if (!event) {
       return NextResponse.json(
@@ -23,7 +23,7 @@ export async function GET(
       );
     }
 
-    // 2️⃣ 🔥 presence 문서 개수 = 실제 참여자 수
+    // 🔥 presence = 실제 참여자 수
     const presenceSnap = await adminDb
       .collection("live_events")
       .doc(sport)
@@ -34,10 +34,15 @@ export async function GET(
 
     const participants = presenceSnap.size;
 
-    // 3️⃣ 응답
     return NextResponse.json({
       ...event,
-      title: `${event.homeTeam} vs ${event.awayTeam} Live`,
+
+      // 🎾 tennis는 title 그대로 사용
+      title:
+        event.kind === "session"
+          ? event.title
+          : `${event.homeTeam} vs ${event.awayTeam} Live`,
+
       participants,
     });
 

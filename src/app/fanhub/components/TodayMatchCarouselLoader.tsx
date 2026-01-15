@@ -1,17 +1,20 @@
-///src/app/fanhub/components/TodayMatchCarouselLoader.tsx
+// src/app/fanhub/components/TodayMatchCarouselLoader.tsx
 
 "use client";
 
 import { useEffect, useState } from "react";
-import TodayMatchCarousel, { CarouselMatch } from "./TodayMatchCarousel";
+import TodayMatchCarousel, { CarouselItem } from "./TodayMatchCarousel";
 
-export default function TodayMatchCarouselLoader({ sport = "all" }: { sport?: string }) {
-  const [matches, setMatches] = useState<CarouselMatch[] | null>(null);
-  const [label, setLabel] = useState("Today’s Predictions");
+export default function TodayMatchCarouselLoader({
+  sport = "all",
+}: {
+  sport?: string;
+}) {
+  const [items, setItems] = useState<CarouselItem[] | null>(null);
+  const [label, setLabel] = useState("Loading…");
 
   useEffect(() => {
-    // ⭐ sport가 바뀌면 즉시 초기화 (이게 있어야 잔상/멈춤 현상 없어짐)
-    setMatches(null);
+    setItems(null);
 
     async function load() {
       try {
@@ -22,66 +25,112 @@ export default function TodayMatchCarouselLoader({ sport = "all" }: { sport?: st
 
         const res = await fetch(endpoint);
         const json = await res.json();
+        const list: any[] = json?.matches ?? [];
 
-        const matchList: any[] = json?.matches ?? [];
-
-        if (!Array.isArray(matchList) || matchList.length === 0) {
-          setLabel("No matches available");
-          setMatches([]);
+        if (list.length === 0) {
+          setLabel("No events today");
+          setItems([]);
           return;
         }
 
-        const todayStr = new Date().toISOString().slice(0, 10);
+        const today = new Date().toISOString().slice(0, 10);
 
-        const todayMatches = matchList.filter((m) => {
-          const matchStr = new Date(m.date).toISOString().slice(0, 10);
-          return matchStr === todayStr;
-        });
+        /** 🔥 오늘 열리는 이벤트 */
+        const todayItems: CarouselItem[] = list
+          .filter((e) => {
+            const d = new Date(e.date).toISOString().slice(0, 10);
+            return d === today;
+          })
+          .map((e) => {
+            if (e.kind === "session") {
+              return {
+                id: e.id,
+                type: "session",
+                title: e.title,
+                startDate: e.startDate,
+                endDate: e.endDate,
+                venue: e.venue,
+              };
+            }
 
-        if (todayMatches.length > 0) {
-          setLabel("Today’s Match");
-          setMatches(todayMatches);
+            return {
+              id: e.id,
+              type: "match",
+              homeTeam: e.homeTeam,
+              awayTeam: e.awayTeam,
+              homeTeamLogo: e.homeTeamLogo ?? null,
+              awayTeamLogo: e.awayTeamLogo ?? null,
+              date: e.date,
+            };
+          });
+
+        if (todayItems.length > 0) {
+          setLabel(
+            todayItems.some((i) => i.type === "session")
+              ? "Tennis Today"
+              : "Today’s Match"
+          );
+          setItems(todayItems);
           return;
         }
 
-        const now = new Date();
-
-        const upcoming = matchList
-          .filter((m) => new Date(m.date) > now)
+        /** 🔥 다음 이벤트 */
+        const upcoming: CarouselItem[] = list
+          .filter((e) => new Date(e.date) > new Date())
           .sort(
             (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-          );
+          )
+          .slice(0, 5)
+          .map((e) => {
+            if (e.kind === "session") {
+              return {
+                id: e.id,
+                type: "session",
+                title: e.title,
+                startDate: e.startDate,
+                endDate: e.endDate,
+                venue: e.venue,
+              };
+            }
+
+            return {
+              id: e.id,
+              type: "match",
+              homeTeam: e.homeTeam,
+              awayTeam: e.awayTeam,
+              homeTeamLogo: e.homeTeamLogo ?? null,
+              awayTeamLogo: e.awayTeamLogo ?? null,
+              date: e.date,
+            };
+          });
 
         if (upcoming.length > 0) {
-          setLabel("Next Match");
-          setMatches(upcoming.slice(0, 5));
+          setLabel("Next Event");
+          setItems(upcoming);
           return;
         }
 
-        // ⭐ 오늘도 없고, 다음 경기 없을 때
-        setLabel("No upcoming matches");
-        setMatches([]);
+        setLabel("No upcoming events");
+        setItems([]);
       } catch (e) {
-        console.error("Failed to load matches:", e);
-        setLabel("No matches available");
-        setMatches([]);
+        console.error(e);
+        setLabel("No events available");
+        setItems([]);
       }
     }
 
     load();
   }, [sport]);
 
-  // ⭐ 아직 로딩 중일 때
-  if (matches === null) {
+  if (items === null) {
     return (
       <div className="w-full h-[50px] flex items-center px-3 mb-1 text-xs opacity-50">
-        Loading...
+        Loading…
       </div>
     );
   }
 
-  // ⭐ 로딩 끝났지만 경기 없음
-  if (matches.length === 0) {
+  if (items.length === 0) {
     return (
       <div className="w-full h-[50px] flex items-center px-3 mb-1 text-xs opacity-60">
         {label}
@@ -89,5 +138,5 @@ export default function TodayMatchCarouselLoader({ sport = "all" }: { sport?: st
     );
   }
 
-  return <TodayMatchCarousel matches={matches} label={label} />;
+  return <TodayMatchCarousel items={items} label={label} />;
 }

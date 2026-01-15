@@ -46,7 +46,7 @@ export default function MeetupsLayoutClient({ children }: any) {
                   : "bg-muted text-muted-foreground"
               }`}
             >
-              All Sports
+              Meetups
             </span>
           </Link>
 
@@ -65,7 +65,7 @@ export default function MeetupsLayoutClient({ children }: any) {
                   : "bg-muted text-muted-foreground"
               }`}
             >
-              My Sports
+              My Meetups
             </span>
           </Link>
         </div>

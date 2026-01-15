@@ -18,7 +18,7 @@ export default function EventsPage() {
 
   const [selectedRegion, setSelectedRegion] = useState('');
   const [selectedCity, setSelectedCity] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedSport, setSelectedSport] = useState('');
   const [selectedCompetition, setSelectedCompetition] = useState('');
 
   const [dateRange, setDateRange] = useState<{ from?: string; to?: string }>(() => {
@@ -46,10 +46,11 @@ export default function EventsPage() {
     async function fetchAllEvents() {
       setLoading(true);
         try {
-          const [baseRes, footballRes, rugbyRes] = await Promise.allSettled([
+          const [baseRes, footballRes, rugbyRes, tennisRes] = await Promise.allSettled([
             fetch('/api/events'),
             fetch('/api/events/england/football'),
             fetch('/api/events/england/rugby'),
+            fetch('/api/events/england/tennis'),
           ]);
 
           let baseEvents: Event[] = [];
@@ -76,7 +77,8 @@ export default function EventsPage() {
               title: m.title ?? `${m.homeTeam} vs ${m.awayTeam}`,
               city: m.city ?? '',
               region: m.region ?? '',
-              category: 'football',
+              sport: 'football',
+              kind: 'match',
               homepageUrl: m.homepageUrl ?? undefined,
             }));
           }
@@ -99,14 +101,46 @@ export default function EventsPage() {
                 title: m.title ?? `${m.homeTeam} vs ${m.awayTeam}`,
                 city: m.city ?? '',
                 region: m.region ?? '',
-                category: 'rugby', // ✅ 중요
+                sport: 'rugby',
+                kind: 'match',
                 homepageUrl: m.homepageUrl ?? undefined,
               }));
             }
 
+            let tennisEvents: Event[] = [];
+              if (tennisRes.status === 'fulfilled' && tennisRes.value.ok) {
+                const data = await tennisRes.value.json();
+
+                tennisEvents = (data.matches ?? []).map((m: any) => ({
+                  id: m.id,
+                  title: m.title,
+
+                  date: m.date,                 // 정렬 anchor
+                  startDate: m.startDate,
+                  endDate: m.endDate,
+
+                  sport: 'tennis',
+                  kind: 'session',
+
+                  venue: m.venue,
+                  city: m.city,
+                  region: m.region,
+                  location: m.location ?? { lat: null, lng: null },
+
+                  homepageUrl: m.homepageUrl,
+                  isPaid: m.isPaid ?? true,
+
+                  // Event 타입 필수값들(없으면 UI/타입 깨짐 방지)
+                  free: false,
+                  organizerId: 'system',
+                  attendees: [],
+                }));
+              }
+
+
 
           // ⭐⭐⭐ 여기서 중복 제거
-          const merged = [...baseEvents, ...footballEvents, ...rugbyEvents];
+          const merged = [...baseEvents, ...footballEvents, ...rugbyEvents, ...tennisEvents];
 
           const uniqueEvents = Array.from(
             new Map(
@@ -131,27 +165,64 @@ export default function EventsPage() {
   useEffect(() => {
     let temp = [...events];
 
-    // 미래 일정만
-    temp = temp.filter((e) => new Date(e.date).getTime() >= Date.now());
+    const now = new Date();
+
+      // 미래 + 진행 중 이벤트만
+      temp = temp.filter((e) => {
+        // 🎾 테니스 / 기간 이벤트
+        if (e.kind === 'session' && e.startDate && e.endDate) {
+          const start = new Date(e.startDate);
+          const end = new Date(e.endDate);
+
+          // 아직 안 시작했거나, 진행 중
+          return start > now || (start <= now && now <= end);
+        }
+
+        // ⚽️🏉 match (단일 경기)
+        return new Date(e.date).getTime() >= now.getTime();
+      });
+
 
     // 지역, 도시, 종목, 리그 필터
     temp = temp.filter(
       (e) =>
         (!selectedRegion || e.region === selectedRegion) &&
         (!selectedCity || e.city === selectedCity) &&
-        (!selectedCategory || e.category === selectedCategory) &&
+        (!selectedSport || e.sport === selectedSport) &&
         (!selectedCompetition || e.competition === selectedCompetition)
     );
 
     // 날짜 범위 필터
-    if (dateRange.from) temp = temp.filter((e) => new Date(e.date) >= new Date(dateRange.from!));
-    if (dateRange.to) temp = temp.filter((e) => new Date(e.date) <= new Date(dateRange.to!));
+    // 날짜 범위 필터 (session은 start~end 기준)
+    if (dateRange.from || dateRange.to) {
+      const from = dateRange.from ? new Date(dateRange.from) : null;
+      const to = dateRange.to ? new Date(dateRange.to) : null;
+
+      temp = temp.filter((e) => {
+        // 🎾 session (테니스 대회)
+        if (e.kind === 'session' && e.startDate && e.endDate) {
+          const start = new Date(e.startDate);
+          const end = new Date(e.endDate);
+
+          // 기간이 선택 범위와 겹치면 표시
+          if (from && end < from) return false;
+          if (to && start > to) return false;
+          return true;
+        }
+
+        // ⚽️🏉 match (단일 경기)
+        const d = new Date(e.date);
+        if (from && d < from) return false;
+        if (to && d > to) return false;
+        return true;
+      });
+    }
 
     // 시간순 정렬
     temp.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     setFilteredEvents(temp);
-  }, [events, selectedRegion, selectedCity, selectedCategory, selectedCompetition, dateRange]);
+  }, [events, selectedRegion, selectedCity, selectedSport, selectedCompetition, dateRange]);
 
   /** ✅ 로딩 상태 */
   if (loading)
@@ -185,7 +256,7 @@ export default function EventsPage() {
       <EventFilterBar
         selectedRegion={selectedRegion}
         selectedCity={selectedCity}
-        selectedCategory={selectedCategory}
+        selectedSport={selectedSport}
         selectedCompetition={selectedCompetition}
         events={events}
         onRegionChange={(r) => {
@@ -193,7 +264,17 @@ export default function EventsPage() {
           setSelectedCity('');
         }}
         onCityChange={setSelectedCity}
-        onCategoryChange={setSelectedCategory}
+        onSportChange={(sport) => {
+          setSelectedSport(sport);
+
+          // 🔥 테니스 카드 안 나오던 진짜 원인 해결
+          setSelectedCompetition('');
+          setSelectedRegion('');
+          setSelectedCity('');
+        }}
+
+        
+
         onCompetitionChange={setSelectedCompetition}
       >
         {/* 🔸 날짜 범위 선택 */}

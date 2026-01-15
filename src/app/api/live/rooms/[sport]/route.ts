@@ -7,56 +7,64 @@ export const fetchCache = "force-no-store";
 import { NextResponse } from "next/server";
 import { getAllEvents } from "@/lib/events";
 import { adminDb } from "@/lib/firebaseAdmin";
+import { isEventActiveInWindow } from "@/lib/events/lifecycle";
 
 export async function GET(
-  req: Request,
+  _req: Request,
   context: { params: Promise<{ sport: string }> }
 ) {
   const { sport } = await context.params;
   const normalizedSport = (sport ?? "").toLowerCase();
 
-  // ✅ 1. Live에서 실제로 지원하는 sport만 허용
-  const SUPPORTED_SPORTS = ["football", "rugby", "all"];
-
-  // 🚫 tennis, f1, golf, cricket 등은 즉시 빈 배열 반환
+  const SUPPORTED_SPORTS = ["football", "rugby", "tennis", "all"];
   if (!SUPPORTED_SPORTS.includes(normalizedSport)) {
     return NextResponse.json({ rooms: [] });
   }
 
   try {
     const now = new Date();
-    const startOfToday = new Date(
+
+    const windowStart = new Date(
       now.getFullYear(),
       now.getMonth(),
       now.getDate()
     );
-    const endOfFutureRange = new Date(
+
+    const windowEnd = new Date(
       now.getFullYear(),
       now.getMonth(),
       now.getDate() + 5,
-      23,
-      59,
-      59
+      23, 59, 59
     );
 
-    // ✅ 2. sport에 맞는 이벤트만 가져오기
-    const allEvents =
-      normalizedSport === "all"
-        ? [
-            ...(await getAllEvents("football")),
-            ...(await getAllEvents("rugby")),
-          ]
-        : await getAllEvents(normalizedSport as "football" | "rugby");
+    let allEvents: any[] = [];
 
-    // ✅ 3. 날짜 필터
-    const filtered = allEvents.filter((event: any) => {
-      const d = new Date(event.date);
-      return d >= startOfToday && d <= endOfFutureRange;
-    });
+    if (normalizedSport === "all") {
+      allEvents = [
+        ...(await getAllEvents("football")),
+        ...(await getAllEvents("rugby")),
+        ...(await getAllEvents("tennis")),
+      ];
+    } else {
+      allEvents = await getAllEvents(
+        normalizedSport as "football" | "rugby" | "tennis"
+      );
+    }
 
-    // ✅ 4. Live rooms 생성
+    const activeEvents = allEvents.filter((event) =>
+      isEventActiveInWindow(event, windowStart, windowEnd)
+    );
+
+    // 🔥 session 오늘 anchor
+    const todayAnchor = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      12, 0, 0, 0
+    );
+
     const rooms = await Promise.all(
-      filtered.map(async (event: any) => {
+      activeEvents.map(async (event: any) => {
         const sportKey =
           normalizedSport === "all" ? event.sport : normalizedSport;
 
@@ -70,20 +78,31 @@ export async function GET(
 
         const participants = presenceSnap.size;
 
+        const isSession = event.kind === "session";
+
         return {
           id: event.id,
           eventId: event.id,
-          sport:
-            normalizedSport === "all"
-              ? event.sport
-              : normalizedSport,
-          title: `${event.homeTeam} vs ${event.awayTeam}`,
+          sport: event.sport,
+
+          title: isSession
+            ? event.title
+            : `${event.homeTeam} vs ${event.awayTeam}`,
+
           participants,
-          datetime: event.date,
-          homeTeam: event.homeTeam,
-          awayTeam: event.awayTeam,
-          homeTeamLogo: event.homeTeamLogo ?? null,
-          awayTeamLogo: event.awayTeamLogo ?? null,
+
+          // ✅ 핵심
+          datetime: isSession
+            ? todayAnchor.toISOString()
+            : event.date,
+
+          homeTeam: isSession ? null : event.homeTeam,
+          awayTeam: isSession ? null : event.awayTeam,
+
+          homeTeamLogo: isSession ? null : event.homeTeamLogo ?? null,
+          awayTeamLogo: isSession ? null : event.awayTeamLogo ?? null,
+
+          kind: event.kind ?? "match",
         };
       })
     );

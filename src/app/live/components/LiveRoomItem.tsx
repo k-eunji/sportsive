@@ -1,32 +1,77 @@
-// src/app/live/components/LiveRoomItemAll.tsx
+///src/app/live/components/LiveRoomItem.tsx
 
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { useEffect, useState } from "react";
+import { doc, onSnapshot } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 import { formatEventTimeWithOffsetUTC } from '@/utils/date'
 
-export default function LiveRoomItemAll({ room }: { room: any }) {
+export default function LiveRoomItem({ room }: { room: any }) {
   const router = useRouter()
 
-  const startTime = new Date(room.datetime)
+  const isSession = room.kind === "session" || room.sport === "tennis"
+
+  // 👥 participants (실시간)
+  const [participants, setParticipants] = useState(room.participants ?? 0)
+
+  useEffect(() => {
+    const ref = doc(db, "live_events", room.sport, "events", room.id)
+
+    const unsub = onSnapshot(ref, (snap) => {
+      if (snap.exists()) {
+        setParticipants(snap.data().participants ?? 0)
+      }
+    })
+
+    return () => unsub()
+  }, [room.sport, room.id])
+
   const now = new Date()
+  const startTime = new Date(room.datetime)
 
-  // ⏰ 시간 정책 (LiveRoomItem과 동일)
-  const openTime = new Date(startTime.getTime() - 2 * 60 * 60 * 1000)
-  const liveEndTime = new Date(startTime.getTime() + 2 * 60 * 60 * 1000)
-  const closeTime = new Date(liveEndTime.getTime() + 30 * 60 * 1000)
+  // ===============================
+  // ⏰ OPEN / CLOSE TIME 계산
+  // ===============================
 
-  let status: 'Scheduled' | 'LIVE' | 'END' = 'Scheduled'
-  if (now >= startTime && now <= liveEndTime) status = 'LIVE'
-  else if (now > liveEndTime) status = 'END'
+  let openTime: Date
+  let closeTime: Date
+
+  if (isSession) {
+    // 🎾 테니스: 당일 하루 종일
+    openTime = new Date(startTime)
+    openTime.setHours(0, 0, 0, 0)
+
+    closeTime = new Date(startTime)
+    closeTime.setHours(23, 59, 59, 999)
+  } else {
+    // ⚽️🏉 match
+    openTime = new Date(startTime.getTime() - 2 * 60 * 60 * 1000)
+    closeTime = new Date(startTime.getTime() + 2 * 60 * 60 * 1000 + 30 * 60 * 1000)
+  }
 
   const isOpen = now >= openTime && now <= closeTime
 
-  // 🖱️ 클릭 제어
+  // ===============================
+  // 📡 STATUS
+  // ===============================
+
+  let status: 'Scheduled' | 'LIVE' | 'END' = 'Scheduled'
+
+  if (isSession) {
+    if (isOpen) status = 'LIVE'
+    else if (now > closeTime) status = 'END'
+  } else {
+    const matchEnd = new Date(startTime.getTime() + 2 * 60 * 60 * 1000)
+    if (now >= startTime && now <= matchEnd) status = 'LIVE'
+    else if (now > matchEnd) status = 'END'
+  }
+
   const handleClick = () => {
-    if (isOpen) {
-      router.push(`/live/${room.sport}/${room.id}`)
-    } else if (now < openTime) {
+    if (isOpen) return router.push(`/live/${room.sport}/${room.id}`)
+
+    if (now < openTime) {
       alert(
         `Chat opens at ${openTime.toLocaleTimeString([], {
           hour: '2-digit',
@@ -38,54 +83,47 @@ export default function LiveRoomItemAll({ room }: { room: any }) {
     }
   }
 
+  // ===============================
+  // 🖼 RENDER
+  // ===============================
+
   return (
     <div
       onClick={handleClick}
-      className={`flex items-center justify-between py-3 px-3 transition-colors text-[13px] md:text-[14px]
-        ${isOpen ? 'cursor-pointer hover:bg-muted/40' : 'opacity-60 cursor-not-allowed'}
+      className={`flex items-center justify-between py-4 cursor-pointer transition-colors
+        ${isOpen ? 'hover:bg-muted/40' : 'opacity-60 cursor-not-allowed'}
       `}
     >
-      {/* LEFT */}
-      <div className="flex items-center gap-2 min-w-0">
-        {/* LOGOS */}
-        <div className="flex items-center gap-1 shrink-0">
-          {room.homeTeamLogo && (
-            <img
-              src={room.homeTeamLogo}
-              alt={room.homeTeam}
-              className="w-6 h-6 rounded-full object-cover md:w-7 md:h-7"
-            />
-          )}
-          {room.awayTeamLogo && (
-            <img
-              src={room.awayTeamLogo}
-              alt={room.awayTeam}
-              className="w-6 h-6 rounded-full object-cover md:w-7 md:h-7"
-            />
-          )}
-        </div>
+      <div className="flex items-center min-w-0 gap-2">
 
-        {/* TEXT */}
-        <div className="flex flex-col min-w-0">
-          <span className="font-medium flex items-center gap-1 min-w-0">
-            <span className="truncate max-w-[70px] md:max-w-[110px]">
-              {room.homeTeam}
-            </span>
-            <span className="shrink-0">vs</span>
-            <span className="truncate max-w-[70px] md:max-w-[110px]">
-              {room.awayTeam}
-            </span>
-          </span>
+        {/* 로고 (match만) */}
+        {!isSession && room.homeTeamLogo && (
+          <img src={room.homeTeamLogo} className="w-6 h-6 rounded-full object-cover" />
+        )}
 
-          <span className="text-[11px] text-muted-foreground truncate md:text-xs">
-            {formatEventTimeWithOffsetUTC(startTime)} • 👥 {room.participants}
+        <div className="flex flex-col flex-1 min-w-0">
+          <div className="flex items-center gap-1 min-w-0">
+
+            <span className="truncate text-[13px] font-medium">
+              {isSession
+                ? `🎾 ${room.title}`
+                : `${room.homeTeam} vs ${room.awayTeam}`}
+            </span>
+
+          </div>
+
+          <span className="text-xs text-muted-foreground truncate">
+            {formatEventTimeWithOffsetUTC(startTime)} • 👥 {participants}
           </span>
         </div>
+
+        {!isSession && room.awayTeamLogo && (
+          <img src={room.awayTeamLogo} className="w-6 h-6 rounded-full object-cover ml-1" />
+        )}
       </div>
 
-      {/* STATUS */}
       <span
-        className={`px-2 py-1 text-xs rounded-full border ml-3 shrink-0
+        className={`px-2 py-1 text-xs rounded-full border ml-3
           ${
             status === 'LIVE'
               ? 'text-red-600 border-red-600/40'

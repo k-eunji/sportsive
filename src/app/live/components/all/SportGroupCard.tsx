@@ -9,19 +9,17 @@ import { db } from "@/lib/firebase";
 
 export default function SportGroupCard({ room }: { room: any }) {
   const router = useRouter();
+  const [participants, setParticipants] = useState<number>(0);
+
+  const isTennis = room.sport === "tennis" || room.kind === "session";
 
   const home = room.homeTeam ?? "";
   const away = room.awayTeam ?? "";
 
-  // ✅ participants는 presence 기준으로만 관리
-  const [participants, setParticipants] = useState<number>(0);
-
-  // 홈팀 이름 길이 제한
   const maxHomeLen = 10;
   const displayHome =
     home.length > maxHomeLen ? home.slice(0, maxHomeLen) + "..." : home;
 
-  // 🔥 presence 실시간 구독 (누적 ❌, 실제 접속자 수 ✅)
   useEffect(() => {
     if (!room?.sport || !room?.id) return;
 
@@ -50,28 +48,20 @@ export default function SportGroupCard({ room }: { room: any }) {
         hover:bg-muted/40 transition cursor-pointer
       "
     >
-      {/* 로고 */}
-      <div className="flex items-center gap-1.5">
-        {room.homeTeamLogo && (
-          <img
-            src={room.homeTeamLogo}
-            alt={room.homeTeam}
-            className="w-6 h-6 rounded-full object-cover"
-          />
-        )}
-        {room.awayTeamLogo && (
-          <img
-            src={room.awayTeamLogo}
-            alt={room.awayTeam}
-            className="w-6 h-6 rounded-full object-cover"
-          />
-        )}
-      </div>
+      {!isTennis && (
+        <div className="flex items-center gap-1.5">
+          {room.homeTeamLogo && (
+            <img src={room.homeTeamLogo} className="w-6 h-6 rounded-full" />
+          )}
+          {room.awayTeamLogo && (
+            <img src={room.awayTeamLogo} className="w-6 h-6 rounded-full" />
+          )}
+        </div>
+      )}
 
-      {/* 텍스트 */}
       <div className="flex flex-col flex-1 min-w-0">
         <span className="font-medium text-[13px] truncate">
-          {displayHome} vs {away}
+          {isTennis ? room.title : `${displayHome} vs ${away}`}
         </span>
 
         <span className="text-xs text-muted-foreground truncate">

@@ -4,9 +4,13 @@ import type { Location, Timestamp } from "./common";
 
 export interface Event {
   id: string;
+  
   title?: string;
   date: string;
-  category?: string;
+  startDate?: string; // "2026-06-29"
+  endDate?: string;  
+  sport: 'football' | 'rugby' | 'tennis' | 'f1' | 'racing';
+  kind: 'match' | 'session' | 'race' | 'round';
   description?: string;
   location: Location;
   venue?: string;
@@ -18,6 +22,7 @@ export interface Event {
   tags?: string[];
   homeTeam?: string;
   awayTeam?: string;
+  payload?: Record<string, any>;
 
   // ⭐️ 여기 추가!!!
   homeTeamId?: string;

@@ -15,6 +15,7 @@ export async function GET() {
         status,
         competition,
         sport,
+        kind, 
         is_paid,
         home_team_id,
         away_team_id,
@@ -44,6 +45,7 @@ export async function GET() {
 
     const formattedMatches = matches.map((m: any) => ({
       id: String(m.id),
+      kind: m.kind, 
       date: m.date,
       status: m.status,
       competition: m.competition,

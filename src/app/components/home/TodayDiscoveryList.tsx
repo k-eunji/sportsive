@@ -47,7 +47,22 @@ export default function TodayDiscoveryList({
         ...e,
         __dt: new Date(e.date ?? e.utcDate ?? Date.now()),
       }))
-      .filter((e) => e.__dt >= now && e.__dt <= in7)
+      .filter((e) => {
+        // match (축구/럭비 등)
+        if (e.kind !== "session") {
+          return e.__dt >= now && e.__dt <= in7;
+        }
+
+        // session (테니스)
+        if (e.startDate && e.endDate) {
+          const start = new Date(e.startDate);
+          const end = new Date(e.endDate);
+          return end >= now && start <= in7;
+        }
+
+        return false;
+      })
+
       .sort((a, b) => a.__dt.getTime() - b.__dt.getTime());
 
     const todayList = cleaned.filter((e) => sameDay(e.__dt, today));
@@ -120,7 +135,7 @@ export default function TodayDiscoveryList({
         </div>
 
         <div className="space-y-2">
-          {list.slice(0, 6).map((e: any) => {
+          {list.map((e: any) => {
             const dt = e.__dt as Date;
             const isLive = (e.status ?? "").toUpperCase() === "LIVE";
 
@@ -154,8 +169,16 @@ export default function TodayDiscoveryList({
                   <div className="min-w-0">
                     {/* ✅ 1. vibe를 카드의 제목으로 승격 */}
                     <p className="text-sm font-semibold leading-snug line-clamp-2">
-                      {e.homeTeam} vs {e.awayTeam}
+                      {e.sport === "tennis"
+                        ? e.title
+                        : `${e.homeTeam} vs ${e.awayTeam}`}
                     </p>
+
+                    {e.sport === "tennis" && e.startDate && e.endDate && (
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Ongoing · {e.startDate} → {e.endDate}
+                      </p>
+                    )}
 
                     <div className="mt-1 text-xs text-muted-foreground space-y-0.5">
                       {/* 시간 */}

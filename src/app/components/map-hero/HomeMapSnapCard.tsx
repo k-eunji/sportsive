@@ -47,27 +47,35 @@ export default function HomeMapSnapCard({
   onClose: () => void;
 }) {
   const e: any = event;
+  const isFootball = e.sport === "football";
   const isLive = (e.status ?? "").toUpperCase() === "LIVE";
   const vibe = getVibe(e);
 
   const [room, setRoom] = useState<LiveRoom | null>(null);
 
   useEffect(() => {
+    if (!isFootball) return;
+
     let mounted = true;
     (async () => {
       try {
-        const res = await fetch("/api/live/rooms/football", { cache: "no-store" });
+        const res = await fetch("/api/live/rooms/football", {
+          cache: "no-store",
+        });
         if (!res.ok) return;
+
         const data = await res.json();
         const rooms: LiveRoom[] = data.rooms ?? [];
         const found = rooms.find((r) => r.eventId === e.id) ?? null;
+
         if (mounted) setRoom(found);
       } catch {}
     })();
+
     return () => {
       mounted = false;
     };
-  }, [e.id]);
+  }, [e.id, isFootball]);
 
   const people = room?.participants ?? 0;
 
@@ -106,8 +114,11 @@ export default function HomeMapSnapCard({
             </p>
 
             <p className="text-xs text-muted-foreground truncate mt-0.5">
-              {e.homeTeam} vs {e.awayTeam}
+              {e.sport === "tennis"
+                ? e.title
+                : `${e.homeTeam} vs ${e.awayTeam}`}
             </p>
+
 
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <span className={`text-[11px] font-semibold px-2 py-1 rounded-full border ${vibeClass(vibe.tone)}`}>
@@ -124,7 +135,7 @@ export default function HomeMapSnapCard({
                 {getLocalEventViewLabel(e.id)}
               </p>
 
-              {showChatCta && (
+              {isFootball && showChatCta && (
                 <button
                   onClick={() => {
                     track("chat_badge_clicked", { eventId: e.id, people });

@@ -45,12 +45,11 @@ export default function EventDetail({ event }: Props) {
 
       {/* 상세 정보 */}
       <div className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
-        {event.category && (
-          <p>
-            <span className="font-medium text-gray-800 dark:text-gray-200">Category:</span>{' '}
-            {event.category}
-          </p>
-        )}
+        <p>
+          <span className="font-medium text-gray-800 dark:text-gray-200">Sport:</span>{' '}
+          {event.sport}
+        </p>
+
         {event.location && (
           <p>
             <span className="font-medium text-gray-800 dark:text-gray-200">Location:</span>{' '}

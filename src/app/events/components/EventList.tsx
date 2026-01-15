@@ -13,7 +13,7 @@ export default function EventList({ events, onEventClick }: Props) {
   if (!events || events.length === 0) {
     return (
       <p className="text-gray-500 dark:text-gray-400 italic text-center mt-6 text-sm sm:text-base">
-        No upcoming matches
+        No upcoming events
       </p>
     );
   }

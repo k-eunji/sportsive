@@ -134,23 +134,23 @@ export async function GET(req: NextRequest) {
     }
 
     // ──────────────────────────
-    // 4) Events (없어도 깨지지 않게)
+    // 4) Events (Discovery infra 소비)
     // ──────────────────────────
     let rawEvents: any[] = [];
 
-    {
-      const { data: eventsRaw, error: eventsErr } = await supabase
-        .from("events")
-        .select("id, home_team, away_team, date, venue, city, region, lat, lng")
-        .order("date", { ascending: true });
+    try {
+      const eventsRes = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/events?window=7d`,
+        { cache: "no-store" }
+      );
 
-      if (eventsErr) {
-        // 테이블 없거나 권한 문제일 수 있음
-        console.error("⚠️ events error:", eventsErr);
-        rawEvents = [];
-      } else {
-        rawEvents = eventsRaw ?? [];
+      if (eventsRes.ok) {
+        const eventsData = await eventsRes.json();
+        rawEvents = eventsData.events ?? [];
       }
+    } catch (e) {
+      console.error("⚠️ explore events fetch error:", e);
+      rawEvents = [];
     }
 
     // ──────────────────────────
@@ -184,9 +184,11 @@ export async function GET(req: NextRequest) {
         teams: teams.filter((t) => t.name?.toLowerCase().includes(q)),
         events: rawEvents.filter(
           (e) =>
-            e.home_team?.toLowerCase().includes(q) ||
-            e.away_team?.toLowerCase().includes(q)
+            e.title?.toLowerCase().includes(q) ||
+            e.venue?.toLowerCase().includes(q) ||
+            e.city?.toLowerCase().includes(q)
         ),
+
         posts: fanhubPosts.filter((p) => p.text?.toLowerCase().includes(q)),
       };
     }

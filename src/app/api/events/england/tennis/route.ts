@@ -2,9 +2,12 @@ import { NextResponse } from "next/server";
 
 /**
  * UK Tennis Events 2026
- * - Tournament = period event
- * - date = anchor (start)
- * - startDate / endDate = real duration
+ *
+ * Event model notes:
+ * - kind: "session" (multi-day tournament)
+ * - date: public opening anchor (for sorting & discovery)
+ * - startDate / endDate: actual duration
+ * - payload: optional metadata for session-type events
  */
 export async function GET() {
   return NextResponse.json({
@@ -16,7 +19,7 @@ export async function GET() {
 
         title: "Lexus Nottingham Challenger 2026",
 
-        date: "2026-01-05T10:00:00Z",      // anchor
+        date: "2026-01-05T10:00:00Z",
         startDate: "2026-01-05",
         endDate: "2026-01-10",
 
@@ -25,12 +28,14 @@ export async function GET() {
         region: "England",
         location: { lat: 52.9399, lng: -1.1956 },
 
-        free: false,
         isPaid: true,
-        attendees: [],
+        homepageUrl: "https://www.atptour.com/en",
 
-        homepageUrl:
-          "https://www.atptour.com/en",
+        payload: {
+          structure: "tournament",
+          granularity: "day",
+          typicalStartTime: "10:00",
+        },
       },
 
       {
@@ -49,12 +54,15 @@ export async function GET() {
         region: "England",
         location: { lat: 52.9399, lng: -1.1956 },
 
-        free: false,
         isPaid: true,
-        attendees: [],
-
         homepageUrl:
           "https://www.wtatennis.com/tournaments/1080/nottingham/2026",
+
+        payload: {
+          structure: "tournament",
+          granularity: "day",
+          typicalStartTime: "11:00",
+        },
       },
 
       {
@@ -73,11 +81,14 @@ export async function GET() {
         region: "England",
         location: { lat: 51.4871, lng: -0.2059 },
 
-        free: false,
         isPaid: true,
-        attendees: [],
-
         homepageUrl: "https://www.queensclub.co.uk/HSBC_Championships",
+
+        payload: {
+          structure: "tournament",
+          granularity: "day",
+          typicalStartTime: "11:30",
+        },
       },
 
       {
@@ -96,11 +107,14 @@ export async function GET() {
         region: "England",
         location: { lat: 51.4340, lng: -0.2145 },
 
-        free: false,
         isPaid: true,
-        attendees: [],
-
         homepageUrl: "https://www.wimbledon.com/en_GB/",
+
+        payload: {
+          structure: "tournament",
+          granularity: "day",
+          typicalStartTime: "11:00",
+        },
       },
     ],
   });

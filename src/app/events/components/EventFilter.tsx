@@ -8,12 +8,12 @@ import type { Event } from '@/types';
 type EventFilterBarProps = {
   selectedRegion: string;
   selectedCity: string;
-  selectedCategory: string;
+  selectedSport: string;
   selectedCompetition: string;
   events: Event[];
   onRegionChange: (region: string) => void;
   onCityChange: (city: string) => void;
-  onCategoryChange: (category: string) => void;
+  onSportChange: (category: string) => void;
   onCompetitionChange: (competition: string) => void;
   children?: React.ReactNode; // 날짜
 };
@@ -21,18 +21,18 @@ type EventFilterBarProps = {
 export default function EventFilterBar({
   selectedRegion,
   selectedCity,
-  selectedCategory,
+  selectedSport,
   selectedCompetition,
   events,
   onRegionChange,
   onCityChange,
-  onCategoryChange,
+  onSportChange,
   onCompetitionChange,
   children,
 }: EventFilterBarProps) {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
-  const categories = [...new Set(events.map((e) => e.category).filter(Boolean))] as string[];
+  const sports = [...new Set(events.map((e) => e.sport).filter(Boolean))];
   const regions = [...new Set(events.map((e) => e.region).filter(Boolean))] as string[];
   const cities = selectedRegion
     ? ([...new Set(
@@ -57,9 +57,9 @@ export default function EventFilterBar({
         {/* Sport */}
         <InlineSelect
           label="Sport"
-          value={selectedCategory}
-          onChange={onCategoryChange}
-          options={categories}
+          value={selectedSport}
+          onChange={onSportChange}
+          options={sports}
           placeholder="All sports"
         />
 
@@ -109,13 +109,16 @@ export default function EventFilterBar({
             disabled={!selectedRegion}
           />
 
-          <InlineSelect
-            label="Competition"
-            value={selectedCompetition}
-            onChange={onCompetitionChange}
-            options={competitions}
-            placeholder="All competitions"
-          />
+          {selectedSport !== 'tennis' && (
+            <InlineSelect
+              label="Competition"
+              value={selectedCompetition}
+              onChange={onCompetitionChange}
+              options={competitions}
+              placeholder="All competitions"
+            />
+          )}
+
         </div>
       )}
     </div>

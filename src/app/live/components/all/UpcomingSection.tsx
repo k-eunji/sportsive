@@ -4,9 +4,11 @@
 import { groupByDate } from "@/lib/groupByDate";
 import DateHeader from "./DateHeader";
 import LiveRoomItemAll from "../LiveRoomItemAll";
+import { getLiveRoomWindow } from "@/lib/liveRoomTime";
 
 interface LiveRoom {
   id: string;
+  kind?: "match" | "session";
   datetime: string;
   participants: number; 
   homeTeam?: string;
@@ -17,7 +19,14 @@ interface LiveRoom {
 
 export default function UpcomingSection({ rooms }: { rooms: LiveRoom[] }) {
   const now = new Date();
-  const upcoming = rooms.filter((r) => new Date(r.datetime) > now);
+  const upcoming = rooms.filter((r) => {
+    const now = new Date();
+    const { openTime } = getLiveRoomWindow(r);
+
+    // 아직 안 열린 방만 Upcoming
+    return now < openTime;
+  });
+
   if (upcoming.length === 0) return null;
 
   const grouped = groupByDate(upcoming);
@@ -32,9 +41,14 @@ export default function UpcomingSection({ rooms }: { rooms: LiveRoom[] }) {
 
           <div className="bg-white rounded-xl border border-border/40 p-1 divide-y">
             {list.map((room) => (
-              <LiveRoomItemAll key={room.id} room={room} />
+              <LiveRoomItemAll
+                key={room.id}
+                room={room}
+                mode="upcoming"
+              />
             ))}
           </div>
+
         </div>
       ))}
     </section>

@@ -1,4 +1,5 @@
 // src/app/api/live/all/rooms/route.ts
+
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
@@ -10,7 +11,13 @@ export async function GET() {
     const DAYS_AHEAD = 5;
     const now = new Date();
 
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    const startOfToday = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      0, 0, 0, 0
+    );
+
     const endOfFutureRange = new Date(
       now.getFullYear(),
       now.getMonth(),
@@ -21,46 +28,78 @@ export async function GET() {
     const allEvents = [
       ...(await getAllEvents("football")),
       ...(await getAllEvents("rugby")),
+      ...(await getAllEvents("tennis")),
     ];
 
-
-    // 날짜 필터링
+    // 1️⃣ 날짜 필터
     const filtered = allEvents.filter((event: any) => {
+      if (event.kind === "session") {
+        if (!event.startDate || !event.endDate) return false;
+
+        const start = new Date(event.startDate);
+        const end = new Date(event.endDate);
+
+        return end >= startOfToday && start <= endOfFutureRange;
+      }
+
       const d = new Date(event.date);
       return d >= startOfToday && d <= endOfFutureRange;
     });
 
+    // 🔥 오늘 anchor (session용)
+    const todayAnchor = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      12, 0, 0, 0
+    );
+
+    // 2️⃣ Live rooms 생성
     const rooms = await Promise.all(
       filtered.map(async (event: any) => {
-        const sport = event.sport ?? "football"; // ★ 누락 방지
+        const sport = event.sport ?? "football";
 
-        const liveDoc = await adminDb
+        const presenceSnap = await adminDb
           .collection("live_events")
           .doc(sport)
           .collection("events")
-          .doc(event.id)
+          .doc(String(event.id))
+          .collection("presence")
           .get();
 
-        const participants = Number(liveDoc.data()?.participants ?? 0);
+        const participants = presenceSnap.size;
 
         return {
           id: event.id,
           eventId: event.id,
-          title: `${event.homeTeam} vs ${event.awayTeam}`,
+
+          title:
+            event.kind === "session"
+              ? event.title
+              : `${event.homeTeam} vs ${event.awayTeam}`,
+
           participants,
-          datetime: event.date,
-          homeTeam: event.homeTeam,
-          awayTeam: event.awayTeam,
+
+          // ✅ 핵심 수정: session은 오늘 기준
+          datetime:
+            event.kind === "session"
+              ? todayAnchor.toISOString()
+              : event.date,
+
+          homeTeam: event.homeTeam ?? null,
+          awayTeam: event.awayTeam ?? null,
           homeTeamLogo: event.homeTeamLogo ?? null,
           awayTeamLogo: event.awayTeamLogo ?? null,
+
           sport,
+          kind: event.kind ?? "match",
         };
       })
     );
 
     return NextResponse.json({ rooms });
   } catch (err) {
-    console.error("❌ GET /live/all/rooms failed:", err);
+    console.error("❌ GET /api/live/all/rooms failed:", err);
     return NextResponse.json({ rooms: [] }, { status: 500 });
   }
 }

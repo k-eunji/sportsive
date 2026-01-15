@@ -8,9 +8,8 @@ import UpcomingSection from "./all/UpcomingSection";
 
 export default function LiveRoomsAll() {
   const [rooms, setRooms] = useState([]);
-  const [eventId, setEventId] = useState<string | null>(null); // ✅ 상태로 관리
+  const [eventId, setEventId] = useState<string | null>(null);
 
-  // ✅ useSearchParams 제거 → window.location.search 사용
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     setEventId(params.get("eventId"));
@@ -35,7 +34,6 @@ export default function LiveRoomsAll() {
 
   return (
     <main className="max-w-5xl mx-auto px-4 pt-8 pb-24 space-y-14 animate-fadeIn">
-      {/* Hero */}
       <section className="space-y-2">
         <h1 className="text-[28px] font-extrabold leading-tight">
           Explore Live Chats

@@ -2,11 +2,12 @@
 
 "use client";
 
-import { getSportIcon } from "../../components/sportIcon";
 import SportGroupCard from "./SportGroupCard";
+import { sportEmoji } from "@/lib/sportEmoji";
 
 interface LiveRoom {
   id: string;
+  kind?: "match" | "session";
   sport?: string;
   homeTeam?: string;
   awayTeam?: string;
@@ -16,28 +17,22 @@ interface LiveRoom {
 }
 
 export default function TrendingSection({ rooms }: { rooms: LiveRoom[] }) {
-  const now = new Date();
+  const today = new Date();
+  const todayKey = today.toDateString();
 
-  // sportGroups: { [sport: string]: LiveRoom[] }
   const sportGroups: Record<string, LiveRoom[]> = {};
 
   rooms.forEach((r) => {
-    // ⏰ 시간 계산 (UTC 안전)
-    const startTime = new Date(Date.parse(r.datetime));
-    const openTime = new Date(startTime.getTime() - 2 * 60 * 60 * 1000);
-    const closeTime = new Date(
-      startTime.getTime() + 2 * 60 * 60 * 1000 + 30 * 60 * 1000
-    );
+    const startTime = new Date(r.datetime);
 
-    // ❌ 아직 안 열린 경기 / 이미 완전히 끝난 경기 제거
-    if (now < openTime || now > closeTime) return;
+    // ✅ Trending = "오늘 열리는 모든 경기"
+    if (startTime.toDateString() !== todayKey) return;
 
     const key = r.sport ?? "other";
     if (!sportGroups[key]) sportGroups[key] = [];
     sportGroups[key].push(r);
   });
 
-  // 필터 결과가 하나도 없으면 섹션 자체 숨김
   if (Object.keys(sportGroups).length === 0) return null;
 
   return (
@@ -47,7 +42,7 @@ export default function TrendingSection({ rooms }: { rooms: LiveRoom[] }) {
       {Object.entries(sportGroups).map(([sport, items]) => (
         <div key={sport} className="space-y-2">
           <div className="flex items-center gap-2 text-sm opacity-70">
-            {getSportIcon(sport)}
+            <span>{sportEmoji[sport] ?? "🏟️"}</span>
             <span className="font-medium">{sport.toUpperCase()}</span>
           </div>
 

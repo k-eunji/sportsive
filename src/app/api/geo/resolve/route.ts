@@ -1,14 +1,15 @@
 // src/app/api/geo/resolve/route.ts
+
 import { NextResponse } from "next/server";
 
 // 🔹 Haversine 거리 계산 함수
 function getDistance(
   lat1: number,
   lon1: number,
-  lat2: number,
-  lon2: number
+  lat2?: number,
+  lon2?: number
 ): number {
-  if (!lat2 || !lon2) return Infinity;
+  if (lat2 == null || lon2 == null) return Infinity;
 
   const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -29,66 +30,73 @@ export async function GET(req: Request) {
   const lat = Number(url.searchParams.get("lat"));
   const lng = Number(url.searchParams.get("lng"));
 
-  // lat/lng 누락 시 기본값
   if (isNaN(lat) || isNaN(lng)) {
     return NextResponse.json({ city: null, region: null });
   }
 
-  // 🔥 Next.js 16에서 내부 API 안정적으로 호출하는 정답 방식
   const base = url.origin;
 
   try {
     // ────────────────────────────────
-    // 1) 이벤트 API 두 개 병렬로 요청
+    // 1) 축구 / 럭비 / 테니스 이벤트 병렬 로드
     // ────────────────────────────────
-    const [eventsRes, footballRes, rugbyRes] = await Promise.allSettled([
-      fetch(`${base}/api/events`, { cache: "no-store" }),
+    const [footballRes, rugbyRes, tennisRes] = await Promise.allSettled([
       fetch(`${base}/api/events/england/football`, { cache: "no-store" }),
       fetch(`${base}/api/events/england/rugby`, { cache: "no-store" }),
+      fetch(`${base}/api/events/england/tennis`, { cache: "no-store" }),
     ]);
 
-    let events: any[] = [];
+    let events: {
+      city?: string;
+      region?: string;
+      lat?: number;
+      lng?: number;
+    }[] = [];
 
-    // base events
-    if (eventsRes.status === "fulfilled" && eventsRes.value.ok) {
-      const json = await eventsRes.value.json();
-      events = [...events, ...(json.events ?? [])];
-    }
-
-    // football events
+    // ───── football
     if (footballRes.status === "fulfilled" && footballRes.value.ok) {
       const json = await footballRes.value.json();
-
-      const footballEvents = (json.matches ?? []).map((m: any) => ({
-        city: m.city,
-        region: m.region,
-        lat: m.location?.lat,
-        lng: m.location?.lng,
-      }));
-
-      events = [...events, ...footballEvents];
+      events.push(
+        ...(json.matches ?? []).map((m: any) => ({
+          city: m.city,
+          region: m.region,
+          lat: m.location?.lat,
+          lng: m.location?.lng,
+        }))
+      );
     }
 
-    // rugby events
+    // ───── rugby
     if (rugbyRes.status === "fulfilled" && rugbyRes.value.ok) {
       const json = await rugbyRes.value.json();
-
-      const rugbyEvents = (json.matches ?? []).map((m: any) => ({
-        city: m.city,
-        region: m.region,
-        lat: m.location?.lat,
-        lng: m.location?.lng,
-      }));
-
-      events = [...events, ...rugbyEvents];
+      events.push(
+        ...(json.matches ?? []).map((m: any) => ({
+          city: m.city,
+          region: m.region,
+          lat: m.location?.lat,
+          lng: m.location?.lng,
+        }))
+      );
     }
 
+    // ───── tennis (session events)
+    if (tennisRes.status === "fulfilled" && tennisRes.value.ok) {
+      const json = await tennisRes.value.json();
+      events.push(
+        ...(json.matches ?? []).map((m: any) => ({
+          city: m.city,
+          region: m.region,
+          lat: m.location?.lat,
+          lng: m.location?.lng,
+        }))
+      );
+    }
 
     // ────────────────────────────────
-    // 2) 좌표가 있는 이벤트만 필터링
+    // 2) 좌표 있는 이벤트만
     // ────────────────────────────────
     const eventsWithCoords = events.filter(
-      (e) => e.lat && e.lng && e.city
+      (e) => e.lat != null && e.lng != null && e.city
     );
 
     if (eventsWithCoords.length === 0) {
@@ -96,14 +104,13 @@ export async function GET(req: Request) {
     }
 
     // ────────────────────────────────
-    // 3) 가장 가까운 이벤트 찾기
+    // 3) 가장 가까운 이벤트 기준 city / region 결정
     // ────────────────────────────────
     let nearest: any = null;
     let nearestDist = Infinity;
 
     for (const e of eventsWithCoords) {
       const dist = getDistance(lat, lng, e.lat, e.lng);
-
       if (dist < nearestDist) {
         nearest = e;
         nearestDist = dist;
@@ -114,7 +121,6 @@ export async function GET(req: Request) {
       city: nearest?.city ?? null,
       region: nearest?.region ?? null,
     });
-
   } catch (err) {
     console.error("❌ geo resolve failed:", err);
     return NextResponse.json({ city: null, region: null });
