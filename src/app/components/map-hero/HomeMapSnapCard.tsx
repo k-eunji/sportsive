@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { getVibe, vibeClass } from "@/lib/vibe";
 import { track } from "@/lib/track";
+import PublicNotes from "./PublicNotes";
 
 interface LiveRoom {
   id: string;
@@ -80,10 +81,10 @@ export default function HomeMapSnapCard({
   const people = room?.participants ?? 0;
 
   const showChatCta = useMemo(() => {
-    if (isLive) return true;
-    if (room && room.status !== "END" && people > 0) return true;
-    return false;
-  }, [isLive, room, people]);
+    if (!isLive) return false;
+    if (!room) return false;
+    return (room.participants ?? 0) >= 2;
+  }, [isLive, room]);
 
   useEffect(() => {
     logLocalEventView(e.id);
@@ -167,6 +168,10 @@ export default function HomeMapSnapCard({
             Close
           </button>
         </div>
+
+        <PublicNotes eventId={e.id} />
+
+        <div className="mt-4 flex flex-col gap-2"></div>
 
         <div className="mt-4 flex flex-col gap-2">
           <Link
