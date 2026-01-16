@@ -26,6 +26,8 @@ import WhatIsSportsiveCompact from "./components/WhatIsSportsiveCompact";
 
 // 신규
 import First15Overlay from "./components/home/First15Overlay";
+import { useLocationMode } from "./components/home/useLocationMode";
+import { extractRegions, extractCities } from "@/lib/eventAreas";
 
 export default function Home() {
   const params = useSearchParams();
@@ -34,12 +36,30 @@ export default function Home() {
   const [events, setEvents] = useState<Event[]>([]);
   const [showMap, setShowMap] = useState(false);
   const [radiusOpen, setRadiusOpen] = useState(false);
+  const { mode, hasLocation } = useLocationMode();
 
   const { unit, toggle } = useDistanceUnit();
-  const [scope, setScope] = useState<ViewScope>("nearby");
+  const [scope, setScope] = useState<ViewScope>("country");
 
   const [focusEventId, setFocusEventId] = useState<string | null>(null);
   const [pendingSurprise, setPendingSurprise] = useState(false);
+
+  const [observerRegion, setObserverRegion] = useState<string | null>(null);
+  const [observerCity, setObserverCity] = useState<string | null>(null);
+
+  const regions = useMemo(
+    () => extractRegions(events),
+    [events]
+  );
+
+  const cities = useMemo(
+    () =>
+      observerRegion
+        ? extractCities(events, observerRegion)
+        : [],
+    [events, observerRegion]
+  );
+
 
   const scopeLabel =
     scope === "global"
@@ -91,6 +111,12 @@ export default function Home() {
     });
   };
 
+  const resetObserver = () => {
+    setObserverCity(null);
+    setObserverRegion(null);
+  };
+
+
   const handleHeroSurprise = () => {
     setShowMap(true);
     setFocusEventId(null);
@@ -139,6 +165,7 @@ export default function Home() {
       <RadiusFilter
         scope={scope}
         onOpen={() => setRadiusOpen(true)}
+        enabled={hasLocation}
       />
 
       {radiusOpen && (
@@ -197,12 +224,84 @@ export default function Home() {
     )}
 
 
-      {/* 3) 선택지(리스트) */}
-      <TodayDiscoveryList
-        events={events}
-        scope={scope}
-        onPick={handlePickFromList}
-      />
+      {/* ===============================
+        Observer flow (위치 미허용)
+      =============================== */}
+
+      {/* 1) 위치 없고, 아직 region 안 고른 상태 */}
+      {!hasLocation && !observerRegion && (
+        <section className="px-6">
+          <p className="text-sm font-semibold mb-2">
+            Choose a region
+          </p>
+
+          {regions.map((r) => (
+            <button
+              key={r}
+              onClick={() => setObserverRegion(r)}
+              className="w-full mb-2 px-4 py-3 rounded-2xl border"
+            >
+              {r}
+            </button>
+          ))}
+        </section>
+      )}
+
+      {/* 2) region은 골랐고, city가 여러 개인 경우 */}
+      {!hasLocation && observerRegion && !observerCity && cities.length > 1 && (
+        <section className="px-6">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm font-semibold">
+              Cities in {observerRegion}
+            </p>
+
+            <button
+              onClick={() => setObserverRegion(null)}
+              className="text-xs text-blue-600 hover:underline"
+            >
+              Change region
+            </button>
+          </div>
+
+          {cities.map((c) => (
+            <button
+              key={c}
+              onClick={() => setObserverCity(c)}
+              className="w-full mb-2 px-4 py-3 rounded-2xl border"
+            >
+              {c}
+            </button>
+          ))}
+        </section>
+      )}
+
+      {/* ===============================
+        Discovery list 진입
+      =============================== */}
+      {!hasLocation && observerRegion && (
+        <div className="px-6">
+          <button
+            onClick={() => {
+              resetObserver();
+              track("observer_reset_region");
+            }}
+            className="text-xs font-semibold text-blue-600 hover:underline mb-2"
+          >
+            ← Change region
+          </button>
+        </div>
+      )}
+
+      {(hasLocation || observerRegion) && (
+        <TodayDiscoveryList
+          events={events}
+          scope={hasLocation ? scope : "country"}
+          observerMode={!hasLocation}
+          observerRegion={observerRegion}
+          observerCity={observerCity}
+          onPick={handlePickFromList}
+        />
+      )}
 
       {/* 5) 소프트 리텐션(스탬프/리추얼/축하) */}
       <StampsBar discoveredToday={discoveredIds.length} />
@@ -214,7 +313,7 @@ export default function Home() {
       />
 
       {/* 6) Map stage (의도 있을 때만) */}
-      {showMap && (
+      {showMap && hasLocation && (
         <div ref={mapStageRef} className="pt-1">
           <HomeMapStage
             key={pendingSurprise ? "map-surprise" : "map-normal"}

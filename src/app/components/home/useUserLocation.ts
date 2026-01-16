@@ -6,11 +6,12 @@ import { useEffect, useState } from "react";
 
 export type LatLng = { lat: number; lng: number };
 
-export function useUserLocation() {
+export function useUserLocation(options?: { enabled?: boolean }) {
   const [pos, setPos] = useState<LatLng | null>(null);
   const [denied, setDenied] = useState(false);
 
   useEffect(() => {
+    if (options?.enabled === false) return;
     if (!navigator.geolocation) return;
 
     navigator.geolocation.getCurrentPosition(
@@ -20,7 +21,7 @@ export function useUserLocation() {
       () => setDenied(true),
       { enableHighAccuracy: false, timeout: 7000 }
     );
-  }, []);
+  }, [options?.enabled]);
 
   return { pos, denied };
 }

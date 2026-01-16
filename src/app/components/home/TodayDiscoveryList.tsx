@@ -27,13 +27,23 @@ export default function TodayDiscoveryList({
   events,
   onPick,
   scope,
+  observerMode,
+  observerRegion,
+  observerCity,
 }: {
   events: Event[];
   onPick: (id: string) => void;
   scope: ViewScope;
+  observerMode: boolean;
+  observerRegion?: string | null;
+  observerCity?: string | null;
 }) {
+
   const [mode, setMode] = useState<"today" | "week">("today");
-  const { pos } = useUserLocation();
+  const { pos } = useUserLocation({
+    enabled: !observerMode,
+  });
+
   const { unit } = useDistanceUnit();
 
   const view = useMemo(() => {
@@ -73,11 +83,15 @@ export default function TodayDiscoveryList({
 
   const list = (mode === "today" ? view.todayList : view.weekList).filter(
     (e: any) => {
-      if (scope === "global") return true;
+      // ✅ Observer: 지역 기반 필터
+      if (observerMode) {
+        if (observerRegion && e.region !== observerRegion) return false;
+        if (observerCity && e.city !== observerCity) return false;
+        return true;
+      }
 
-      // ✅ 위치 아직 없으면 필터 안 함
+      // 기존 위치 기반 로직
       if (!pos) return true;
-
       if (!e.location?.lat || !e.location?.lng) return false;
 
       const d = haversineKm(pos, {
@@ -88,6 +102,7 @@ export default function TodayDiscoveryList({
       return d <= scopeToKm(scope);
     }
   );
+
   console.log("pos:", pos);
 
   return (
@@ -96,16 +111,34 @@ export default function TodayDiscoveryList({
         <div className="flex items-end justify-between gap-3">
           <div className="min-w-0">
             <p className="text-sm font-semibold truncate">
-              {scope === "global"
-                ? mode === "today"
-                  ? "Happening around the world today"
-                  : "Next 7 days around the world"
-                : mode === "today"
-                ? "Today around you"
-                : "Next 7 days around you"}
+              {observerMode
+                ? "Across places · Next 7 days"
+                : scope === "global"
+                ? "Around the world"
+                : "Near you"}
             </p>
 
-            <p className="text-xs text-gray-500 truncate">Tap a match to view on the map</p>
+            {observerMode && (
+              <button
+                onClick={() => {
+                  track("observer_try_nearby");
+                  // 여기서만 위치 요청을 트리거
+                  navigator.geolocation.getCurrentPosition(() => {
+                    window.location.reload();
+                  });
+                }}
+                className="text-xs font-semibold text-blue-600 hover:underline"
+              >
+                See what’s closest to you →
+              </button>
+            )}
+
+            <p className="text-xs text-gray-500 truncate">
+              {observerMode
+                ? "Tap a match to explore details"
+                : "Tap a match to view on the map"}
+            </p>
+
           </div>
 
           <div className="flex gap-2 shrink-0">
@@ -141,7 +174,7 @@ export default function TodayDiscoveryList({
 
             const vibe = getVibe(e);
             const dist =
-              pos && e.location?.lat && e.location?.lng
+              !observerMode && pos && e.location?.lat && e.location?.lng
                 ? haversineKm(pos, { lat: e.location.lat, lng: e.location.lng })
                 : null;
 
@@ -188,7 +221,7 @@ export default function TodayDiscoveryList({
 
                       {/* 거리 + 종목 */}
                       <div className="flex flex-wrap gap-x-2 gap-y-0.5">
-                        {typeof dist === "number" && (
+                        {!observerMode && typeof dist === "number" && (
                           <span>{formatDistance(dist, unit)}</span>
                         )}
 

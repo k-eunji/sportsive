@@ -6,10 +6,14 @@ export type ViewScope = "nearby" | "city" | "country" | "global";
 export default function RadiusFilter({
   scope,
   onOpen,
+  enabled,
 }: {
   scope: ViewScope;
   onOpen: () => void;
+  enabled: boolean;
 }) {
+  if (!enabled) return null;
+
   const label =
     scope === "nearby"
       ? "Nearby"
