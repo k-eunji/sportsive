@@ -15,6 +15,7 @@ import StampsBar from "./components/home/StampsBar";
 import RadiusFilter from "./components/home/RadiusFilter";
 import type { ViewScope } from "./components/home/RadiusFilter";
 import { useDistanceUnit } from "./components/home/useDistanceUnit";
+import LiveRoomView from "@/app/live/LiveRoomView";
 
 import { useDailyDiscovery } from "./components/home/useDailyDiscovery";
 import { addStamp } from "./components/home/stamps";
@@ -46,6 +47,11 @@ export default function Home() {
 
   const [observerRegion, setObserverRegion] = useState<string | null>(null);
   const [observerCity, setObserverCity] = useState<string | null>(null);
+
+  const [liveOverlay, setLiveOverlay] = useState<{
+    sport: string;
+    liveId: string;
+  } | null>(null);
 
   const regions = useMemo(
     () => extractRegions(events),
@@ -159,7 +165,12 @@ export default function Home() {
       <MobileHero onSurprise={handleHeroSurprise} />
 
       {/* 2) “지금” 신호 (조용한 활동/라이브) */}
-      <LivePreview />
+      <LivePreview
+        onOpenLive={({ sport, liveId }) =>
+          setLiveOverlay({ sport, liveId })
+        }
+      />
+
 
       {/* 4) 필터는 보조로 내려서 ‘결정 피로’ 줄이기 */}
       <RadiusFilter
@@ -331,6 +342,18 @@ export default function Home() {
 
         </div>
       )}
+
+      {liveOverlay && (
+        <div className="fixed inset-0 z-[100] bg-black/40">
+          <LiveRoomView
+            sport={liveOverlay.sport}
+            liveId={liveOverlay.liveId}
+            variant="overlay"
+            onClose={() => setLiveOverlay(null)}
+          />
+        </div>
+      )}
+
 
       {/* ✅ demo 모드에서만 “설명 카드” 노출 */}
       {isDemo && <WhatIsSportsiveCompact />}

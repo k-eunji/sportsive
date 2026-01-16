@@ -2,7 +2,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { formatEventTimeWithOffsetUTC } from "@/utils/date";
 import { motion } from "framer-motion";
 
@@ -15,19 +14,25 @@ interface LiveRoom {
   homeTeamLogo?: string;
   awayTeamLogo?: string;
   datetime: string;
-  participants?: number;
+  participants?: number; // 실시간 접속자
+  commenters?: number;   // 채팅한 사람 누적
   sport?: string;
   status?: "Scheduled" | "LIVE" | "END";
 }
 
-export default function LivePreview() {
+export default function LivePreview({
+  onOpenLive,
+}: {
+  onOpenLive: (args: { sport: string; liveId: string }) => void;
+}) {
+
   const [rooms, setRooms] = useState<LiveRoom[]>([]);
 
   useEffect(() => {
     let mounted = true;
     (async function fetchRooms() {
       try {
-        const res = await fetch("/api/live/rooms/all", { cache: "no-store" });
+        const res = await fetch("/api/live/preview", { cache: "no-store" });
         if (!res.ok) return;
         const data = await res.json();
         if (!mounted) return;
@@ -51,8 +56,14 @@ export default function LivePreview() {
     });
 
     const sorted = [...todayRooms].sort((a, b) => {
+      const aCount = a.commenters ?? 0;
+      const bCount = b.commenters ?? 0;
+
+      if (aCount !== bCount) return bCount - aCount;
+
       if (a.status === "LIVE" && b.status !== "LIVE") return -1;
       if (a.status !== "LIVE" && b.status === "LIVE") return 1;
+
       return new Date(a.datetime).getTime() - new Date(b.datetime).getTime();
     });
 
@@ -84,7 +95,11 @@ export default function LivePreview() {
             onClick={() => {
               const first = view.top[0];
               if (first?.sport) {
-                window.location.href = `/live/${first.sport}/${first.id}`;
+                onOpenLive({
+                  sport: first.sport!,
+                  liveId: first.id,
+                });
+
               }
             }}
             className="cursor-pointer space-y-1"
@@ -108,13 +123,19 @@ export default function LivePreview() {
         <div className="grid gap-3">
           {view.top.map((room) => {
             const startTime = new Date(room.datetime);
-            const people = room.participants ?? 0;
+            const commenters = room.commenters ?? 0;
 
             return (
-              <Link
+              <button
                 key={room.id}
-                href={`/live/${room.sport}/${room.id}`}
+                onClick={() =>
+                  onOpenLive({
+                    sport: room.sport!,
+                    liveId: room.id,
+                  })
+                }
                 className="
+                  w-full text-left
                   rounded-2xl
                   border border-border/60
                   bg-background/60
@@ -153,7 +174,7 @@ export default function LivePreview() {
                       </p>
 
                       <p className="text-xs text-muted-foreground truncate">
-                        {formatEventTimeWithOffsetUTC(startTime)} · 👥 {people}
+                        {formatEventTimeWithOffsetUTC(startTime)} · 💬 {commenters}
                       </p>
                     </div>
                   </div>
@@ -168,7 +189,7 @@ export default function LivePreview() {
                     </motion.span>
                   )}
                 </div>
-              </Link>
+              </button>
             );
           })}
         </div>
