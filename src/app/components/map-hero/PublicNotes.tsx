@@ -11,7 +11,7 @@ export default function PublicNotes({ eventId }: { eventId: string }) {
   const [text, setText] = useState("");
 
   useEffect(() => {
-    fetch(`/api/events/${eventId}/notes`)
+    fetch(`/api/events/${eventId}/notes`, { cache: "no-store" })
       .then((r) => r.json())
       .then((d) => setNotes(d.notes ?? []));
   }, [eventId]);
@@ -31,9 +31,12 @@ export default function PublicNotes({ eventId }: { eventId: string }) {
     setText("");
     setOpen(false);
 
-    const r = await fetch(`/api/events/${eventId}/notes`);
+    const r = await fetch(`/api/events/${eventId}/notes`, {
+      cache: "no-store",
+    });
     const d = await r.json();
     setNotes(d.notes ?? []);
+
   }
 
   return (
