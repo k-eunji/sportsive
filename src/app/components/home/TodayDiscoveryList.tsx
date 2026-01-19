@@ -23,6 +23,14 @@ function sameDay(a: Date, b: Date) {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
 
+function timeBucket(dt: Date) {
+  const now = new Date();
+  if (dt.toDateString() === now.toDateString()) return "Today";
+  if (dt.getTime() - now.getTime() < 1000 * 60 * 60 * 24 * 2)
+    return "Later this week";
+  return "Coming up";
+}
+
 export default function TodayDiscoveryList({
   events,
   onPick,
@@ -39,7 +47,6 @@ export default function TodayDiscoveryList({
   observerCity?: string | null;
 }) {
 
-  const [mode, setMode] = useState<"today" | "week">("today");
   const { pos } = useUserLocation({
     enabled: !observerMode,
   });
@@ -74,40 +81,28 @@ export default function TodayDiscoveryList({
       })
 
       .sort((a, b) => a.__dt.getTime() - b.__dt.getTime());
-
-    const todayList = cleaned.filter((e) => sameDay(e.__dt, today));
-    const weekList = cleaned;
-
-    return { todayList, weekList };
   }, [events]);
 
-  const list = (mode === "today" ? view.todayList : view.weekList).filter(
-    (e: any) => {
-      // ✅ Observer: 지역 기반 필터
-      if (observerMode) {
-        if (observerRegion && e.region !== observerRegion) return false;
-        if (observerCity && e.city !== observerCity) return false;
-        return true;
-      }
+  const list = useMemo(() => {
+    const now = new Date();
+    const horizon = new Date();
+    horizon.setDate(horizon.getDate() + 7);
 
-      // 기존 위치 기반 로직
-      if (!pos) return true;
-      if (!e.location?.lat || !e.location?.lng) return false;
+    return (events as any[])
+      .map(e => ({
+        ...e,
+        __dt: new Date(e.date ?? e.utcDate ?? Date.now()),
+      }))
+      .filter(e => e.__dt >= now && e.__dt <= horizon)
+      .sort((a, b) => a.__dt.getTime() - b.__dt.getTime());
+  }, [events]);
 
-      const d = haversineKm(pos, {
-        lat: e.location.lat,
-        lng: e.location.lng,
-      });
-
-      return d <= scopeToKm(scope);
-    }
-  );
 
   console.log("pos:", pos);
 
   return (
-    <section className="px-6">
-      <div className="md:max-w-3xl mx-auto space-y-3">
+    <section className="w-full">
+      <div className="w-full px-4 md:max-w-3xl md:mx-auto space-y-3">
         <div className="flex items-end justify-between gap-3">
           <div className="min-w-0">
             <p className="text-sm font-semibold truncate">
@@ -140,170 +135,118 @@ export default function TodayDiscoveryList({
             </p>
 
           </div>
-
-          <div className="flex gap-2 shrink-0">
-            <button
-              onClick={() => {
-                setMode("today");
-                track("list_filter_changed", { mode: "today" });
-              }}
-              className={`text-xs font-semibold px-3 py-1.5 rounded-full border ${
-                mode === "today" ? "bg-black text-white border-black" : "bg-transparent text-gray-600"
-              }`}
-            >
-              Today
-            </button>
-            <button
-              onClick={() => {
-                setMode("week");
-                track("list_filter_changed", { mode: "week" });
-              }}
-              className={`text-xs font-semibold px-3 py-1.5 rounded-full border ${
-                mode === "week" ? "bg-black text-white border-black" : "bg-transparent text-gray-600"
-              }`}
-            >
-              7 days
-            </button>
-          </div>
         </div>
 
         <div className="space-y-2">
-          {list.map((e: any) => {
-            const dt = e.__dt as Date;
-            const isLive = (e.status ?? "").toUpperCase() === "LIVE";
+          {(() => {
+            let lastBucket = "";
 
-            const vibe = getVibe(e);
-            const dist =
-              !observerMode && pos && e.location?.lat && e.location?.lng
-                ? haversineKm(pos, { lat: e.location.lat, lng: e.location.lng })
-                : null;
+            return list.map((e: any) => {
+              const dt = e.__dt as Date;
+              const bucket = timeBucket(dt);
+              const showBucket = bucket !== lastBucket;
+              lastBucket = bucket;
 
-            return (
-              <div
-                key={e.id}
-                role="button"
-                tabIndex={0}
-                onClick={() => {
-                  track("list_item_clicked", { eventId: e.id });
-                  onPick(e.id);
-                }}
-                className="
-                  w-full text-left
-                  rounded-2xl border border-border/60
-                  bg-background/60 backdrop-blur
-                  shadow-sm shadow-black/5
-                  px-4 py-3
-                  hover:bg-background/80
-                  transition
-                  cursor-pointer
-                "
-              >
-                <div className="flex items-start gap-3">
-                  <div className="min-w-0">
-                    {/* ✅ 1. vibe를 카드의 제목으로 승격 */}
-                    <p className="text-sm font-semibold leading-snug line-clamp-2">
-                      {e.sport === "tennis"
-                        ? e.title
-                        : `${e.homeTeam} vs ${e.awayTeam}`}
+              const isLive = (e.status ?? "").toUpperCase() === "LIVE";
+              const vibe = getVibe(e);
+              const dist =
+                !observerMode && pos && e.location?.lat && e.location?.lng
+                  ? haversineKm(pos, { lat: e.location.lat, lng: e.location.lng })
+                  : null;
+
+              return (
+                <div key={e.id}>
+                  {showBucket && (
+                    <p className="text-xs font-semibold text-gray-500 mt-4 mb-1">
+                      {bucket}
                     </p>
+                  )}
 
-                    {e.sport === "tennis" && e.startDate && e.endDate && (
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Ongoing · {e.startDate} → {e.endDate}
-                      </p>
-                    )}
-
-                    <div className="mt-1 text-xs text-muted-foreground space-y-0.5">
-                      {/* 시간 */}
-                      <div className="leading-snug">
-                        {formatEventTimeCard(dt, e.region)}
-                      </div>
-
-                      {/* 거리 + 종목 */}
-                      <div className="flex flex-wrap gap-x-2 gap-y-0.5">
-                        {!observerMode && typeof dist === "number" && (
-                          <span>{formatDistance(dist, unit)}</span>
-                        )}
-
-                        {e.sport && (
-                          <span className="font-medium">
-                            {e.sport === "football" && "⚽ Football"}
-                            {e.sport === "rugby" && "🏉 Rugby"}
-                            {e.sport === "tennis" && "🎾 Tennis"}
-                            {e.sport === "f1" && "🏎️ F1"}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      <span className={`text-[11px] font-semibold px-2 py-1 rounded-full border ${vibeClass(vibe.tone)}`}>
-                        {getEventTimingLabel(dt)}
-                      </span>
-
-                      <span className={`text-[11px] font-semibold px-2 py-1 rounded-full border ${
-                        isLive ? "text-red-600 bg-red-50 border-red-200" : "text-gray-600 bg-gray-50 border-gray-200"
-                      }`}>
-                        {isLive ? "LIVE" : "Quiet"}
-                      </span>
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={(ev) => {
-                      ev.stopPropagation(); // ✅ 카드 onClick(지도 열기) 막기
-                      track("directions_clicked", { eventId: e.id });
-
-                      const lat = e.location?.lat;
-                      const lng = e.location?.lng;
-                      if (!lat || !lng) return;
-
-                      // Google Maps directions
-                      const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
-                      window.open(url, "_blank");
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => {
+                      track("list_item_clicked", { eventId: e.id });
+                      onPick(e.id);
                     }}
                     className="
-                      ml-auto
-                      self-start
-                      rounded-full
-                      px-3 py-1.5
-                      text-xs font-semibold
-                      text-blue-600
-                      hover:bg-blue-50
+                      w-full
+                      py-3
+                      border-b border-border/40
+                      hover:bg-muted/40
+                      transition
+                      cursor-pointer
                     "
                   >
-                    Directions →
-                  </button>
 
+                    <div className="flex items-start gap-3">
+                      {/* Logos (match only) */}
+                      {e.sport !== "tennis" && (e.homeTeamLogo || e.awayTeamLogo) && (
+                        <div className="flex items-center gap-1 shrink-0 mt-0.5">
+                          {e.homeTeamLogo ? (
+                            <img
+                              src={e.homeTeamLogo}
+                              alt={e.homeTeam}
+                              className="w-7 h-7 rounded-full object-cover border"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className="w-7 h-7 rounded-full border bg-muted/40" />
+                          )}
 
+                          {e.awayTeamLogo ? (
+                            <img
+                              src={e.awayTeamLogo}
+                              alt={e.awayTeam}
+                              className="w-7 h-7 rounded-full object-cover border -ml-2"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className="w-7 h-7 rounded-full border bg-muted/40 -ml-2" />
+                          )}
+                        </div>
+                      )}
+
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold leading-snug line-clamp-2">
+                          {e.sport === "tennis"
+                            ? e.title
+                            : `${e.homeTeam} vs ${e.awayTeam}`}
+                        </p>
+
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          {formatEventTimeCard(dt, e.region)}
+                        </div>
+
+                        <div className="mt-1 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                          {typeof dist === "number" && (
+                            <span>{formatDistance(dist, unit)}</span>
+                          )}
+                          {e.sport && <span>{e.sport}</span>}
+                        </div>
+
+                        <div className="mt-1 flex gap-2">
+                          <span className={`text-[11px] font-semibold px-2 py-1 rounded-full border ${vibeClass(vibe.tone)}`}>
+                            {getEventTimingLabel(dt)}
+                          </span>
+
+                          <span className={`text-[11px] font-semibold px-2 py-1 rounded-full border ${
+                            isLive
+                              ? "text-red-600 bg-red-50 border-red-200"
+                              : "text-emerald-700 bg-emerald-50 border-emerald-200"
+                          }`}>
+                            {isLive ? "LIVE" : "OPEN"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-
-          {list.length === 0 && (
-            <div className="rounded-2xl border px-4 py-4 text-sm text-gray-500 space-y-1">
-              <p>
-                {scope === "global"
-                  ? "Nothing surfaced globally right now."
-                  : "This area is quiet right now."}
-              </p>
-              <p className="text-xs">
-                {scope === "global"
-                  ? "Try switching back to nearby or city."
-                  : "It usually doesn’t stay that way."}
-              </p>
-            </div>
-          )}
-
+              );
+            });
+          })()}
         </div>
-        <button
-          onClick={() => setMode("week")}
-          className="text-xs font-semibold text-blue-600 hover:underline"
-        >
-          Show the next 7 days →
-        </button>
+
 
         <Link
           href="/events"

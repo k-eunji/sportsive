@@ -17,6 +17,11 @@ const DEFAULT_LOCATION = { lat: 51.5074, lng: -0.1278 };
 const DEFAULT_ZOOM = 8;
 const FOCUS_ZOOM = 13;
 
+type EventWithTime = Event & {
+  __dt: Date;
+  utcDate?: string;
+};
+
 export interface HomeEventMapRef {
   surprise: () => void;
   focus: (eventId: string) => void;
@@ -43,8 +48,6 @@ const HomeEventMap = forwardRef<
   const resetMap = () => {
     setSelectedEvent(null);
     setMapActive(false);
-    mapRef.current?.panTo(DEFAULT_LOCATION);
-    mapRef.current?.setZoom(DEFAULT_ZOOM);
   };
 
   const focusById = (eventId: string) => {
@@ -63,9 +66,6 @@ const HomeEventMap = forwardRef<
     }, 350);
 
     onDiscover(picked.id);
-
-    mapRef.current.panTo(picked.location);
-    mapRef.current.setZoom(FOCUS_ZOOM);
   };
 
   useImperativeHandle(ref, () => ({
@@ -74,29 +74,33 @@ const HomeEventMap = forwardRef<
 
       setMapActive(true);
 
-      const bounds = mapRef.current.getBounds();
-      if (!bounds) return;
+      const now = Date.now();
 
-      const visible = (events as any[]).filter((e) => {
-        if (!e.location) return false;
-        return bounds.contains(
-          new google.maps.LatLng(e.location.lat, e.location.lng)
-        );
-      });
+      const pool: EventWithTime[] = events
+        .map((e) => {
+          const dt = e.date ?? (e as any).utcDate;
+          if (!e.location || !dt) return null;
 
-      if (!visible.length) return;
+          return {
+            ...(e as EventWithTime),
+            __dt: new Date(dt),
+          };
+        })
+        .filter((e): e is EventWithTime => e !== null)
+        .sort((a, b) => a.__dt.getTime() - b.__dt.getTime())
+        .slice(0, 10);
 
-      const picked = visible[Math.floor(Math.random() * visible.length)];
-      if (!picked?.location) return;
+      if (!pool.length) return;
+
+      const picked = pool[0]; // ⭐ 랜덤 ❌ → 가장 임박한 경기
 
       mapRef.current.panTo(picked.location);
       mapRef.current.setZoom(FOCUS_ZOOM);
 
-      // ⭐ 핵심
       setTimeout(() => {
         setSelectedEvent(picked);
         setShowSnap(true);
-      }, 350);
+      }, 120);
 
       onDiscover(picked.id);
     },
@@ -178,7 +182,7 @@ const HomeEventMap = forwardRef<
             pointer-events-none
           "
         >
-          Drag anywhere. Tap a pin. Or hit Surprise.
+          Move around. Pick a match. Step inside.
         </div>
       )}
 

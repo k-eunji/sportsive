@@ -1,42 +1,37 @@
 // src/app/components/map-hero/HomeMapSnapCard.tsx
-
 "use client";
 
 import type { Event } from "@/types";
 import { formatEventTimeWithOffsetUTC } from "@/utils/date";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect } from "react";
 import { getVibe, vibeClass } from "@/lib/vibe";
 import { track } from "@/lib/track";
-import PublicNotes from "./PublicNotes";
-
-interface LiveRoom {
-  id: string;
-  eventId: string;
-  participants?: number;
-  status?: "Scheduled" | "LIVE" | "END";
-}
 
 function logLocalEventView(eventId: string) {
   try {
     const key = `sportsive_event_views_${eventId}`;
     const raw = localStorage.getItem(key);
-    const n = raw ? Number(raw) : 0;
-    localStorage.setItem(key, String(n + 1));
+    const arr = raw ? (JSON.parse(raw) as number[]) : [];
+    arr.push(Date.now());
+    localStorage.setItem(key, JSON.stringify(arr.slice(-5)));
   } catch {}
 }
 
 function getLocalEventViewLabel(eventId: string) {
   try {
     const raw = localStorage.getItem(`sportsive_event_views_${eventId}`);
-    const n = raw ? Number(raw) : 0;
+    if (!raw) return "Someone might be nearby";
 
-    if (n <= 0) return "Quiet — no recent activity";
-    if (n === 1) return "Someone checked this recently";
-    if (n <= 3) return "A few people looked at this";
-    return "People are circling this match";
+    const arr = JSON.parse(raw) as number[];
+    const last = arr[arr.length - 1];
+    const sec = Math.floor((Date.now() - last) / 1000);
+
+    if (sec < 20) return "Someone just opened this";
+    if (sec < 60) return "Someone was here a moment ago";
+    return "People pass through this from time to time";
   } catch {
-    return null;
+    return "Someone might be nearby";
   }
 }
 
@@ -48,48 +43,12 @@ export default function HomeMapSnapCard({
   onClose: () => void;
 }) {
   const e: any = event;
-  const isFootball = e.sport === "football";
   const isLive = (e.status ?? "").toUpperCase() === "LIVE";
   const vibe = getVibe(e);
-
-  const [room, setRoom] = useState<LiveRoom | null>(null);
-
-  useEffect(() => {
-    if (!isFootball) return;
-
-    let mounted = true;
-    (async () => {
-      try {
-        const res = await fetch("/api/live/rooms/football", {
-          cache: "no-store",
-        });
-        if (!res.ok) return;
-
-        const data = await res.json();
-        const rooms: LiveRoom[] = data.rooms ?? [];
-        const found = rooms.find((r) => r.eventId === e.id) ?? null;
-
-        if (mounted) setRoom(found);
-      } catch {}
-    })();
-
-    return () => {
-      mounted = false;
-    };
-  }, [e.id, isFootball]);
-
-  const people = room?.participants ?? 0;
-
-  const showChatCta = useMemo(() => {
-    if (!isLive) return false;
-    if (!room) return false;
-    return (room.participants ?? 0) >= 2;
-  }, [isLive, room]);
 
   useEffect(() => {
     logLocalEventView(e.id);
   }, [e.id]);
-
 
   return (
     <div
@@ -111,49 +70,32 @@ export default function HomeMapSnapCard({
             </p>
 
             <p className="text-base font-semibold truncate mt-0.5">
-              {vibe.label}
+              {e.sport === "tennis" ? e.title : `${e.homeTeam} vs ${e.awayTeam}`}
             </p>
-
-            <p className="text-xs text-muted-foreground truncate mt-0.5">
-              {e.sport === "tennis"
-                ? e.title
-                : `${e.homeTeam} vs ${e.awayTeam}`}
-            </p>
-
 
             <div className="mt-2 flex flex-wrap items-center gap-2">
-              <span className={`text-[11px] font-semibold px-2 py-1 rounded-full border ${vibeClass(vibe.tone)}`}>
-                {vibe.emoji ? `${vibe.emoji} ` : ""}{vibe.label}
+              <span
+                className={`text-[11px] font-semibold px-2 py-1 rounded-full border ${vibeClass(
+                  vibe.tone
+                )}`}
+              >
+                {vibe.emoji ? `${vibe.emoji} ` : ""}
+                {vibe.label}
               </span>
 
-              <span className={`text-[11px] font-semibold px-2 py-1 rounded-full border ${
-                isLive ? "text-red-600 bg-red-50 border-red-200" : "text-gray-700 bg-gray-50 border-gray-200"
-              }`}>
+              <span
+                className={`text-[11px] font-semibold px-2 py-1 rounded-full border ${
+                  isLive
+                    ? "text-red-600 bg-red-50 border-red-200"
+                    : "text-gray-700 bg-gray-50 border-gray-200"
+                }`}
+              >
                 {isLive ? "LIVE" : "UPCOMING"}
               </span>
 
-              <p className="mt-2 text-[11px] text-muted-foreground">
+              <p className="text-[11px] text-muted-foreground">
                 {getLocalEventViewLabel(e.id)}
               </p>
-
-              {isFootball && showChatCta && (
-                <button
-                  onClick={() => {
-                    track("chat_badge_clicked", { eventId: e.id, people });
-                    window.location.href = `/live/football?eventId=${e.id}`;
-                  }}
-                  className="
-                    text-[11px] font-semibold px-2 py-1 rounded-full border
-                    text-red-600 bg-red-50 border-red-200
-                    hover:bg-red-100
-                    transition
-                  "
-                  aria-label="Open live chat"
-                >
-                  💬 {people}
-                </button>
-              )}
-
             </div>
           </div>
 
@@ -169,14 +111,12 @@ export default function HomeMapSnapCard({
           </button>
         </div>
 
-        <PublicNotes eventId={e.id} />
-
-        <div className="mt-4 flex flex-col gap-2"></div>
-
         <div className="mt-4 flex flex-col gap-2">
           <Link
             href={`/events?focus=${e.id}`}
-            onClick={() => track("details_opened", { eventId: e.id, source: "snapcard" })}
+            onClick={() =>
+              track("details_opened", { eventId: e.id, source: "snapcard" })
+            }
             className="
               w-full text-center
               rounded-2xl
@@ -188,31 +128,9 @@ export default function HomeMapSnapCard({
               transition
             "
           >
-            See what’s happening →
+            View details →
           </Link>
-
-          {showChatCta && (
-            <Link
-              href={`/live`}
-              onClick={() => track("live_opened", { source: "snapcard", eventId: e.id })}
-              className="
-                w-full text-center
-                rounded-2xl border border-border/60
-                bg-background/60 backdrop-blur
-                px-4 py-3
-                text-sm font-semibold text-red-600
-                hover:bg-background/80
-                transition
-              "
-            >
-              Join live chat
-            </Link>
-          )}
         </div>
-
-        <p className="mt-3 text-[11px] text-gray-400">
-          Explore first. Offline participation only where activity already exists.
-        </p>
       </div>
     </div>
   );

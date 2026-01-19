@@ -41,11 +41,11 @@ export default function HomeMapStage({
   }, [autoSurprise]);
 
   return (
-    <section className="px-6">
-      <div className="md:max-w-3xl mx-auto space-y-3">
+    <section className="w-full">
+      <div className="w-full px-4 md:max-w-3xl md:mx-auto space-y-3">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-sm font-semibold truncate">Map</p>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">Map</p>
             <p className="text-xs text-muted-foreground truncate">
               Drag, tap, or hit Surprise — it will surface something nearby.
             </p>
