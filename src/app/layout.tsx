@@ -19,6 +19,9 @@ export const metadata = {
   title: "Sportsive",
   description: "Discover sports you can actually attend near you",
   manifest: "/manifest.json",
+};
+
+export const viewport = {
   themeColor: "#2563eb",
 };
 
