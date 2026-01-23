@@ -15,12 +15,14 @@ import { useGoogleMaps } from "@/components/GoogleMapsProvider";
 const DEFAULT_ZOOM = 8;
 const FOCUS_ZOOM = 13;
 
+
 // ======== Signal spec constants ========
 const SOON_WINDOW_MS = 2 * 60 * 60 * 1000; // 2h
 const PRESENCE_RECENT_MS = 2 * 60 * 1000; // 2m "someone just opened this"
 const PRESENCE_FADE_MS = 8 * 60 * 1000; // 8m "was here a moment ago"
 
 type MarkerStatus = "DEFAULT" | "SOON" | "LIVE";
+type TimeScope = "today" | "tomorrow" | "weekend" | "week";
 
 function getEventStart(e: Event): Date | null {
   const raw = (e as any).date ?? (e as any).utcDate ?? (e as any).startDate;
@@ -44,12 +46,12 @@ function getMarkerStatus(e: Event): MarkerStatus {
 }
 
 function markerBaseScaleForZoom(zoom: number) {
-  // slightly larger than before so dots actually read on light basemap
-  if (zoom >= 14) return 7.8;
-  if (zoom >= 12) return 6.8;
+  if (zoom >= 14) return 4.8;
+  if (zoom >= 12) return 5.4;
   if (zoom >= 10) return 6.0;
-  return 5.4;
+  return 6.6;
 }
+
 
 function thinByGrid(events: Event[], zoom: number) {
   const cellKm =
@@ -116,7 +118,7 @@ function getMarkerIcon(e: Event, zoom: number, phase: number): google.maps.Symbo
   // Default is intentionally low presence so LIVE/SOON pops by contrast
   let fillColor = "#0f172a";
   let fillOpacity = 0.48;        // ⬅️ 확실히 보이게
-  let scale = base * 1.1;        
+  let scale = base * 1.1;
   // Live/Soon: signal, not POI
   if (status === "SOON") {
     // subtle pulse; still readable
@@ -164,6 +166,10 @@ function getHaloIcon(zoom: number, phase: number): google.maps.Symbol {
   };
 }
 
+// =========================
+// (기존 히트맵 보조 함수들: 남겨둠 — 혹시 다른 곳에서 참조할 수 있어 유지)
+// ⚠️ 단, google.maps.visualization 타입은 제거(visualization lib 제거했기 때문)
+// =========================
 function buildHeatmapPoints(events: Event[]) {
   return events
     .filter((e) => e.location?.lat && e.location?.lng)
@@ -187,7 +193,7 @@ function spreadPoints(
   lng: number,
   weight: number,
   zoom: number
-): google.maps.visualization.WeightedLocation[] {
+): any[] {
   // zoom이 낮을수록 더 넓게 퍼짐
   const spreadMeters =
     zoom <= 6 ? 6000 :
@@ -198,7 +204,7 @@ function spreadPoints(
   // weight이 클수록 점 개수 증가
   const count = Math.round(weight * 4);
 
-  const points: google.maps.visualization.WeightedLocation[] = [];
+  const points: any[] = [];
 
   for (let i = 0; i < count; i++) {
     const angle = Math.random() * Math.PI * 2;
@@ -219,13 +225,102 @@ function spreadPoints(
   return points;
 }
 
-
 function heatmapRadiusForZoom(zoom: number) {
   if (zoom <= 6) return 26;
   if (zoom === 7) return 34;
   if (zoom === 8) return 44;
   if (zoom === 9) return 58;
   return 0;
+}
+
+// =========================
+// ✅ NEW: Soft Density (Canvas Overlay) helpers
+// =========================
+function densityRadiusPxForZoom(zoom: number) {
+  // “근처” 감각: zoom 낮을수록 넓게
+  if (zoom <= 6) return 58;
+  if (zoom === 7) return 50;
+  if (zoom === 8) return 40;
+  if (zoom === 9) return 32;
+  return 0;
+}
+
+function densityBlurPxForZoom(zoom: number) {
+  if (zoom <= 6) return 38;
+  if (zoom === 7) return 32;
+  if (zoom === 8) return 24;
+  if (zoom === 9) return 18;
+  return 0;
+}
+
+function densityBaseAlphaForZoom(zoom: number) {
+  // 전체가 과하게 뿌옇게 되는 걸 방지 (zoom 낮을수록 더 옅게)
+  if (zoom <= 6) return 0.12;
+  if (zoom === 7) return 0.14;
+  if (zoom === 8) return 0.16;
+  if (zoom === 9) return 0.18;
+  return 0;
+}
+
+/**
+ * ✅ Density 핵심: scope + "시작 이후 제거(토너먼트 예외)" + "3h+도 약하게 표시"
+ * - 시작 이후: 일반 경기는 제거
+ * - 토너먼트(tennis tournament 등): 유지, 단 상한을 둬서 과하게 튀지 않게
+ *
+ * ⚠️ 토너먼트 판별은 프로젝트 데이터 스키마에 맞게 조정 필요:
+ *   - 아래는 (e.format === "tournament") 또는 (e.kind === "tournament") 같은 패턴을 지원
+ *   - 너 데이터에 맞는 키로 1줄만 바꿔주면 됨
+ */
+function getDensityWeight(e: Event, scope: TimeScope, now: Date) {
+  const start = getEventStart(e);
+  if (!start) return 0;
+
+  // ✅ tournament 예외 판별 (프로젝트에 맞게 키를 하나로 통일하면 더 좋음)
+  const sport = ((e as any).sport ?? "").toString().toLowerCase();
+  const format = ((e as any).format ?? "").toString().toLowerCase();
+  const kind = ((e as any).kind ?? "").toString().toLowerCase();
+  const isTournament =
+    format === "tournament" ||
+    kind === "tournament" ||
+    (sport === "tennis" && (format === "event" || format === "tourney"));
+
+  // ❌ 시작 이후 제거 (토너먼트 제외)
+  if (!isTournament && start.getTime() <= now.getTime()) {
+    return 0;
+  }
+
+  const diffMs = start.getTime() - now.getTime();
+  const diffH = diffMs / (1000 * 60 * 60);
+
+  // ================= TODAY =================
+  // 목적: “지금 나갈까?” 판단
+  if (scope === "today") {
+    if (isTournament) return 0.6;
+
+    // 3h+도 보여야 하니까 0.15~0.3 영역으로 남겨둔다
+    if (diffH > 6) return 0.15;
+    if (diffH > 3) return 0.30;
+    if (diffH > 1) return 0.60;
+    if (diffH > 0.25) return 1.00; // 15m~1h
+    return 1.20; // 0~15m
+  }
+
+  // ================= TOMORROW =================
+  // 목적: 내일 어디가 살아있는지 (임박성보다 존재감)
+  if (scope === "tomorrow") {
+    if (isTournament) return 0.40;
+    return 0.35;
+  }
+
+  // ================= WEEKEND =================
+  // 목적: 도시 단위 선택 (공간 분포)
+  if (scope === "weekend") {
+    return isTournament ? 0.40 : 0.45;
+  }
+
+  // ================= WEEK =================
+  // 목적: 다음 7일의 활동 축 (가장 약한 신호)
+  return isTournament ? 0.30 : 0.25;
 }
 
 export interface HomeEventMapRef {
@@ -250,8 +345,12 @@ const HomeEventMap = forwardRef<
     onDiscover: (eventId: string) => void;
     children?: React.ReactNode;
     onBoundsChanged?: (bounds: google.maps.LatLngBoundsLiteral) => void;
+
+    // ✅ NEW: scope를 Density 레이어에 주입 (선택)
+    // 지금 당장 다른 파일 안 고쳐도 빌드되도록 optional + 기본값 today
+    timeScope?: TimeScope;
   }
->(({ events, onDiscover, children, onBoundsChanged }, ref) => {
+>(({ events, onDiscover, children, onBoundsChanged, timeScope }, ref) => {
   const mapRef = useRef<google.maps.Map | null>(null);
 
   const prevViewRef = useRef<{
@@ -264,9 +363,14 @@ const HomeEventMap = forwardRef<
   // replaces markersRef: we need bundles (main + optional halo + presence)
   const markerBundlesRef = useRef<MarkerBundle[]>([]);
 
-  const heatmapRef = useRef<google.maps.visualization.HeatmapLayer | null>(
-    null
-  );
+  // ❌ HeatmapLayer removed (deprecated May 2026)
+  // const heatmapRef = useRef<google.maps.visualization.HeatmapLayer | null>(null);
+
+  // ✅ Density overlay refs
+  const densityOverlayRef = useRef<google.maps.OverlayView | null>(null);
+  const densityEventsRef = useRef<Event[]>([]);
+  const densityScopeRef = useRef<TimeScope>("today");
+  const densityActiveRef = useRef<boolean>(false);
 
   const { isLoaded } = useGoogleMaps();
 
@@ -279,7 +383,7 @@ const HomeEventMap = forwardRef<
   // ✅ signal animation phase (0..1)
   const phaseRef = useRef(0);
   const [signalTick, setSignalTick] = useState(0);
-  
+
   const getZoom = () => mapRef.current?.getZoom?.() ?? 0;
 
   const shouldUseDensity = () => {
@@ -387,6 +491,18 @@ const HomeEventMap = forwardRef<
     },
   }));
 
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    const ro = new ResizeObserver(() => {
+      google.maps.event.trigger(mapRef.current!, "resize");
+    });
+
+    ro.observe(containerRef.current!);
+    return () => ro.disconnect();
+  }, []);
+
+
   // ✅ 1) signal animation (safe): update phase + bump tick every ~900ms
   useEffect(() => {
     const id = window.setInterval(() => {
@@ -396,45 +512,134 @@ const HomeEventMap = forwardRef<
     return () => window.clearInterval(id);
   }, []);
 
-  // ✅ 2) heatmap layer (already there)
+  // ✅ 2) Density overlay (Canvas) — replaces HeatmapLayer
   useEffect(() => {
     if (!mapRef.current || !isLoaded) return;
 
-    const active = shouldUseDensity();
+    // keep latest refs for overlay.draw()
+    densityEventsRef.current = events;
+    densityScopeRef.current = (timeScope ?? "today");
+    densityActiveRef.current = shouldUseDensity();
 
-    if (!active) {
-      heatmapRef.current?.setMap(null);
+    const map = mapRef.current;
+
+    // create overlay once
+    if (!densityOverlayRef.current) {
+      class DensityOverlay extends google.maps.OverlayView {
+        private canvas: HTMLCanvasElement | null = null;
+        private ctx: CanvasRenderingContext2D | null = null;
+
+        onAdd() {
+          const canvas = document.createElement("canvas");
+          canvas.style.position = "absolute";
+          canvas.style.top = "0";
+          canvas.style.left = "0";
+          canvas.style.width = "100%";
+          canvas.style.height = "100%";
+          canvas.style.pointerEvents = "none";
+          canvas.style.zIndex = "2";
+
+          // ✅ 타입 안전: mapRef의 map 사용
+          const mapDiv = map.getDiv() as HTMLElement;
+          mapDiv.appendChild(canvas);
+
+          this.canvas = canvas;
+          this.ctx = canvas.getContext("2d");
+        }
+
+        onRemove() {
+          if (this.canvas?.parentNode) {
+            this.canvas.parentNode.removeChild(this.canvas);
+          }
+          this.canvas = null;
+          this.ctx = null;
+        }
+
+        draw() {
+          if (!this.canvas || !this.ctx) return;
+
+          const projection = this.getProjection();
+          if (!projection) return;
+
+          const mapDiv = map.getDiv() as HTMLElement;
+          const w = mapDiv.clientWidth;
+          const h = mapDiv.clientHeight;
+
+          const dpr = window.devicePixelRatio || 1;
+
+          if (
+            this.canvas.width !== Math.floor(w * dpr) ||
+            this.canvas.height !== Math.floor(h * dpr)
+          ) {
+            this.canvas.width = Math.floor(w * dpr);
+            this.canvas.height = Math.floor(h * dpr);
+            this.canvas.style.width = `${w}px`;
+            this.canvas.style.height = `${h}px`;
+          }
+
+          const ctx = this.ctx;
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          ctx.clearRect(0, 0, w, h);
+
+          if (!densityActiveRef.current) return;
+
+          const zoom = map.getZoom() ?? 0;
+          const radius = densityRadiusPxForZoom(zoom);
+          const blur = densityBlurPxForZoom(zoom);
+          const baseAlpha = densityBaseAlphaForZoom(zoom);
+
+          if (radius <= 0 || baseAlpha <= 0) return;
+
+          const now = new Date();
+          const scope = densityScopeRef.current;
+          const evs = densityEventsRef.current;
+
+          const color = "15,23,42"; // #0f172a
+
+          for (const e of evs) {
+            if (!e.location?.lat || !e.location?.lng) continue;
+
+            const wgt = getDensityWeight(e, scope, now);
+            if (wgt <= 0) continue;
+
+            const p = projection.fromLatLngToContainerPixel(
+              new google.maps.LatLng(e.location.lat, e.location.lng)
+            );
+            if (!p) continue;
+
+            const alpha = Math.min(0.52, baseAlpha * wgt);
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = `rgba(${color},1)`;
+            ctx.shadowColor = `rgba(${color},1)`;
+            ctx.shadowBlur = blur;
+
+            ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+          }
+        }
+      }
+
+      densityOverlayRef.current = new DensityOverlay();
+      densityOverlayRef.current.setMap(map);
+    }
+
+
+
+    // toggle attach/detach
+    if (!densityActiveRef.current) {
+      densityOverlayRef.current?.setMap(null);
       return;
     }
 
-    const points = buildHeatmapPoints(events);
-    const zoom = mapRef.current.getZoom() ?? 0;
-    const radius = heatmapRadiusForZoom(zoom);
-
-    if (!heatmapRef.current) {
-      heatmapRef.current = new google.maps.visualization.HeatmapLayer({
-        data: points,
-        map: mapRef.current,
-        dissipating: true,
-        opacity: 0.68,
-        radius,
-        gradient: [
-          "rgba(0,0,0,0)",
-          "rgba(220,252,231,0.35)",  // 아주 연한 연초록
-          "rgba(187,247,208,0.5)",   // 연초록
-          "rgba(254,240,138,0.6)",   // 노랑
-          "rgba(253,224,71,0.7)",    // 진노랑
-          "rgba(253,186,116,0.8)",   // 주황
-          "rgba(239,68,68,0.9)",     // 빨강
-        ],
-
-      });
-    } else {
-      heatmapRef.current.setData(points);
-      heatmapRef.current.set("radius", radius);
-      heatmapRef.current.setMap(mapRef.current);
-    }
-  }, [events, isLoaded, mapActive, viewportTick]);
+    densityOverlayRef.current.setMap(map);
+    // force redraw on events/scope updates
+    // @ts-ignore
+    densityOverlayRef.current.draw?.();
+  }, [events, isLoaded, mapActive, viewportTick, timeScope]);
 
   // ✅ 3) create map once
   useEffect(() => {
@@ -617,22 +822,24 @@ const HomeEventMap = forwardRef<
   }, [onBoundsChanged, mapActive]);
 
   return (
-    <div className="fixed inset-0 overflow-hidden">
+    <div className="fixed inset-0 overflow-visible">
       {/* RADAR OVERLAY */}
-      <div
-        className="pointer-events-none absolute inset-0 z-10"
-        style={{
-          background: `
-            radial-gradient(
-              circle at center,
-              rgba(255,255,255,0) 0%,
-              rgba(255,255,255,0) 55%,
-              rgba(15,23,42,0.35) 70%,
-              rgba(15,23,42,0.55) 100%
-            )
-          `,
-        }}
-      />
+      {!shouldUseDensity() && (
+        <div
+          className="pointer-events-none absolute inset-0 z-10"
+          style={{
+            background: `
+              radial-gradient(
+                circle at center,
+                rgba(255,255,255,0) 0%,
+                rgba(255,255,255,0) 55%,
+                rgba(15,23,42,0.35) 70%,
+                rgba(15,23,42,0.55) 100%
+              )
+            `,
+          }}
+        />
+      )}
 
       {/* MAP CANVAS */}
       <div ref={containerRef} className="absolute inset-0" />

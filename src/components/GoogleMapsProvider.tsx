@@ -1,4 +1,5 @@
 // src/components/GoogleMapsProvider.tsx
+
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
@@ -35,7 +36,8 @@ export default function GoogleMapsProvider({
       await google.maps.importLibrary("maps");
       await google.maps.importLibrary("places");
       await google.maps.importLibrary("marker");
-      await google.maps.importLibrary("visualization");
+      // ❌ HeatmapLayer(visualization) 제거 (May 2026 unavailable)
+      // await google.maps.importLibrary("visualization");
 
       setIsLoaded(true);
     };
