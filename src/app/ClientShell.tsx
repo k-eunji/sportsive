@@ -2,7 +2,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import Header from "@/components/layout/Header";
+//import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import IntroWrapper from "@/components/layout/IntroWrapper";
 import { Toaster } from "react-hot-toast";
@@ -16,7 +16,7 @@ export default function ClientShell({ children }: { children: React.ReactNode })
 
   const content = (
     <>
-      {!isLiveRoom && !isHome && <Header showLogo />}
+      {/*{!isLiveRoom && !isHome && <Header showLogo />}*/}
 
       <main
         className={
