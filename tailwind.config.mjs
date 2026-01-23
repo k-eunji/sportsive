@@ -1,7 +1,6 @@
 // tailwind.config.mjs
 
-import tailwindcssAnimate from "tailwindcss-animate";
-import scrollbarHide from "tailwind-scrollbar-hide"; 
+import tailwindcssAnimate from "tailwindcss-animate"; 
 
 /** @type {import('tailwindcss').Config} */
 export default {
@@ -57,6 +56,7 @@ export default {
         "emoji-float": "emojiFloat 1.3s ease-out forwards",
         chat: "chatIn 0.15s ease-out",
       },
+      
     },
   },
   plugins: [tailwindcssAnimate],
