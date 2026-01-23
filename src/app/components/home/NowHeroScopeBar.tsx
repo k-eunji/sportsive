@@ -1,7 +1,8 @@
 // src/app/components/home/NowHeroScopeBar.tsx
 
 "use client";
-import type { TimeScope } from "./NowHero";
+
+import type { TimeScope } from "@/lib/nowDashboard";
 
 export default function NowHeroScopeBar({
   scope,

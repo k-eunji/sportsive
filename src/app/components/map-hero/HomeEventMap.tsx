@@ -11,9 +11,10 @@ import {
 } from "react";
 import type { Event } from "@/types";
 import { useGoogleMaps } from "@/components/GoogleMapsProvider";
+import type { TimeScope } from "@/lib/nowDashboard";
 
 const DEFAULT_ZOOM = 8;
-const FOCUS_ZOOM = 13;
+const FOCUS_ZOOM = 16;
 
 
 // ======== Signal spec constants ========
@@ -22,7 +23,6 @@ const PRESENCE_RECENT_MS = 2 * 60 * 1000; // 2m "someone just opened this"
 const PRESENCE_FADE_MS = 8 * 60 * 1000; // 8m "was here a moment ago"
 
 type MarkerStatus = "DEFAULT" | "SOON" | "LIVE";
-type TimeScope = "today" | "tomorrow" | "weekend" | "week";
 
 function getEventStart(e: Event): Date | null {
   const raw = (e as any).date ?? (e as any).utcDate ?? (e as any).startDate;
@@ -36,13 +36,29 @@ function getMarkerStatus(e: Event): MarkerStatus {
   const start = getEventStart(e);
   const rawStatus = ((e as any).status ?? "").toString().toUpperCase();
 
-  const isLive = rawStatus === "LIVE";
+  // 1) 명시적 LIVE (축구 등)
+  if (rawStatus === "LIVE") return "LIVE";
+
+  // 2) 🎾 session (테니스) 진행 중인 날 → LIVE signal
+  if (
+    (e as any).kind === "session" &&
+    (e as any).startDate &&
+    (e as any).endDate
+  ) {
+    const s = new Date((e as any).startDate).getTime();
+    const eend = new Date((e as any).endDate).getTime();
+    if (now >= s && now <= eend) {
+      return "LIVE";
+    }
+  }
+
+  // 3) SOON
   const isSoon =
     !!start &&
     start.getTime() - now > 0 &&
     start.getTime() - now <= getSoonWindowMs(e);
 
-  return isLive ? "LIVE" : isSoon ? "SOON" : "DEFAULT";
+  return isSoon ? "SOON" : "DEFAULT";
 }
 
 function markerBaseScaleForZoom(zoom: number) {
@@ -439,27 +455,31 @@ const HomeEventMap = forwardRef<
   const focusById = (eventId: string) => {
     if (!mapRef.current) return;
 
-    const center = mapRef.current.getCenter();
-    const zoom = mapRef.current.getZoom();
+    // ✅ 이전 뷰 저장 (처음 진입 시만)
+    if (!prevViewRef.current) {
+      const center = mapRef.current.getCenter();
+      const zoom = mapRef.current.getZoom();
 
-    if (center && typeof zoom === "number") {
-      prevViewRef.current = {
-        center: { lat: center.lat(), lng: center.lng() },
-        zoom,
-      };
+      if (center && typeof zoom === "number") {
+        prevViewRef.current = {
+          center: { lat: center.lat(), lng: center.lng() },
+          zoom,
+        };
+      }
     }
 
     const picked = (events as any[]).find((x) => x.id === eventId);
     if (!picked?.location) return;
 
     setMapActive(true);
+
     mapRef.current.panTo(picked.location);
     mapRef.current.setZoom(FOCUS_ZOOM);
 
     setTimeout(() => {
       setSelectedEvent(picked);
       setShowSnap(true);
-    }, 350);
+    }, 300);
 
     onDiscover(picked.id);
   };
@@ -705,12 +725,7 @@ const HomeEventMap = forwardRef<
         shape: { type: "circle", coords: [0, 0, 18] },
       });
       main.addListener("click", () => {
-        setMapActive(true);
-        setSelectedEvent(e);
-        setShowSnap(true);
-        onDiscover((e as any).id);
-        mapRef.current?.panTo(e.location);
-        mapRef.current?.setZoom(FOCUS_ZOOM);
+        focusById((e as any).id);
       });
 
       let halo: google.maps.Marker | undefined;

@@ -17,7 +17,7 @@ import { useUserLocation, haversineKm } from "@/app/components/home/useUserLocat
 import { extractRegions, extractCities } from "@/lib/eventAreas";
 import { track } from "@/lib/track";
 import type { HomeEventMapRef } from "@/app/components/map-hero/HomeEventMap";
-import type { TimeScope } from "@/app/components/home/NowHero";
+import type { TimeScope } from "@/lib/nowDashboard";
 import { calcCityCenter } from "@/lib/calcCityCenter";
 import MapStatusPill from "@/app/components/home/MapStatusPill";
 import type { AreaIndex } from "@/types/area";
@@ -53,6 +53,14 @@ function isInBounds(
     location.lng <= bounds.east &&
     location.lng >= bounds.west
   );
+}
+
+function isSession(e: any) {
+  return e.kind === "session";
+}
+
+function overlaps(aStart: Date, aEnd: Date, bStart: Date, bEnd: Date) {
+  return aStart < bEnd && aEnd > bStart;
 }
 
 export default function HomePage() {
@@ -204,6 +212,9 @@ export default function HomePage() {
     const now = new Date();
     const todayStart = startOfLocalDay(now);
 
+    const todayEnd = new Date(todayStart);
+    todayEnd.setDate(todayEnd.getDate() + 1);
+
     const tomorrowStart = new Date(todayStart);
     tomorrowStart.setDate(tomorrowStart.getDate() + 1);
     const tomorrowEnd = new Date(tomorrowStart);
@@ -220,16 +231,29 @@ export default function HomePage() {
       ====================== */
       const start = getStartDate(e);
       if (!start) return false;
+
+      // session 이벤트면 기간 사용
+      const isSessionEvent = isSession(e);
+      const sessionStart = isSessionEvent ? new Date(e.startDate) : start;
+      const sessionEnd = isSessionEvent
+        ? new Date(e.endDate)
+        : new Date(start.getTime() + 2 * 60 * 60 * 1000); // 일반 경기는 2h 가정
+
       /* ======================
         2️⃣ 시간 필터
         👉 all이면 통과
       ====================== */
       if (timeScope === "today") {
-        const todayStart = startOfLocalDay(now);
-        const todayEnd = new Date(todayStart);
-        todayEnd.setDate(todayEnd.getDate() + 1);
+        const scopeStart = todayStart;
+        const scopeEnd = todayEnd;
 
-        if (!(start >= todayStart && start < todayEnd)) return false;
+        if (
+          isSessionEvent
+            ? !overlaps(sessionStart, sessionEnd, scopeStart, scopeEnd)
+            : !(start >= scopeStart && start < scopeEnd)
+        ) {
+          return false;
+        }
       }
 
       if (timeScope === "tomorrow") {
@@ -291,6 +315,7 @@ export default function HomePage() {
         <HomeMapStage
           ref={mapRef}
           events={filteredEvents}
+          timeScope={timeScope} 
           onDiscoverFromMap={(id) => {
             const ev = filteredEvents.find(e => e.id === id) ?? null;
             setSnapEvent(ev);
