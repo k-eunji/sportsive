@@ -35,6 +35,7 @@ export default function GoogleMapsProvider({
       await google.maps.importLibrary("maps");
       await google.maps.importLibrary("places");
       await google.maps.importLibrary("marker");
+      await google.maps.importLibrary("visualization");
 
       setIsLoaded(true);
     };

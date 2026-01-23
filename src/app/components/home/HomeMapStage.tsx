@@ -1,90 +1,29 @@
-//src/app/components/home/HomeMapStage.tsx
-
+// src/app/components/home/HomeMapStage.tsx
 "use client";
 
-import { useEffect, useRef, useMemo } from "react";
+import { forwardRef } from "react";
 import type { Event } from "@/types";
 import HomeEventMap, { HomeEventMapRef } from "@/app/components/map-hero/HomeEventMap";
-import SoftButton from "@/components/ui/SoftButton";
-import { track } from "@/lib/track";
 
-export default function HomeMapStage({
-  events,
-  focusEventId,
-  autoSurprise = false,
-  onClose,
-  onSurprise,
-  onDiscoverFromMap,
-}: {
+type Props = {
   events: Event[];
-  focusEventId: string | null;
-  autoSurprise?: boolean;
-  onClose: () => void;
-  onSurprise: () => void;
   onDiscoverFromMap: (eventId: string) => void;
-}) {
-  const mapRef = useRef<HomeEventMapRef | null>(null);
+  onBoundsChanged?: (bounds: google.maps.LatLngBoundsLiteral) => void;
+};
+const HomeMapStage = forwardRef<HomeEventMapRef, Props>(
+  function HomeMapStage(
+    { events, onDiscoverFromMap, onBoundsChanged }, // ✅ 여기 추가
+    ref
+  ) {
+    return (
+      <HomeEventMap
+        ref={ref}
+        events={events}
+        onDiscover={onDiscoverFromMap}
+        onBoundsChanged={onBoundsChanged} // ✅ 이제 정상
+      />
+    );
+  }
+);
 
-  useEffect(() => {
-    if (!focusEventId) return;
-    mapRef.current?.focus?.(focusEventId);
-  }, [focusEventId]);
-
-  useEffect(() => {
-    if (!autoSurprise) return;
-
-    const t = setTimeout(() => {
-      mapRef.current?.surprise();
-    }, 800); // ⬅️ 늘려라
-
-    return () => clearTimeout(t);
-  }, [autoSurprise]);
-
-  return (
-    <section className="w-full">
-      <div className="w-full px-4 md:max-w-3xl md:mx-auto space-y-3">
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">Map</p>
-            <p className="text-xs text-muted-foreground truncate">
-              Drag, tap, or hit Surprise — it will surface something nearby.
-            </p>
-
-
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            <SoftButton
-              as="button"
-              onClick={() => {
-                track("surprise_clicked", { source: "map_stage" });
-                mapRef.current?.surprise();
-                onSurprise();
-              }}
-              className="px-4 py-2"
-            >
-              Surprise →
-            </SoftButton>
-
-            <button
-              onClick={() => {
-                track("map_closed");
-                onClose();
-              }}
-              className="text-sm font-semibold text-gray-500 hover:text-gray-700"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-
-        <HomeEventMap
-          ref={mapRef}
-          events={events}
-          onDiscover={onDiscoverFromMap}
-        />
-
-      </div>
-    </section>
-  );
-}
+export default HomeMapStage;

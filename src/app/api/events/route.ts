@@ -5,6 +5,7 @@ import { GET as getFootballEvents } from "./england/football/route";
 import { GET as getRugbyEvents } from "./england/rugby/route";
 import { GET as getTennisEvents } from "./england/tennis/route"; // ✅ 추가
 import { isEventActiveInWindow } from "@/lib/events/lifecycle";
+import { buildAreaIndex } from "@/lib/events/buildAreaIndex";
 
 export async function GET(req: Request) {
   try {
@@ -27,6 +28,11 @@ export async function GET(req: Request) {
       ...(tennisData.matches ?? []),
     ];
 
+    if (window === "180d") {
+      const areas = buildAreaIndex(merged);
+      return NextResponse.json({ areas });
+    }
+
     const now = new Date();
     const windowEnd = new Date(now);
 
@@ -36,6 +42,8 @@ export async function GET(req: Request) {
       windowEnd.setDate(windowEnd.getDate() + 7);
     } else if (window === "30d") {
       windowEnd.setDate(windowEnd.getDate() + 30);
+    } else if (window === "180d") {
+      windowEnd.setDate(windowEnd.getDate() + 180);
     }
 
     const filtered = merged

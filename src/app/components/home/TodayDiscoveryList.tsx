@@ -102,7 +102,7 @@ export default function TodayDiscoveryList({
 
   return (
     <section className="w-full">
-      <div className="w-full px-4 md:max-w-3xl md:mx-auto space-y-3">
+      <div className="w-full">
         <div className="flex items-end justify-between gap-3">
           <div className="min-w-0">
             <p className="text-sm font-semibold truncate">

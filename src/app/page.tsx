@@ -1,124 +1,255 @@
-// src/app/page.tsx
+//src/app/page.tsx
+
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef  } from "react";
+import { useRouter } from "next/navigation";
 import type { Event } from "@/types";
 
-import WeekStrip from "@/app/components/home/WeekStrip";
-import TodayDiscoveryList from "@/app/components/home/TodayDiscoveryList";
 import HomeMapStage from "@/app/components/home/HomeMapStage";
-import MapPanel from "@/app/components/home/MapPanel";
-import type { ViewScope } from "@/app/components/home/RadiusFilter";
+import NowHeroScopeBar from "@/app/components/home/NowHeroScopeBar";
+
+import HomeMapSnapCard from "@/app/components/map-hero/HomeMapSnapCard";
 
 import LocationSheet from "@/app/components/home/LocationSheet";
 import { useLocationMode } from "@/app/components/home/useLocationMode";
+import { useUserLocation, haversineKm } from "@/app/components/home/useUserLocation";
 import { extractRegions, extractCities } from "@/lib/eventAreas";
 import { track } from "@/lib/track";
-import { useUserLocation, haversineKm } from "@/app/components/home/useUserLocation";
-import { scopeToKm } from "@/lib/scopeDistance";
+import type { HomeEventMapRef } from "@/app/components/map-hero/HomeEventMap";
+import type { TimeScope } from "@/app/components/home/NowHero";
+import { calcCityCenter } from "@/lib/calcCityCenter";
+import MapStatusPill from "@/app/components/home/MapStatusPill";
+import type { AreaIndex } from "@/types/area";
 
-
-function isSameDay(d: Date, iso: string) {
-  return d.toISOString().slice(0, 10) === iso;
+function getStartDate(e: any): Date | null {
+  const raw = e.date ?? e.utcDate ?? e.startDate ?? null;
+  if (!raw) return null;
+  const d = new Date(raw);
+  return isNaN(d.getTime()) ? null : d;
 }
 
-function scopeLabel(scope: ViewScope) {
-  if (scope === "nearby") return "Walking distance";
-  if (scope === "city") return "Around you";
-  if (scope === "country") return "Wider area";
-  return "Worldwide";
+function startOfLocalDay(d: Date) {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+function nextWeekendRange(now: Date) {
+  const base = startOfLocalDay(now);
+  const day = base.getDay(); // 0 Sun ... 6 Sat
+  const toSat = day === 6 ? 0 : (6 - day + 7) % 7;
+  const sat = new Date(base);
+  sat.setDate(sat.getDate() + toSat);
+  const mon = new Date(sat);
+  mon.setDate(mon.getDate() + 2);
+  return { start: sat, end: mon };
 }
 
-function locationTitle({
-  hasLocation,
-  observerCity,
-  observerRegion,
-  regions,
-}: {
-  hasLocation: boolean;
-  observerCity: string | null;
-  observerRegion: string | null;
-  regions: string[];
-}) {
-  if (hasLocation) return "Near you";
-  if (observerCity) return observerCity;
-  if (observerRegion) return observerRegion;
-
-  // 👇 여기 중요
-  if (regions.length === 1) return regions[0];
-
-  return "Choose location";
+function isInBounds(
+  location: { lat: number; lng: number },
+  bounds: google.maps.LatLngBoundsLiteral
+) {
+  return (
+    location.lat <= bounds.north &&
+    location.lat >= bounds.south &&
+    location.lng <= bounds.east &&
+    location.lng >= bounds.west
+  );
 }
 
-export default function EventsPage() {
-  const [events, setEvents] = useState<Event[]>([]);
+export default function HomePage() {
+  const router = useRouter();
+
+  const [areaIndex, setAreaIndex] = useState<AreaIndex[]>([]);
+  const [currentEvents, setCurrentEvents] = useState<Event[]>([]); // 이번 주 표시용
+
   const { hasLocation } = useLocationMode();
-
-  const [scope, setScope] = useState<ViewScope>("country");
-  const [radiusOpen, setRadiusOpen] = useState(false);
-
-  // observer mode
-  const [observerRegion, setObserverRegion] = useState<string | null>(null);
-  const [observerCity, setObserverCity] = useState<string | null>(null);
-
-  // week filter
-  const [pickedDay, setPickedDay] = useState<string | null>(null);
+  const { pos } = useUserLocation({ enabled: hasLocation });
+    
+  const mapRef = useRef<HomeEventMapRef | null>(null);
+  const [snapEvent, setSnapEvent] = useState<Event | null>(null);
 
   // map focus
   const [focusEventId, setFocusEventId] = useState<string | null>(null);
 
-  const { pos } = useUserLocation({
-    enabled: hasLocation,
-  });
-
+  // observer mode (no geo permission)
+  const [observerRegion, setObserverRegion] = useState<string | null>(null);
+  const [observerCity, setObserverCity] = useState<string | null>(null);
   const [locationOpen, setLocationOpen] = useState(false);
+  const HOME_RADIUS_KM = 25;
+
+  const [showLocatedHint, setShowLocatedHint] = useState(false);
+  const [timeScope, setTimeScope] = useState<TimeScope>("today");
+  const [heroExpanded, setHeroExpanded] = useState(true);
+
+  const [mapViewMode, setMapViewMode] =
+    useState<"user" | "global" | "observer">(
+      hasLocation ? "user" : "observer"
+    );
+
+  const toggleMapView = () => {
+    if (!hasLocation || !mapRef.current) return;
+
+    if (mapViewMode === "user") {
+      // 🌍 전체 히트맵으로
+      setMapViewMode("global");
+      setAppliedBounds(null);
+      setPendingBounds(null);
+
+      mapRef.current.resetToAll();
+      track("map_view_global_from_user");
+    } else {
+      // 📍 내 위치로 복귀
+      setMapViewMode("user");
+
+      if (pos) {
+        mapRef.current.panTo({
+          lat: pos.lat,
+          lng: pos.lng,
+        });
+      }
+
+      track("map_view_user_from_global");
+    }
+  };
+
+  const showChooseCity = !hasLocation && !observerCity;
+  const showNowHero = hasLocation || observerCity || !hasLocation;
+
+  const [pendingBounds, setPendingBounds] =
+    useState<google.maps.LatLngBoundsLiteral | null>(null);
+
+  const [appliedBounds, setAppliedBounds] =
+    useState<google.maps.LatLngBoundsLiteral | null>(null);
+
+  const isMobile =
+    typeof window !== "undefined" && window.innerWidth < 768;
 
   useEffect(() => {
-    track("events_page_loaded");
+    track("home_loaded");
+
     (async () => {
-      const res = await fetch("/api/events?window=7d");
-      const data = await res.json();
-      setEvents(data.events ?? []);
+      // ⬅️ 공간 구조용 (나라/도시 추출)
+      const areaRes = await fetch("/api/events?window=180d");
+      const areaData = await areaRes.json();
+      setAreaIndex(areaData.areas ?? []);
+
+      // ⬅️ 실제 지도/마커용 (이번 주)
+      const curRes = await fetch("/api/events?window=7d");
+      const curData = await curRes.json();
+      setCurrentEvents(curData.events ?? []);
     })();
   }, []);
 
-  const regions = useMemo(() => extractRegions(events), [events]);
-  const cities = useMemo(
-    () => (observerRegion ? extractCities(events, observerRegion) : []),
-    [events, observerRegion]
+  useEffect(() => {
+    if (hasLocation) {
+      setMapViewMode("user");
+    }
+  }, [hasLocation]);
+
+  // observer → located 전환 감지
+  useEffect(() => {
+    if (hasLocation && observerCity) {
+      setObserverRegion(null);
+      setObserverCity(null);
+      track("observer_to_located");
+    }
+  }, [hasLocation]);
+
+  // city 선택 시
+  useEffect(() => {
+    if (observerCity) {
+      localStorage.setItem("sportsive_observer_city", observerCity);
+    }
+  }, [observerCity]);
+
+  useEffect(() => {
+    if (!observerCity || !mapRef.current) return;
+
+    // 1) ✅ 이벤트 없어도 이동: areaIndex(center)로 이동
+    const area = areaIndex.find(a => a.city === observerCity);
+    if (area?.center) {
+      mapRef.current.panTo(area.center);
+      return;
+    }
+
+    // 2) (fallback) 혹시 areaIndex에 없으면 기존 방식(이벤트 평균)으로 이동
+    const center = calcCityCenter(currentEvents, observerCity);
+    if (center) {
+      mapRef.current.panTo(center);
+    }
+  }, [observerCity, areaIndex, currentEvents]);
+
+  useEffect(() => {
+    if (!hasLocation || !pos || !mapRef.current) return;
+
+    mapRef.current.panTo({
+      lat: pos.lat,
+      lng: pos.lng,
+    });
+  }, [hasLocation, pos]);
+
+
+  // ✅ 공간 구조는 areaIndex 기준
+  const regions = useMemo(
+    () => extractRegions(areaIndex),
+    [areaIndex]
   );
 
-  const eventsWithoutDayFilter = useMemo(() => {
-    return events.filter((e: any) => {
-      // 위치 필터
-      if (hasLocation && pos && scope !== "global") {
-        if (!e.location?.lat || !e.location?.lng) return false;
+  const cities = useMemo(
+    () => (observerRegion ? extractCities(areaIndex, observerRegion) : []),
+    [areaIndex, observerRegion]
+  );
 
-        const distKm = haversineKm(pos, {
-          lat: e.location.lat,
-          lng: e.location.lng,
-        });
-
-        if (distKm > scopeToKm(scope)) return false;
-      }
-
-      // observer 필터
-      if (!hasLocation) {
-        if (observerRegion && e.region !== observerRegion) return false;
-        if (observerCity && e.city !== observerCity) return false;
-      }
-
-      return true;
-    });
-  }, [events, hasLocation, pos, scope, observerRegion, observerCity]);
-
-
+  // filteredEvents useMemo 내부
   const filteredEvents = useMemo(() => {
-    return events.filter((e: any) => {
-      // ===============================
-      // 1️⃣ 위치 허용 유저 → 거리 필터
-      // ===============================
-      if (hasLocation && pos && scope !== "global") {
+    const now = new Date();
+    const todayStart = startOfLocalDay(now);
+
+    const tomorrowStart = new Date(todayStart);
+    tomorrowStart.setDate(tomorrowStart.getDate() + 1);
+    const tomorrowEnd = new Date(tomorrowStart);
+    tomorrowEnd.setDate(tomorrowEnd.getDate() + 1);
+
+    const weekEnd = new Date(todayStart);
+    weekEnd.setDate(weekEnd.getDate() + 7);
+
+    const weekend = nextWeekendRange(now);
+
+    return currentEvents.filter((e: any) => {
+      /* ======================
+        1️⃣ 날짜 파싱
+      ====================== */
+      const start = getStartDate(e);
+      if (!start) return false;
+      /* ======================
+        2️⃣ 시간 필터
+        👉 all이면 통과
+      ====================== */
+      if (timeScope === "today") {
+        const todayStart = startOfLocalDay(now);
+        const todayEnd = new Date(todayStart);
+        todayEnd.setDate(todayEnd.getDate() + 1);
+
+        if (!(start >= todayStart && start < todayEnd)) return false;
+      }
+
+      if (timeScope === "tomorrow") {
+        if (!(start >= tomorrowStart && start < tomorrowEnd)) return false;
+      }
+
+      if (timeScope === "weekend") {
+        if (!(start >= weekend.start && start < weekend.end)) return false;
+      }
+
+      if (timeScope === "week") {
+        if (!(start >= now && start < weekEnd)) return false;
+      }
+
+      /* ======================
+        3️⃣ 위치 필터 (항상 적용)
+      ====================== */
+
+      // 📍 위치 공유 ON → 내 주변
+      if (hasLocation && pos && mapViewMode === "user") {
         if (!e.location?.lat || !e.location?.lng) return false;
 
         const distKm = haversineKm(pos, {
@@ -126,183 +257,194 @@ export default function EventsPage() {
           lng: e.location.lng,
         });
 
-        const limitKm = scopeToKm(scope);
-        if (distKm > limitKm) return false;
+        if (distKm > HOME_RADIUS_KM) return false;
       }
 
-      // ===============================
-      // 2️⃣ observer 유저 → region / city
-      // ===============================
-      if (!hasLocation) {
-        if (observerRegion && e.region !== observerRegion) return false;
-        if (observerCity && e.city !== observerCity) return false;
+      // 👀 위치 공유 OFF + 도시 선택
+      if (!hasLocation && observerCity) {
+        if (e.city !== observerCity) return false;
       }
 
-      // ===============================
-      // 3️⃣ day filter (공통)
-      // ===============================
-      if (pickedDay) {
-        const dt = new Date(e.date ?? e.utcDate ?? Date.now());
-        if (!isSameDay(dt, pickedDay)) return false;
+      /* ======================
+        4️⃣ Search this area
+      ====================== */
+      if (appliedBounds && e.location) {
+        if (!isInBounds(e.location, appliedBounds)) return false;
       }
 
       return true;
     });
-  }, [events, hasLocation, pos, scope, observerRegion, observerCity, pickedDay]);
-
-  if (!events.length) return null;
+  }, [
+    currentEvents,
+    hasLocation,
+    pos,
+    observerCity,
+    timeScope,
+    appliedBounds,
+    mapViewMode,
+  ]);
 
   return (
-    <main className="pb-[120px] space-y-6">
+    <main className="relative min-h-screen">
+      {/* FULLSCREEN MAP */}
+      <div className="fixed inset-0">
+        <HomeMapStage
+          ref={mapRef}
+          events={filteredEvents}
+          onDiscoverFromMap={(id) => {
+            const ev = filteredEvents.find(e => e.id === id) ?? null;
+            setSnapEvent(ev);
+          }}
+          onBoundsChanged={setPendingBounds}
+        />
 
-      {/* ===============================
-        TOP BAR (location + scope)
-      =============================== */}
-      <section className="w-full pt-4">
-        <div className="w-full px-4 md:max-w-3xl md:mx-auto space-y-1">
-          
-          {/* ✅ LOCATION = TITLE */}
-          <button
-            onClick={() => {
-              if (!hasLocation) setLocationOpen(true);
-            }}
-            className="text-lg font-semibold tracking-tight text-left"
-          >
-            {locationTitle({
-              hasLocation,
-              observerCity,
-              observerRegion,
-              regions,
-            })}
-          </button>
+      </div>
 
-          {/* ✅ META LINE */}
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            {hasLocation && <span>{scopeLabel(scope)}</span>}
+      {/* 🔍 NEARBY SPORTS SCAN BUTTON (observer only) */}
+      {!hasLocation && (
+        <button
+          onClick={() => setLocationOpen(true)}
+          className="
+            fixed right-4
+            bottom-[calc(env(safe-area-inset-bottom)+220px)]
+            z-[70]
+            w-10 h-10
+            rounded-full
+            bg-black
+            flex items-center justify-center
+            shadow-lg
+          "
+          aria-label="Scan nearby sports"
+        >
+          <span className="relative">
+            <span className="block w-2 h-2 bg-white rounded-full" />
+            <span className="absolute inset-0 rounded-full border border-white/40 animate-ping" />
+          </span>
+        </button>
+      )}
 
-            {hasLocation && (
-              <button
-                onClick={() => setRadiusOpen(true)}
-                className="underline underline-offset-2"
-              >
-                Change
-              </button>
-            )}
+      {/* 🔘 MAP VIEW TOGGLE BUTTON (located user only) */}
+      {hasLocation && (
+        <button
+          onClick={toggleMapView}
+          className="
+            fixed right-4
+            bottom-[calc(env(safe-area-inset-bottom)+220px)]
+            z-[70]
+            w-10 h-10
+            rounded-full
+            bg-black
+            flex items-center justify-center
+            shadow-lg
+          "
+          aria-label={
+            mapViewMode === "user"
+              ? "View all events"
+              : "Back to my location"
+          }
+        >
+          {mapViewMode === "user" ? "🌍" : "📍"}
+        </button>
+      )}
+
+      {/* NOW HERO (MAIN UI) */}
+      {showNowHero && (
+        <div
+          className="
+            fixed z-40
+            left-1/2 -translate-x-1/2
+            bottom-[calc(env(safe-area-inset-bottom)+12px)]
+            w-full max-w-3xl
+            pointer-events-none
+          "
+        >
+          <div className="px-4 pointer-events-auto">
+            {/* ✅ 항상 보이는 필터 바 */}
+            <div
+              className="
+                h-14
+                rounded-full
+                bg-background/80
+                backdrop-blur
+                ring-1 ring-border/40
+                flex items-center justify-center
+              "
+              onClick={() => setHeroExpanded(true)}
+            >
+              {/* 👉 NowHero에서 필터 UI만 분리해서 컴포넌트화 */}
+              <NowHeroScopeBar
+                scope={timeScope}
+                onScopeChange={setTimeScope}
+              />
+            </div>
+
+            {/* ✅ 확장 패널 */}
+            <div
+              className={`
+                overflow-hidden transition-all duration-300
+                ${heroExpanded ? "max-h-[360px] mt-3" : "max-h-0"}
+              `}
+            >
+            </div>
           </div>
-
         </div>
-      </section>
+      )}
 
+      {/* LOCATION SHEET (observer only) */}
       {locationOpen && (
         <LocationSheet
           regions={regions}
           cities={cities}
           observerRegion={observerRegion}
           onPickRegion={(r) => {
+            // ✅ ALL 선택 (LocationSheet에서 null을 보냄)
+            if (r === null) {
+              setObserverRegion(null);
+              setObserverCity(null);
+
+              setAppliedBounds(null);
+              setPendingBounds(null);
+
+              setHeroExpanded(false); // 리스트 접고
+              setSnapEvent(null);     // 카드 닫고
+
+              mapRef.current?.resetToAll(); // 🔥 지도 + 상태 리셋
+
+              track("home_region_all_selected");
+              setLocationOpen(false);
+              return;
+            }
+
+            // ✅ 특정 region 선택
             setObserverRegion(r);
             setObserverCity(null);
-            track("location_region_selected", { r });
+            track("home_region_selected", { r });
           }}
-
 
           onPickCity={(c) => {
             setObserverCity(c);
             setLocationOpen(false);
-            track("location_city_selected", { c });
           }}
+
           onClose={() => setLocationOpen(false)}
         />
       )}
 
-      {/* ===============================
-        Radius sheet
-      =============================== */}
-      {radiusOpen && (
-        <div className="fixed inset-0 z-50">
-          <button
-            className="absolute inset-0 bg-black/40"
-            onClick={() => setRadiusOpen(false)}
-            aria-label="Close"
-          />
-          <div className="absolute bottom-0 left-0 right-0 rounded-t-3xl bg-background px-5 pt-4 pb-[env(safe-area-inset-bottom)]">
-            <p className="text-sm font-semibold mb-3">Search area</p>
-
-            {[
-              { label: "Nearby", scope: "nearby" },
-              { label: "Around me", scope: "city" },
-              { label: "Wider", scope: "country" },
-              { label: "Global", scope: "global" },
-            ].map((o) => (
-              <button
-                key={o.scope}
-                onClick={() => {
-                  setScope(o.scope as ViewScope);
-                  setRadiusOpen(false);
-                  track("scope_changed", { scope: o.scope });
-                }}
-                className={`w-full mb-2 px-4 py-3 rounded-2xl text-left text-sm font-medium ${
-                  scope === o.scope
-                    ? "bg-black text-white"
-                    : "bg-muted/40"
-                }`}
-              >
-                {o.label}
-              </button>
-            ))}
-          </div>
-        </div>
+      {/* 🟢 MAP STATUS PILL (today only) */}
+      {timeScope === "today" && filteredEvents.length > 0 && (
+        <MapStatusPill events={filteredEvents} />
       )}
 
-      
-      {/* ===============================
-        WEEK STRIP (날짜 필터)
-      =============================== */}
-      <section className="w-full">
-        <div className="w-full px-4 md:max-w-3xl md:mx-auto"></div>
-          <WeekStrip
-            events={eventsWithoutDayFilter}
-            activeIso={pickedDay}                 // ✅ 추가
-            onPickDay={(iso) => {
-              setPickedDay((prev) => (prev === iso ? null : iso));  // ✅ 토글 추천
-              track("events_day_filtered", { iso });
-            }}
-          />
-        </section>
-      {/* ===============================
-        LIST (결정 단계)
-      =============================== */}
-      <section className="w-full">
-        <div className="w-full px-4 md:max-w-3xl md:mx-auto"></div>
-          <TodayDiscoveryList
-            events={filteredEvents}
-            scope={hasLocation ? scope : "country"}
-            observerMode={!hasLocation}
-            observerRegion={observerRegion}
-            observerCity={observerCity}
-            onPick={(id) => {
-              setFocusEventId(id);
-              track("events_list_item_clicked", { eventId: id });
-            }}
-          />
-        </section>                          
+      {snapEvent && (
+        <HomeMapSnapCard
+          event={snapEvent}
+          onClose={() => {
+            mapRef.current?.closeSnap();  // 🔴 지도 원상복귀
+            setSnapEvent(null);
+          }}
+        />
+      )}
 
-      {/* ===============================
-        MAP (탐색 보조)
-      =============================== */}
-      <section className="w-full">
-        <MapPanel defaultOpen>
-          <HomeMapStage
-            events={filteredEvents}
-            focusEventId={focusEventId}
-            autoSurprise={false}
-            onClose={() => setFocusEventId(null)}
-            onSurprise={() => {}}
-            onDiscoverFromMap={(id) =>
-              track("events_map_discovered", { eventId: id })
-            }
-          />
-        </MapPanel>
-      </section>
     </main>
   );
 }

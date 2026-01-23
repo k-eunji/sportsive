@@ -40,7 +40,6 @@ export default function Header({ showLogo = false, disableHide = false }) {
         flex items-center justify-between
         px-4
         bg-[var(--background)]
-        border-b border-[var(--border)]
         transition-transform duration-300
         ${shouldHide ? "-translate-y-full" : "translate-y-0"}
       `}
@@ -69,7 +68,7 @@ export default function Header({ showLogo = false, disableHide = false }) {
 
       {/* RIGHT BUTTONS */}
       <div ref={rightRef} className="flex items-center gap-2">
-        {user && <NotificationBell />}
+       {/* {user && <NotificationBell />}
 
         {user && (
           <button
@@ -82,7 +81,7 @@ export default function Header({ showLogo = false, disableHide = false }) {
           >
             <MessageSquare className="w-[19px] h-[19px]" />
           </button>
-        )}
+        )}*/}
       </div>
     </header>
   );
@@ -120,7 +119,7 @@ function PlusMenu() {
           transition
         "
       >
-        +
+        {/*+*/}
       </button>
 
       {open && (

@@ -7,54 +7,30 @@ import Link from "next/link";
 import { useEffect } from "react";
 import { getVibe, vibeClass } from "@/lib/vibe";
 import { track } from "@/lib/track";
+import { useMemo } from "react";
 
-function logLocalEventView(eventId: string) {
-  try {
-    const key = `sportsive_event_views_${eventId}`;
-    const raw = localStorage.getItem(key);
-    const arr = raw ? (JSON.parse(raw) as number[]) : [];
-    arr.push(Date.now());
-    localStorage.setItem(key, JSON.stringify(arr.slice(-5)));
-  } catch {}
-}
 
-function getLocalEventViewLabel(eventId: string) {
-  try {
-    const raw = localStorage.getItem(`sportsive_event_views_${eventId}`);
-    if (!raw) return "Someone might be nearby";
 
-    const arr = JSON.parse(raw) as number[];
-    const last = arr[arr.length - 1];
-    const sec = Math.floor((Date.now() - last) / 1000);
-
-    if (sec < 20) return "Someone just opened this";
-    if (sec < 60) return "Someone was here a moment ago";
-    return "People pass through this from time to time";
-  } catch {
-    return "Someone might be nearby";
-  }
-}
-
-export default function HomeMapSnapCard({
-  event,
-  onClose,
-}: {
-  event: Event;
-  onClose: () => void;
-}) {
+export default function HomeMapSnapCard({ event, onClose }: { event: Event; onClose: () => void }) {
   const e: any = event;
   const isLive = (e.status ?? "").toUpperCase() === "LIVE";
   const vibe = getVibe(e);
 
-  useEffect(() => {
-    logLocalEventView(e.id);
-  }, [e.id]);
+  const mapsHref = useMemo(() => {
+    const lat = e.location?.lat;
+    const lng = e.location?.lng;
+    if (typeof lat !== "number" || typeof lng !== "number") return null;
+
+    const dest = `${lat},${lng}`;
+    // Google Maps directions deep link
+    return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(dest)}`;
+  }, [e.location?.lat, e.location?.lng]);
 
   return (
     <div
       className="
-        fixed left-0 right-0 z-40
-        bottom-[calc(env(safe-area-inset-bottom)+58px)]
+        fixed left-0 right-0 z-[1000]
+        bottom-[calc(env(safe-area-inset-bottom)+12px)]
         pb-[env(safe-area-inset-bottom)]
         bg-white dark:bg-black
         border-t
@@ -92,10 +68,6 @@ export default function HomeMapSnapCard({
               >
                 {isLive ? "LIVE" : "UPCOMING"}
               </span>
-
-              <p className="text-[11px] text-muted-foreground">
-                {getLocalEventViewLabel(e.id)}
-              </p>
             </div>
           </div>
 
@@ -112,24 +84,26 @@ export default function HomeMapSnapCard({
         </div>
 
         <div className="mt-4 flex flex-col gap-2">
-          <Link
-            href={`/events?focus=${e.id}`}
-            onClick={() =>
-              track("details_opened", { eventId: e.id, source: "snapcard" })
-            }
-            className="
-              w-full text-center
-              rounded-2xl
-              bg-primary text-primary-foreground
-              px-4 py-3
-              text-sm font-semibold
-              shadow-sm shadow-black/10
-              hover:opacity-95
-              transition
-            "
-          >
-            View details →
-          </Link>
+          {mapsHref && (
+            <a
+              href={mapsHref}
+              target="_blank"
+              rel="noreferrer"
+              className="
+                w-full text-center
+                rounded-2xl
+                border
+                bg-background
+                px-4 py-3
+                text-sm font-semibold
+                hover:bg-muted/30
+                transition
+              "
+              onClick={() => track("open_in_maps_clicked", { eventId: e.id })}
+            >
+              Open in Maps
+            </a>
+          )}
         </div>
       </div>
     </div>

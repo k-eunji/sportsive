@@ -1,11 +1,9 @@
 // src/app/ClientShell.tsx
-
 "use client";
 
 import { usePathname } from "next/navigation";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
-//import BottomNav from "@/components/layout/BottomNav";
 import IntroWrapper from "@/components/layout/IntroWrapper";
 import { Toaster } from "react-hot-toast";
 
@@ -18,15 +16,20 @@ export default function ClientShell({ children }: { children: React.ReactNode })
 
   const content = (
     <>
-      {!isLiveRoom && <Header showLogo />}
+      {!isLiveRoom && !isHome && <Header showLogo />}
 
-      <main className="flex flex-col pt-24 pb-[calc(58px+env(safe-area-inset-bottom))]">
-        <div className="flex-1">{children}</div>
-        {!isLiveRoom && <Footer />}
+      <main
+        className={
+          isHome
+            ? "min-h-screen" // 홈은 풀화면 레이아웃
+            : "flex flex-col pt-24 px-4 pb-[calc(58px+env(safe-area-inset-bottom))]"
+        }
+      >
+        <div className={isHome ? "" : "flex-1"}>{children}</div>
+        {!isLiveRoom && !isHome && <Footer />}
       </main>
 
-      {/*{!isLiveRoom && <BottomNav />}
-      <Toaster position="bottom-center" />*/}
+      <Toaster position="bottom-center" />
     </>
   );
 

@@ -18,22 +18,28 @@ const inter = Inter({
 export const metadata = {
   title: "Sportsive",
   description: "Discover sports you can actually attend near you",
+  manifest: "/manifest.json",
+  themeColor: "#2563eb",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${inter.variable} h-full`}>
+      
+      {/* ✅ 여기 */}
+      <head>
+        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+      </head>
+
       <body className="text-foreground antialiased">
         <Providers>
-
-          {/* ⭐ 전역에서 단 한 번만 Google Maps API 로드 */}
           <GoogleMapsProvider>
             <ClientShell>{children}</ClientShell>
           </GoogleMapsProvider>
-
         </Providers>
 
-        {/* 🔥 Vercel Analytics (이 줄 추가) */}
         <Analytics />
       </body>
     </html>
