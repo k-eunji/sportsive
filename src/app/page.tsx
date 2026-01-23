@@ -55,6 +55,20 @@ function isInBounds(
   );
 }
 
+function getDefaultDurationMs(e: any) {
+  switch (e.sport) {
+    case "football":
+    case "rugby":
+      return 2.5 * 60 * 60 * 1000;
+    case "basketball":
+      return 2 * 60 * 60 * 1000;
+    case "baseball":
+      return 3.5 * 60 * 60 * 1000;
+    default:
+      return 2 * 60 * 60 * 1000;
+  }
+}
+
 function isSession(e: any) {
   return e.kind === "session";
 }
@@ -64,8 +78,6 @@ function overlaps(aStart: Date, aEnd: Date, bStart: Date, bEnd: Date) {
 }
 
 export default function HomePage() {
-  const router = useRouter();
-
   const [areaIndex, setAreaIndex] = useState<AreaIndex[]>([]);
   const [currentEvents, setCurrentEvents] = useState<Event[]>([]); // 이번 주 표시용
 
@@ -75,16 +87,12 @@ export default function HomePage() {
   const mapRef = useRef<HomeEventMapRef | null>(null);
   const [snapEvent, setSnapEvent] = useState<Event | null>(null);
 
-  // map focus
-  const [focusEventId, setFocusEventId] = useState<string | null>(null);
-
   // observer mode (no geo permission)
   const [observerRegion, setObserverRegion] = useState<string | null>(null);
   const [observerCity, setObserverCity] = useState<string | null>(null);
   const [locationOpen, setLocationOpen] = useState(false);
   const HOME_RADIUS_KM = 25;
 
-  const [showLocatedHint, setShowLocatedHint] = useState(false);
   const [timeScope, setTimeScope] = useState<TimeScope>("today");
   const [heroExpanded, setHeroExpanded] = useState(true);
 
@@ -118,8 +126,6 @@ export default function HomePage() {
       track("map_view_user_from_global");
     }
   };
-
-  const showChooseCity = !hasLocation && !observerCity;
   const showNowHero = hasLocation || observerCity || !hasLocation;
 
   const [pendingBounds, setPendingBounds] =
@@ -237,36 +243,45 @@ export default function HomePage() {
       const sessionStart = isSessionEvent ? new Date(e.startDate) : start;
       const sessionEnd = isSessionEvent
         ? new Date(e.endDate)
-        : new Date(start.getTime() + 2 * 60 * 60 * 1000); // 일반 경기는 2h 가정
+        : new Date(start.getTime() + getDefaultDurationMs(e));
 
       /* ======================
-        2️⃣ 시간 필터
-        👉 all이면 통과
+        2️⃣ 시간 필터 (scope 통합)
       ====================== */
-      if (timeScope === "today") {
-        const scopeStart = todayStart;
-        const scopeEnd = todayEnd;
 
-        if (
-          isSessionEvent
-            ? !overlaps(sessionStart, sessionEnd, scopeStart, scopeEnd)
-            : !(start >= scopeStart && start < scopeEnd)
-        ) {
-          return false;
-        }
+      // scopeStart / scopeEnd 계산
+      let scopeStart: Date;
+      let scopeEnd: Date;
+
+      switch (timeScope) {
+        case "today":
+          scopeStart = todayStart;
+          scopeEnd = todayEnd;
+          break;
+
+        case "tomorrow":
+          scopeStart = tomorrowStart;
+          scopeEnd = tomorrowEnd;
+          break;
+
+        case "weekend":
+          scopeStart = weekend.start;
+          scopeEnd = weekend.end;
+          break;
+
+        case "week":
+        default:
+          scopeStart = now;
+          scopeEnd = weekEnd;
+          break;
       }
 
-      if (timeScope === "tomorrow") {
-        if (!(start >= tomorrowStart && start < tomorrowEnd)) return false;
-      }
+      // session / non-session 공통 처리
+      const inScope = isSessionEvent
+        ? overlaps(sessionStart, sessionEnd, scopeStart, scopeEnd)
+        : start >= scopeStart && start < scopeEnd;
 
-      if (timeScope === "weekend") {
-        if (!(start >= weekend.start && start < weekend.end)) return false;
-      }
-
-      if (timeScope === "week") {
-        if (!(start >= now && start < weekEnd)) return false;
-      }
+      if (!inScope) return false;
 
       /* ======================
         3️⃣ 위치 필터 (항상 적용)
@@ -401,15 +416,6 @@ export default function HomePage() {
                 scope={timeScope}
                 onScopeChange={setTimeScope}
               />
-            </div>
-
-            {/* ✅ 확장 패널 */}
-            <div
-              className={`
-                overflow-hidden transition-all duration-300
-                ${heroExpanded ? "max-h-[360px] mt-3" : "max-h-0"}
-              `}
-            >
             </div>
           </div>
         </div>

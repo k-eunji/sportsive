@@ -68,6 +68,21 @@ function markerBaseScaleForZoom(zoom: number) {
   return 6.6;
 }
 
+function getDefaultDurationMs(e: any) {
+  switch ((e.sport ?? "").toLowerCase()) {
+    case "football":
+    case "rugby":
+      return 2.5 * 60 * 60 * 1000; // 2.5h
+    case "basketball":
+      return 2 * 60 * 60 * 1000;   // 2h
+    case "tennis":
+      return 3 * 60 * 60 * 1000;   // 단일 매치 가정
+    case "baseball":
+      return 3.5 * 60 * 60 * 1000;
+    default:
+      return 2 * 60 * 60 * 1000;   // fallback
+  }
+}
 
 function thinByGrid(events: Event[], zoom: number) {
   const cellKm =
@@ -278,64 +293,105 @@ function densityBaseAlphaForZoom(zoom: number) {
   return 0;
 }
 
-/**
- * ✅ Density 핵심: scope + "시작 이후 제거(토너먼트 예외)" + "3h+도 약하게 표시"
- * - 시작 이후: 일반 경기는 제거
- * - 토너먼트(tennis tournament 등): 유지, 단 상한을 둬서 과하게 튀지 않게
- *
- * ⚠️ 토너먼트 판별은 프로젝트 데이터 스키마에 맞게 조정 필요:
- *   - 아래는 (e.format === "tournament") 또는 (e.kind === "tournament") 같은 패턴을 지원
- *   - 너 데이터에 맞는 키로 1줄만 바꿔주면 됨
- */
 function getDensityWeight(e: Event, scope: TimeScope, now: Date) {
   const start = getEventStart(e);
   if (!start) return 0;
 
-  // ✅ tournament 예외 판별 (프로젝트에 맞게 키를 하나로 통일하면 더 좋음)
+  // =====================
+  // session 판별
+  // =====================
+  const isSession =
+    (e as any).kind === "session" &&
+    (e as any).startDate &&
+    (e as any).endDate;
+
+  const graceMs = 15 * 60 * 1000; // 🔧 15분 여유 (취향)
+
+  const sessionStart = isSession
+    ? new Date((e as any).startDate)
+    : start;
+
+  const sessionEnd = isSession
+    ? new Date((e as any).endDate)
+    : new Date(start.getTime() + getDefaultDurationMs(e) + graceMs);
+
+
+  // =====================
+  // scope 범위 계산
+  // =====================
+  const base = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  let scopeStart: Date;
+  let scopeEnd: Date;
+
+  switch (scope) {
+    case "today":
+      scopeStart = base;
+      scopeEnd = new Date(base.getTime() + 24 * 60 * 60 * 1000);
+      break;
+
+    case "tomorrow":
+      scopeStart = new Date(base.getTime() + 24 * 60 * 60 * 1000);
+      scopeEnd = new Date(base.getTime() + 48 * 60 * 60 * 1000);
+      break;
+
+    case "weekend": {
+      const day = base.getDay(); // 0 Sun ... 6 Sat
+      const toSat = day === 6 ? 0 : (6 - day + 7) % 7;
+      const sat = new Date(base);
+      sat.setDate(sat.getDate() + toSat);
+      scopeStart = sat;
+      scopeEnd = new Date(sat.getTime() + 2 * 24 * 60 * 60 * 1000);
+      break;
+    }
+
+    case "week":
+    default:
+      scopeStart = now;
+      scopeEnd = new Date(base.getTime() + 7 * 24 * 60 * 60 * 1000);
+      break;
+  }
+
+  // =====================
+  // scope와 겹치는지 판단 (🔥 핵심)
+  // =====================
+  const inScope = isSession
+    ? sessionStart < scopeEnd && sessionEnd > scopeStart
+    : start >= scopeStart && start < scopeEnd;
+
+  if (!inScope) return 0;
+
+  // =====================
+  // 가중치 계산 (기존 로직 유지)
+  // =====================
   const sport = ((e as any).sport ?? "").toString().toLowerCase();
   const format = ((e as any).format ?? "").toString().toLowerCase();
   const kind = ((e as any).kind ?? "").toString().toLowerCase();
+
   const isTournament =
     format === "tournament" ||
     kind === "tournament" ||
     (sport === "tennis" && (format === "event" || format === "tourney"));
 
-  // ❌ 시작 이후 제거 (토너먼트 제외)
-  if (!isTournament && start.getTime() <= now.getTime()) {
-    return 0;
-  }
+  const diffH = (start.getTime() - now.getTime()) / (1000 * 60 * 60);
 
-  const diffMs = start.getTime() - now.getTime();
-  const diffH = diffMs / (1000 * 60 * 60);
-
-  // ================= TODAY =================
-  // 목적: “지금 나갈까?” 판단
   if (scope === "today") {
     if (isTournament) return 0.6;
-
-    // 3h+도 보여야 하니까 0.15~0.3 영역으로 남겨둔다
     if (diffH > 6) return 0.15;
     if (diffH > 3) return 0.30;
     if (diffH > 1) return 0.60;
-    if (diffH > 0.25) return 1.00; // 15m~1h
-    return 1.20; // 0~15m
+    if (diffH > 0.25) return 1.00;
+    return 1.20;
   }
 
-  // ================= TOMORROW =================
-  // 목적: 내일 어디가 살아있는지 (임박성보다 존재감)
   if (scope === "tomorrow") {
-    if (isTournament) return 0.40;
-    return 0.35;
+    return isTournament ? 0.40 : 0.35;
   }
 
-  // ================= WEEKEND =================
-  // 목적: 도시 단위 선택 (공간 분포)
   if (scope === "weekend") {
     return isTournament ? 0.40 : 0.45;
   }
 
-  // ================= WEEK =================
-  // 목적: 다음 7일의 활동 축 (가장 약한 신호)
   return isTournament ? 0.30 : 0.25;
 }
 
