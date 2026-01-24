@@ -49,5 +49,22 @@ export default function ClientShell({
     </>
   );
 
+  useEffect(() => {
+    const isInternal =
+      typeof window !== "undefined" &&
+      (window.location.search.includes("internal=true") ||
+        localStorage.getItem("sportsive_internal") === "true");
+
+    if (window.location.search.includes("internal=true")) {
+      localStorage.setItem("sportsive_internal", "true");
+    }
+
+    window.gtag?.("set", {
+      debug_mode: true,
+      internal_user: isInternal,
+    });
+  }, []);
+
+
   return isHome ? <IntroWrapper>{content}</IntroWrapper> : content;
 }
