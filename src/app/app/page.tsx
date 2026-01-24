@@ -3,7 +3,6 @@
 "use client";
 
 import { useEffect, useMemo, useState, useRef  } from "react";
-import { useRouter } from "next/navigation";
 import type { Event } from "@/types";
 
 import HomeMapStage from "@/app/components/home/HomeMapStage";
@@ -59,15 +58,21 @@ function getDefaultDurationMs(e: any) {
   switch (e.sport) {
     case "football":
     case "rugby":
-      return 2.5 * 60 * 60 * 1000;
+      return 2.5 * 60 * 60 * 1000; // 2.5h
     case "basketball":
-      return 2 * 60 * 60 * 1000;
+      return 2 * 60 * 60 * 1000;   // 2h
+    case "tennis":
+      return 3 * 60 * 60 * 1000;   // 단일 매치 가정
     case "baseball":
       return 3.5 * 60 * 60 * 1000;
     default:
-      return 2 * 60 * 60 * 1000;
+      return 2 * 60 * 60 * 1000;   // fallback
+    case "horse-racing":
+      return 6 * 60 * 60 * 1000;
   }
 }
+
+// session = tennis tournaments, horse-racing meetings, etc.
 
 function isSession(e: any) {
   return e.kind === "session";

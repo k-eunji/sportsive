@@ -1,5 +1,11 @@
 // src/lib/events.ts
 
+
+// NOTE:
+// horse-racing events are loaded via /api/events/england/horseRacing
+// and are intentionally excluded from this loader.
+
+
 import { supabase } from "../lib/supabaseServer";
 import type { Event } from "@/types/event";
 

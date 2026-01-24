@@ -45,6 +45,26 @@ function formatMatchTime(e: any) {
   });
 }
 
+function formatHorseRacingSession(e: any) {
+  if (e.sport !== "horse-racing" || e.kind !== "session") return null;
+
+  const label = e.payload?.sessionTime;
+  const start = new Date(e.startDate);
+  const end = new Date(e.endDate);
+
+  if (!label || isNaN(start.getTime()) || isNaN(end.getTime())) {
+    return label ?? null;
+  }
+
+  const timeOpts: Intl.DateTimeFormatOptions = {
+    hour: "numeric",
+    minute: "2-digit",
+  };
+
+  return `${label} · ${start.toLocaleTimeString(undefined, timeOpts)} – ${end.toLocaleTimeString(undefined, timeOpts)}`;
+}
+
+
 function formatSessionRange(e: any, now = new Date()) {
   if (e.kind !== "session" || !e.startDate || !e.endDate) return null;
 
@@ -88,8 +108,14 @@ export default function HomeMapSnapCard({
   const matchTime = useMemo(() => formatMatchTime(e), [e]);
   const session = useMemo(() => formatSessionRange(e), [e]);
 
+  const horseSession = useMemo(
+    () => formatHorseRacingSession(e),
+    [e]
+  );
+
   const { pos } = useUserLocation({ enabled: true });
   const { unit } = useDistanceUnit();
+  
 
   const distance =
     pos && e.location
@@ -147,7 +173,11 @@ export default function HomeMapSnapCard({
 
               {/* Title */}
               <p className="text-lg font-semibold leading-tight truncate">
-                {e.sport === "tennis"
+                {e.sport === "horse-racing"
+                  ? e.code
+                    ? `${e.title} · ${e.code}`
+                    : e.title
+                  : e.sport === "tennis"
                   ? e.title
                   : `${e.homeTeam} vs ${e.awayTeam}`}
               </p>
@@ -159,8 +189,14 @@ export default function HomeMapSnapCard({
                 </p>
               )}
 
-              {/* Session range (tennis only) */}
-              {session && (
+              {/* Session info */}
+              {horseSession && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {horseSession}
+                </p>
+              )}
+
+              {e.kind === "session" && e.sport !== "horse-racing" && session && (
                 <p className="mt-1 text-xs text-muted-foreground">
                   {session.range}
                   {session.dayIndex && (

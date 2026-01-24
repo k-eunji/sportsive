@@ -3,7 +3,8 @@
 import { NextResponse } from "next/server";
 import { GET as getFootballEvents } from "./england/football/route";
 import { GET as getRugbyEvents } from "./england/rugby/route";
-import { GET as getTennisEvents } from "./england/tennis/route"; // ✅ 추가
+import { GET as getTennisEvents } from "./england/tennis/route";
+import { GET as getHorseRacingEvents } from "./england/horseRacing/route";
 import { isEventActiveInWindow } from "@/lib/events/lifecycle";
 import { buildAreaIndex } from "@/lib/events/buildAreaIndex";
 
@@ -12,20 +13,28 @@ export async function GET(req: Request) {
     const url = new URL(req.url);
     const window = url.searchParams.get("window") ?? "7d";
 
-    const [footballRes, rugbyRes, tennisRes] = await Promise.all([
+    const [
+      footballRes,
+      rugbyRes,
+      tennisRes,
+      horseRacingRes,
+    ] = await Promise.all([
       getFootballEvents(),
       getRugbyEvents(),
       getTennisEvents(),
+      getHorseRacingEvents(),
     ]);
 
     const footballData = await footballRes.json();
     const rugbyData = await rugbyRes.json();
     const tennisData = await tennisRes.json();
+    const horseRacingData = await horseRacingRes.json();
 
     const merged = [
       ...(footballData.matches ?? []),
       ...(rugbyData.matches ?? []),
       ...(tennisData.matches ?? []),
+      ...(horseRacingData.matches ?? []),
     ];
 
     if (window === "180d") {
@@ -47,13 +56,10 @@ export async function GET(req: Request) {
     }
 
     const filtered = merged
-      .filter((e: any) =>
-        isEventActiveInWindow(e, now, windowEnd)
-      )
+      .filter((e: any) => isEventActiveInWindow(e, now, windowEnd))
       .map((e: any) => ({
         ...e,
-        // ⭐ discovery & sorting용 단일 기준
-        startAtUtc: e.date,
+        startAtUtc: e.date, // sorting & discovery 기준
       }))
       .sort(
         (a: any, b: any) =>

@@ -81,6 +81,8 @@ function getDefaultDurationMs(e: any) {
       return 3.5 * 60 * 60 * 1000;
     default:
       return 2 * 60 * 60 * 1000;   // fallback
+    case "horse-racing":
+      return 6 * 60 * 60 * 1000;
   }
 }
 
@@ -131,6 +133,8 @@ function getSoonWindowMs(e: Event) {
       return 90 * 60 * 1000;     // 1.5h
     default:
       return 2 * 60 * 60 * 1000;
+    case "horse-racing":
+      return 4 * 60 * 60 * 1000; // 4시간 전부터 SOON 
   }
 }
 

@@ -1,9 +1,102 @@
-//api/events/england/horse-racing/route.ts
+// src/app/api/events/england/horseRacing/route.ts
 
 import { NextResponse } from "next/server";
+import { supabase } from "../../../../../lib/supabaseServer";
+
+function mapSessionToWindow(time?: string | null) {
+  const t = (time ?? "").toLowerCase();
+
+  // Horse racing meetings use session-based windows
+  if (t.includes("afternoon")) {
+    return { startHour: 11, durationHours: 8 }; // 11:00–19:00
+  }
+
+  if (t.includes("evening")) {
+    return { startHour: 16, durationHours: 8 }; // 16:00–00:00
+  }
+
+  if (t.includes("floodlit")) {
+    return { startHour: 19, durationHours: 6 }; // 19:00–01:00
+  }
+
+  // fallback
+  return { startHour: 11, durationHours: 8 };
+}
 
 export async function GET() {
-  return NextResponse.json({
-    matches: [],
-  });
+  try {
+    const { data: sessions, error } = await supabase
+      .from("race_sessions")
+      .select(`
+        id,
+        date,
+        time,
+        sport,
+        kind,
+        course,
+        code,
+        courses:course (
+          venue,
+          city,
+          region,
+          lat,
+          lng
+        )
+      `)
+
+      .order("date", { ascending: true });
+
+    if (error || !sessions) {
+      console.error(error);
+      return NextResponse.json({ matches: [] });
+    }
+
+    const matches = sessions.map((s: any) => {
+      const { startHour, durationHours } = mapSessionToWindow(s.time);
+
+      const start = new Date(
+        `${s.date}T${String(startHour).padStart(2, "0")}:00:00Z`
+      );
+
+      const end = new Date(
+        start.getTime() + durationHours * 60 * 60 * 1000
+      );
+
+      return {
+        id: `horse-racing-${s.course}-${s.date}`,
+        sport: (s.sport || "horse-racing").toLowerCase(),
+        kind: s.kind || "session",
+
+        title: `${s.courses?.venue}`,
+        code: s.code, 
+        date: start.toISOString(),
+        startDate: start.toISOString(),
+        endDate: end.toISOString(),
+
+        venue: s.courses?.venue,
+        city: s.courses?.city,
+        region: s.courses?.region,
+        location: {
+          lat: s.courses?.lat,
+          lng: s.courses?.lng,
+        },
+
+        free: true,
+        isPaid: false,
+
+        payload: {
+          course: s.course,
+          sessionTime: s.time, // Afternoon / Evening / Floodlit
+          startHour,
+          durationHours,
+        },
+
+      };
+    });
+
+    return NextResponse.json({ matches });
+  } catch (err) {
+    console.error("❌ horse racing events error:", err);
+    return NextResponse.json({ matches: [] });
+  }
 }
