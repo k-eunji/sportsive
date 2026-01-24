@@ -46,7 +46,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* ✅ Google Analytics (GA4) */}
         <script
           async
-          src="https://www.googletagmanager.com/gtag/js?id=G-13143387052"
+          src="https://www.googletagmanager.com/gtag/js?id=G-1WRHN39RC6"
         />
         <script
           dangerouslySetInnerHTML={{
@@ -54,7 +54,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               window.dataLayer = window.dataLayer || [];
               function gtag(){dataLayer.push(arguments);}
               gtag('js', new Date());
-              gtag('config', 'G-XXXXXXXXXX', {
+              gtag('config', 'G-1WRHN39RC6', {
                 debug_mode: true,
               });
             `,
