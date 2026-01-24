@@ -14,16 +14,30 @@ export default function ClientShell({
   const pathname = usePathname() ?? "";
 
   /**
-   * ✅ GA DebugView 강제 활성화
-   * - DebugView에 이벤트 표시
-   * - internal_user 확인용
+   * ✅ GA 설정
+   * - DebugView 활성화
+   * - internal_user 구분
    */
   useEffect(() => {
-    if (typeof window !== "undefined" && typeof window.gtag === "function") {
-      window.gtag("set", {
-        debug_mode: true,
-      });
+    if (typeof window === "undefined") return;
+
+    const isInternal =
+      window.location.search.includes("internal=true") ||
+      localStorage.getItem("sportsive_internal") === "true";
+
+    if (window.location.search.includes("internal=true")) {
+      localStorage.setItem("sportsive_internal", "true");
     }
+
+    // ✅ 사용자 속성으로 명시적으로 설정
+    window.gtag?.("set", "user_properties", {
+      internal_user: isInternal,
+    });
+
+    // ✅ DebugView 유지
+    window.gtag?.("set", {
+      debug_mode: true,
+    });
   }, []);
 
   const isHome = pathname === "/";
@@ -32,8 +46,6 @@ export default function ClientShell({
 
   const content = (
     <>
-      {/* {!isLiveRoom && !isHome && <Header showLogo />} */}
-
       <main
         className={
           isHome
@@ -48,23 +60,6 @@ export default function ClientShell({
       <Toaster position="bottom-center" />
     </>
   );
-
-  useEffect(() => {
-    const isInternal =
-      typeof window !== "undefined" &&
-      (window.location.search.includes("internal=true") ||
-        localStorage.getItem("sportsive_internal") === "true");
-
-    if (window.location.search.includes("internal=true")) {
-      localStorage.setItem("sportsive_internal", "true");
-    }
-
-    window.gtag?.("set", {
-      debug_mode: true,
-      internal_user: isInternal,
-    });
-  }, []);
-
 
   return isHome ? <IntroWrapper>{content}</IntroWrapper> : content;
 }
