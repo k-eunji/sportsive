@@ -15,7 +15,8 @@ import type { TimeScope } from "@/lib/nowDashboard";
 
 const DEFAULT_ZOOM = 8;
 const FOCUS_ZOOM = 16;
-
+const UK_CENTER = { lat: 54.5, lng: -3.0 };
+const UK_ZOOM = 7;
 
 // ======== Signal spec constants ========
 const SOON_WINDOW_MS = 2 * 60 * 60 * 1000; // 2h
@@ -509,9 +510,6 @@ const HomeEventMap = forwardRef<
     setMapActive(false);
   };
 
-  const UK_CENTER = { lat: 54.5, lng: -3.0 };
-  const UK_ZOOM = 7;
-
   const focusById = (eventId: string) => {
     if (!mapRef.current) return;
 
@@ -808,7 +806,7 @@ const HomeEventMap = forwardRef<
         halo,
       });
     });
-  }, [events, viewportTick, mapActive]);
+  }, [events, events.length, viewportTick, mapActive]);
 
   // ✅ 5) animate icons without recreating markers (cheap updates)
   useEffect(() => {
