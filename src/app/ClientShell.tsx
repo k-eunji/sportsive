@@ -20,6 +20,7 @@ export default function ClientShell({
    */
   useEffect(() => {
     if (typeof window === "undefined") return;
+    if (typeof window.gtag !== "function") return;
 
     const isInternal =
       window.location.search.includes("internal=true") ||
@@ -29,14 +30,12 @@ export default function ClientShell({
       localStorage.setItem("sportsive_internal", "true");
     }
 
-    // ✅ 사용자 속성으로 명시적으로 설정
-    window.gtag?.("set", "user_properties", {
-      internal_user: isInternal,
-    });
-
-    // ✅ DebugView 유지
-    window.gtag?.("set", {
+    // ✅ GA4에 user_properties를 config 단계에서 명시
+    window.gtag("config", "G-1WRHN39RC6", {
       debug_mode: true,
+      user_properties: {
+        internal_user: isInternal,
+      },
     });
   }, []);
 
