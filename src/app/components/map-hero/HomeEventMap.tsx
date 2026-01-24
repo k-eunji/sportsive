@@ -455,7 +455,9 @@ const HomeEventMap = forwardRef<
   const [showSnap, setShowSnap] = useState(false);
   const [viewportTick, setViewportTick] = useState(0);
   const [mapActive, setMapActive] = useState(false);
+  const [mapReady, setMapReady] = useState(false);
   const ignoreNextBoundsRef = useRef(false);
+  const [zoomTick, setZoomTick] = useState(0);
 
   // ✅ signal animation phase (0..1)
   const phaseRef = useRef(0);
@@ -463,9 +465,8 @@ const HomeEventMap = forwardRef<
 
   const getZoom = () => mapRef.current?.getZoom?.() ?? 0;
 
-  const shouldUseDensity = () => {
-    return !mapActive && getZoom() <= 9;
-  };
+  const isDensity =
+    mapReady && !mapActive && getZoom() <= 9;
 
   const SPORTSIVE_MAP_STYLE: google.maps.MapTypeStyle[] = [
     { featureType: "road", elementType: "labels", stylers: [{ visibility: "off" }] },
@@ -597,7 +598,7 @@ const HomeEventMap = forwardRef<
     // keep latest refs for overlay.draw()
     densityEventsRef.current = events;
     densityScopeRef.current = (timeScope ?? "today");
-    densityActiveRef.current = shouldUseDensity();
+    densityActiveRef.current = isDensity;
 
     const map = mapRef.current;
 
@@ -717,7 +718,7 @@ const HomeEventMap = forwardRef<
     // force redraw on events/scope updates
     // @ts-ignore
     densityOverlayRef.current.draw?.();
-  }, [events, isLoaded, mapActive, viewportTick, timeScope]);
+  }, [events, isLoaded, mapActive, viewportTick, timeScope, zoomTick]);
 
   // ✅ 3) create map once
   useEffect(() => {
@@ -736,6 +737,8 @@ const HomeEventMap = forwardRef<
       streetViewControl: false,
     });
 
+    setMapReady(true);
+
     mapRef.current.addListener("click", () => {
       if (mapActive) resetMap();
     });
@@ -746,7 +749,7 @@ const HomeEventMap = forwardRef<
     if (!mapRef.current) return;
 
     // density mode: clear markers
-    if (shouldUseDensity()) {
+    if (isDensity) {
       markerBundlesRef.current.forEach((b) => {
         b.main.setMap(null);
         b.halo?.setMap(null);
@@ -806,12 +809,12 @@ const HomeEventMap = forwardRef<
         halo,
       });
     });
-  }, [events, events.length, viewportTick, mapActive]);
+  }, [events, events.length, viewportTick, mapActive, zoomTick, isDensity]);
 
   // ✅ 5) animate icons without recreating markers (cheap updates)
   useEffect(() => {
     if (!mapRef.current) return;
-    if (shouldUseDensity()) return;
+    if (isDensity) return;
 
     const z = mapRef.current.getZoom() ?? 12;
     const phase = phaseRef.current;
@@ -851,6 +854,16 @@ const HomeEventMap = forwardRef<
 
   // ✅ 6) idle listener: viewportTick, density↔markers hint, bounds
   const lastDensityRef = useRef<boolean | null>(null);
+  
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    const zListener = mapRef.current.addListener("zoom_changed", () => {
+      setZoomTick((t) => t + 1);
+    });
+
+    return () => zListener.remove();
+  }, []);
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -897,7 +910,7 @@ const HomeEventMap = forwardRef<
   return (
     <div className="fixed inset-0 overflow-visible">
       {/* RADAR OVERLAY */}
-      {!shouldUseDensity() && (
+      {!isDensity && (
         <div
           className="pointer-events-none absolute inset-0 z-10"
           style={{
