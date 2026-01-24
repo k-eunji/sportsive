@@ -43,8 +43,27 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </GoogleMapsProvider>
         </Providers>
 
+        {/* ✅ Google Analytics (GA4) */}
+        <script
+          async
+          src="https://www.googletagmanager.com/gtag/js?id=G-13143387052"
+        />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'G-XXXXXXXXXX', {
+                debug_mode: true,
+              });
+            `,
+          }}
+        />
+
         <Analytics />
       </body>
+
     </html>
   );
 }
