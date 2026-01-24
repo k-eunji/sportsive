@@ -30,12 +30,10 @@ export default function ClientShell({
       localStorage.setItem("sportsive_internal", "true");
     }
 
-    // ✅ GA4에 user_properties를 config 단계에서 명시
-    window.gtag("config", "G-1WRHN39RC6", {
+    // ✅ 커스텀 이벤트 하나 발생
+    window.gtag("event", "internal_check", {
+      internal_user: isInternal,
       debug_mode: true,
-      user_properties: {
-        internal_user: isInternal,
-      },
     });
   }, []);
 
