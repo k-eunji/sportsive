@@ -5,6 +5,8 @@ import { GET as getFootballEvents } from "./england/football/route";
 import { GET as getRugbyEvents } from "./england/rugby/route";
 import { GET as getTennisEvents } from "./england/tennis/route";
 import { GET as getHorseRacingEvents } from "./england/horseRacing/route";
+import { GET as getBasketballEvents } from "./england/basketball/route"; // ✅ 추가
+
 import { isEventActiveInWindow } from "@/lib/events/lifecycle";
 import { buildAreaIndex } from "@/lib/events/buildAreaIndex";
 
@@ -18,25 +20,30 @@ export async function GET(req: Request) {
       rugbyRes,
       tennisRes,
       horseRacingRes,
+      basketballRes, // ✅ 추가
     ] = await Promise.all([
       getFootballEvents(),
       getRugbyEvents(),
       getTennisEvents(),
       getHorseRacingEvents(),
+      getBasketballEvents(), // ✅ 추가
     ]);
 
     const footballData = await footballRes.json();
     const rugbyData = await rugbyRes.json();
     const tennisData = await tennisRes.json();
     const horseRacingData = await horseRacingRes.json();
+    const basketballData = await basketballRes.json(); // ✅ 추가
 
     const merged = [
-      ...(footballData.matches ?? []),
-      ...(rugbyData.matches ?? []),
-      ...(tennisData.matches ?? []),
-      ...(horseRacingData.matches ?? []),
+      ...(footballData.matches ?? footballData.events ?? []),
+      ...(rugbyData.matches ?? rugbyData.events ?? []),
+      ...(tennisData.matches ?? tennisData.events ?? []),
+      ...(horseRacingData.matches ?? horseRacingData.events ?? []),
+      ...(basketballData.events ?? []), // ✅ 농구는 events
     ];
 
+    // 🔹 area index 전용 (지도 구조용)
     if (window === "180d") {
       const areas = buildAreaIndex(merged);
       return NextResponse.json({ areas });
