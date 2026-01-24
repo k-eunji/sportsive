@@ -8,6 +8,7 @@ export {};
 declare global {
   interface Window {
     google: typeof google;
+    gtag?: (...args: any[]) => void;
   }
 
   // ✅ google.maps 네임스페이스 강제 확립

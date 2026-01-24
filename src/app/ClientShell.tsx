@@ -1,14 +1,30 @@
-// src/app/ClientShell.tsx
 "use client";
 
 import { usePathname } from "next/navigation";
-//import Header from "@/components/layout/Header";
+import { useEffect } from "react";
 import Footer from "@/components/layout/Footer";
 import IntroWrapper from "@/components/layout/IntroWrapper";
 import { Toaster } from "react-hot-toast";
 
-export default function ClientShell({ children }: { children: React.ReactNode }) {
+export default function ClientShell({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const pathname = usePathname() ?? "";
+
+  /**
+   * ✅ GA DebugView 강제 활성화
+   * - DebugView에 이벤트 표시
+   * - internal_user 확인용
+   */
+  useEffect(() => {
+    if (typeof window !== "undefined" && typeof window.gtag === "function") {
+      window.gtag("set", {
+        debug_mode: true,
+      });
+    }
+  }, []);
 
   const isHome = pathname === "/";
   const isLiveRoom =
@@ -16,12 +32,12 @@ export default function ClientShell({ children }: { children: React.ReactNode })
 
   const content = (
     <>
-      {/*{!isLiveRoom && !isHome && <Header showLogo />}*/}
+      {/* {!isLiveRoom && !isHome && <Header showLogo />} */}
 
       <main
         className={
           isHome
-            ? "min-h-screen" // 홈은 풀화면 레이아웃
+            ? "min-h-screen"
             : "flex flex-col pt-24 px-4 pb-[calc(58px+env(safe-area-inset-bottom))]"
         }
       >
