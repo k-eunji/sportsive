@@ -34,13 +34,15 @@ export async function GET() {
         sport,
         kind,
         course,
+        is_paid,
         code,
         courses:course (
           venue,
           city,
           region,
           lat,
-          lng
+          lng,
+          homepage_url
         )
       `)
 
@@ -76,13 +78,15 @@ export async function GET() {
         venue: s.courses?.venue,
         city: s.courses?.city,
         region: s.courses?.region,
+
+        homepageUrl: s.courses?.homepage_url,
+        
         location: {
           lat: s.courses?.lat,
           lng: s.courses?.lng,
         },
-
-        free: true,
-        isPaid: false,
+        
+        isPaid: s.is_paid === true,
 
         payload: {
           course: s.course,

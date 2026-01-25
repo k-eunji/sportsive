@@ -68,7 +68,7 @@ export async function GET() {
       region: m.home_team?.region,
       homepageUrl: m.home_team?.homepage_url,
 
-      isPaid: m.is_paid === 1,
+      isPaid: m.is_paid === true,
       teams: [
         cleanTeamName(m.home_team?.name),
         cleanTeamName(m.away_team?.name),

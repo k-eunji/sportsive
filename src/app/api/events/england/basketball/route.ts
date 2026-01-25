@@ -17,9 +17,9 @@ export async function GET() {
         status,
         competition,
         kind,
-        is_paid,
         home_team_id,
         away_team_id,
+        is_paid,
 
         home_team:home_team_id (
           id,
@@ -29,7 +29,8 @@ export async function GET() {
           lat,
           lng,
           region,
-          city
+          city,
+          homepage_url
         ),
 
         away_team:away_team_id (
@@ -60,7 +61,6 @@ export async function GET() {
 
         // 🔹 optional metadata (UI에 안 보여도 됨)
         competition: m.competition ?? null,
-        isPaid: m.is_paid,
 
         // 🔹 teams
         homeTeamId: m.home_team_id,
@@ -75,6 +75,9 @@ export async function GET() {
         venue: m.home_team?.venue ?? null,
         city: m.home_team?.city ?? null,
         region: m.home_team?.region ?? null,
+        homepageUrl: m.home_team?.homepage_url,
+        isPaid: m.is_paid === true,  
+
         location: m.home_team?.lat && m.home_team?.lng
           ? {
               lat: m.home_team.lat,

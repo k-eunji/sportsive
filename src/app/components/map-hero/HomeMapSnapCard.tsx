@@ -273,7 +273,35 @@ export default function HomeMapSnapCard({
               </a>
             </div>
           )}
-        </div>
+
+           {e.homepageUrl && (
+              <a
+                href={e.homepageUrl}
+                target="_blank"
+                rel="noreferrer"
+                onClick={() =>
+                  track("official_site_clicked", {
+                    eventId: e.id,
+                    isPaid: e.isPaid,
+                    sport: e.sport,
+                  })
+                }
+                className="
+                  block w-full
+                  rounded-2xl
+                  border border-border
+                  text-center
+                  py-2.5
+                  text-sm font-semibold
+                  text-foreground
+                  hover:bg-muted/50
+                  transition
+                "
+              >
+                {e.isPaid ? "Official tickets" : "Official event info"}
+              </a>
+            )}
+          </div>
       </div>
     </div>
   );
