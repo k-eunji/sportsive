@@ -1,24 +1,33 @@
 // src/app/api/go/ticket/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { supabase } from "../../../../lib/supabaseServer";
 
+/**
+ * Ticket click = high-intent action
+ * This log is the KPI source of truth for investor conversations.
+ */
 type TicketClickLog = {
   type: "ticket_click";
   ts: string;
   eventId: string;
   sport: string | null;
   city: string | null;
+
+  // where the click happened
+  source: "snap_card" | "map" | "list" | "unknown";
+
   userAgent: string | null;
   ip: string | null;
   referrer: string | null;
 };
 
 async function logTicketClick(log: TicketClickLog) {
-  /**
-   * KPI source of truth
-   * - Used for investor metrics
-   * - Independent from GA / client-side tracking
-   */
-  console.log(JSON.stringify(log));
+  await supabase.from("ticket_clicks").insert({
+    event_id: log.eventId,
+    sport: log.sport,
+    city: log.city,
+    source: log.source,
+  });
 }
 
 export async function GET(req: NextRequest) {
@@ -31,14 +40,23 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Bad request" }, { status: 400 });
   }
 
-  // ✅ target URL validation (security & data integrity)
+  // ✅ Validate target URL (security & data integrity)
   try {
     new URL(target);
   } catch {
     return NextResponse.json({ error: "Invalid target" }, { status: 400 });
   }
 
-  // ✅ Client IP extraction (Vercel / proxy safe)
+  // ✅ Click source (default: unknown)
+  const sourceParam = searchParams.get("source");
+  const source: TicketClickLog["source"] =
+    sourceParam === "snap_card" ||
+    sourceParam === "map" ||
+    sourceParam === "list"
+      ? sourceParam
+      : "unknown";
+
+  // ✅ Client IP extraction (proxy / Vercel safe)
   const forwardedFor = req.headers.get("x-forwarded-for");
   const ip = forwardedFor
     ? forwardedFor.split(",")[0].trim()
@@ -50,6 +68,7 @@ export async function GET(req: NextRequest) {
     eventId,
     sport: searchParams.get("sport"),
     city: searchParams.get("city"),
+    source,
     userAgent: req.headers.get("user-agent"),
     ip,
     referrer: req.headers.get("referer"),
