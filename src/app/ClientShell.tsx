@@ -14,26 +14,31 @@ export default function ClientShell({
   const pathname = usePathname() ?? "";
 
   /**
-   * ✅ GA 설정
-   * - DebugView 활성화
-   * - internal_user 구분
+   * ✅ GA 안전 설정
+   * - internal 판정은 개발환경에서만
+   * - session 단위 (탭 닫으면 사라짐)
+   * - GA Internal traffic 필터와 절대 결합되지 않음
    */
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (typeof window.gtag !== "function") return;
 
-    const isInternal =
-      window.location.search.includes("internal=true") ||
-      localStorage.getItem("sportsive_internal") === "true";
+    const isDev = process.env.NODE_ENV === "development";
 
-    if (window.location.search.includes("internal=true")) {
-      localStorage.setItem("sportsive_internal", "true");
+    // 개발 환경 + 명시적 쿼리일 때만 internal
+    const isInternal =
+      isDev && window.location.search.includes("internal=true");
+
+    if (isInternal) {
+      sessionStorage.setItem("sportsive_internal", "true");
     }
 
-    // ✅ 커스텀 이벤트 하나 발생
-    window.gtag("event", "internal_check", {
-      internal_user: isInternal,
-      debug_mode: true,
+    // ❗ internal 판정은 "정보용 이벤트"로만 보냄
+    // ❗ GA Internal traffic 필터 조건에 사용하면 안 됨
+    window.gtag("event", "dev_diagnostic", {
+      is_internal_dev: isInternal,
+      environment: isDev ? "development" : "production",
+      debug_mode: isDev,
     });
   }, []);
 
