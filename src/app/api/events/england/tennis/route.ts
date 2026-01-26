@@ -1,3 +1,5 @@
+// src/app/api/events/england/tennis/route.ts
+
 import { NextResponse } from "next/server";
 
 /**
@@ -12,32 +14,6 @@ import { NextResponse } from "next/server";
 export async function GET() {
   return NextResponse.json({
     matches: [
-      {
-        id: "tennis-nottingham-challenger-2026",
-        sport: "tennis",
-        kind: "session",
-
-        title: "Lexus Nottingham Challenger 2026",
-
-        date: "2026-01-05T10:00:00Z",
-        startDate: "2026-01-05",
-        endDate: "2026-01-10",
-
-        venue: "Nottingham Tennis Centre",
-        city: "Nottingham",
-        region: "England",
-        location: { lat: 52.9399, lng: -1.1956 },
-
-        isPaid: true,
-        homepageUrl: "https://www.atptour.com/en",
-
-        payload: {
-          structure: "tournament",
-          granularity: "day",
-          typicalStartTime: "10:00",
-        },
-      },
-
       {
         id: "tennis-nottingham-open-2026",
         sport: "tennis",

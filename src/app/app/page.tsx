@@ -20,6 +20,7 @@ import type { TimeScope } from "@/lib/nowDashboard";
 import { calcCityCenter } from "@/lib/calcCityCenter";
 import MapStatusPill from "@/app/components/home/MapStatusPill";
 import type { AreaIndex } from "@/types/area";
+import { getDefaultDurationMs } from "@/lib/eventTime";
 
 function getStartDate(e: any): Date | null {
   const raw = e.date ?? e.utcDate ?? e.startDate ?? null;
@@ -52,24 +53,6 @@ function isInBounds(
     location.lng <= bounds.east &&
     location.lng >= bounds.west
   );
-}
-
-function getDefaultDurationMs(e: any) {
-  switch (e.sport) {
-    case "football":
-    case "rugby":
-      return 2.5 * 60 * 60 * 1000; // 2.5h
-    case "basketball":
-      return 2 * 60 * 60 * 1000;   // 2h
-    case "tennis":
-      return 3 * 60 * 60 * 1000;   // 단일 매치 가정
-    case "baseball":
-      return 3.5 * 60 * 60 * 1000;
-    default:
-      return 2 * 60 * 60 * 1000;   // fallback
-    case "horse-racing":
-      return 6 * 60 * 60 * 1000;
-  }
 }
 
 // session = tennis tournaments, horse-racing meetings, etc.

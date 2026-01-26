@@ -8,6 +8,7 @@ import { track } from "@/lib/track";
 import { useUserLocation, haversineKm } from "@/app/components/home/useUserLocation";
 import { useDistanceUnit } from "@/app/components/home/useDistanceUnit";
 import { formatDistance } from "@/lib/distance";
+import { getEventTimeState } from "@/lib/eventTime";
 
 /* ---------------- helpers ---------------- */
 
@@ -18,19 +19,22 @@ function getAnchorDate(e: any): Date | null {
   return isNaN(d.getTime()) ? null : d;
 }
 
-function formatStartsLabel(e: any, now = new Date()) {
-  const status = (e.status ?? "").toString().toUpperCase();
-  if (status === "LIVE") return { tone: "live" as const, text: "LIVE" };
+function formatStartsLabel(e: any) {
+  const state = getEventTimeState(e);
 
-  const start = getAnchorDate(e);
-  if (!start) return { tone: "upcoming" as const, text: "UPCOMING" };
+  if (state === "LIVE") {
+    return { tone: "live" as const, text: "LIVE" };
+  }
 
-  const diffMin = Math.round((start.getTime() - now.getTime()) / 60000);
-  if (diffMin <= 0) return { tone: "upcoming" as const, text: "STARTED" };
-  if (diffMin < 60) return { tone: "soon" as const, text: `IN ${diffMin} MIN` };
+  if (state === "SOON") {
+    return { tone: "soon" as const, text: "SOON" };
+  }
 
-  const diffHr = Math.floor(diffMin / 60);
-  return { tone: "soon" as const, text: `IN ${diffHr}H` };
+  if (state === "UPCOMING") {
+    return { tone: "upcoming" as const, text: "UPCOMING" };
+  }
+
+  return { tone: "upcoming" as const, text: "ENDED" };
 }
 
 function formatMatchTime(e: any) {
@@ -128,6 +132,20 @@ export default function HomeMapSnapCard({
     return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
   }, [e.location]);
 
+  const ticketHref = useMemo(() => {
+    if (!e.homepageUrl) return null;
+
+    return (
+      `/api/go/ticket` +
+      `?eventId=${e.id}` +
+      `&sport=${e.sport ?? ""}` +
+      `&city=${e.city ?? ""}` +
+      `&source=snap_card` + // ✅ 여기
+      `&target=${encodeURIComponent(e.homepageUrl)}`
+    );
+    }, [e]);
+
+
   return (
     <div
       className="
@@ -151,8 +169,8 @@ export default function HomeMapSnapCard({
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
 
-              {/* Team logos (non-tennis) */}
-              {e.sport !== "tennis" && (e.homeTeamLogo || e.awayTeamLogo) && (
+              {/* Team logos (team sports only) */}
+              {e.sport !== "tennis" && e.sport !== "darts" && (e.homeTeamLogo || e.awayTeamLogo) && (
                 <div className="flex items-center gap-1 mb-2">
                   {e.homeTeamLogo && (
                     <img
@@ -161,7 +179,7 @@ export default function HomeMapSnapCard({
                       className="w-7 h-7 rounded-full bg-white"
                     />
                   )}
-                  {e.awayTeamLogo && (                 
+                  {e.awayTeamLogo && (
                     <img
                       src={e.awayTeamLogo}
                       alt={e.awayTeam}
@@ -177,7 +195,7 @@ export default function HomeMapSnapCard({
                   ? e.code
                     ? `${e.title} · ${e.code}`
                     : e.title
-                  : e.sport === "tennis"
+                  : e.sport === "tennis" || e.sport === "darts" // ✅ 추가
                   ? e.title
                   : `${e.homeTeam} vs ${e.awayTeam}`}
               </p>
@@ -274,16 +292,16 @@ export default function HomeMapSnapCard({
             </div>
           )}
 
-           {e.homepageUrl && (
+            {ticketHref && (
               <a
-                href={e.homepageUrl}
+                href={ticketHref}
                 target="_blank"
                 rel="noreferrer"
                 onClick={() =>
-                  track("official_site_clicked", {
+                  track("official_ticket_clicked", {
                     eventId: e.id,
-                    isPaid: e.isPaid,
                     sport: e.sport,
+                    city: e.city,
                   })
                 }
                 className="
@@ -298,7 +316,9 @@ export default function HomeMapSnapCard({
                   transition
                 "
               >
-                {e.isPaid ? "Official tickets" : "Official event info"}
+                {e.isPaid
+                  ? "Buy official tickets"
+                  : "View official event info"}
               </a>
             )}
           </div>

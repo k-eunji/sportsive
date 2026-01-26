@@ -12,6 +12,8 @@ import {
 import type { Event } from "@/types";
 import { useGoogleMaps } from "@/components/GoogleMapsProvider";
 import type { TimeScope } from "@/lib/nowDashboard";
+import { getEventTimeState, getDefaultDurationMs } from "@/lib/eventTime";
+
 
 const DEFAULT_ZOOM = 8;
 const FOCUS_ZOOM = 16;
@@ -33,58 +35,19 @@ function getEventStart(e: Event): Date | null {
 }
 
 function getMarkerStatus(e: Event): MarkerStatus {
-  const now = Date.now();
-  const start = getEventStart(e);
-  const rawStatus = ((e as any).status ?? "").toString().toUpperCase();
+  const state = getEventTimeState(e);
 
-  // 1) 명시적 LIVE (축구 등)
-  if (rawStatus === "LIVE") return "LIVE";
-
-  // 2) 🎾 session (테니스) 진행 중인 날 → LIVE signal
-  if (
-    (e as any).kind === "session" &&
-    (e as any).startDate &&
-    (e as any).endDate
-  ) {
-    const s = new Date((e as any).startDate).getTime();
-    const eend = new Date((e as any).endDate).getTime();
-    if (now >= s && now <= eend) {
-      return "LIVE";
-    }
-  }
-
-  // 3) SOON
-  const isSoon =
-    !!start &&
-    start.getTime() - now > 0 &&
-    start.getTime() - now <= getSoonWindowMs(e);
-
-  return isSoon ? "SOON" : "DEFAULT";
+  if (state === "LIVE") return "LIVE";
+  if (state === "SOON") return "SOON";
+  return "DEFAULT";
 }
+
 
 function markerBaseScaleForZoom(zoom: number) {
   if (zoom >= 14) return 4.8;
   if (zoom >= 12) return 5.4;
   if (zoom >= 10) return 6.0;
   return 6.6;
-}
-
-function getDefaultDurationMs(e: any) {
-  switch ((e.sport ?? "").toLowerCase()) {
-    case "football":
-    case "rugby":
-      return 2.5 * 60 * 60 * 1000; // 2.5h
-    case "basketball":
-      return 2 * 60 * 60 * 1000;   // 2h
-    case "tennis":
-      return 3 * 60 * 60 * 1000;   // 단일 매치 가정
-    case "baseball":
-      return 3.5 * 60 * 60 * 1000;
-    default:
-      return 2 * 60 * 60 * 1000;   // fallback
-    case "horse-racing":
-      return 6 * 60 * 60 * 1000;
-  }
 }
 
 function thinByGrid(events: Event[], zoom: number) {
@@ -121,22 +84,6 @@ function thinByGrid(events: Event[], zoom: number) {
   }
 
   return Array.from(grid.values());
-}
-
-function getSoonWindowMs(e: Event) {
-  switch ((e as any).sport) {
-    case "football":
-    case "rugby":
-      return 2 * 60 * 60 * 1000; // 2h
-    case "tennis":
-      return 60 * 60 * 1000;     // 1h
-    case "basketball":
-      return 90 * 60 * 1000;     // 1.5h
-    default:
-      return 2 * 60 * 60 * 1000;
-    case "horse-racing":
-      return 4 * 60 * 60 * 1000; // 4시간 전부터 SOON 
-  }
 }
 
 function computePulse(phase: number) {
@@ -376,6 +323,7 @@ function getDensityWeight(e: Event, scope: TimeScope, now: Date) {
   const isTournament =
     format === "tournament" ||
     kind === "tournament" ||
+    sport === "darts" || // ✅ 다트는 기본적으로 토너먼트급
     (sport === "tennis" && (format === "event" || format === "tourney"));
 
   const diffH = (start.getTime() - now.getTime()) / (1000 * 60 * 60);
