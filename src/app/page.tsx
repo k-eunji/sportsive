@@ -22,6 +22,11 @@ export default function LandingPage() {
         <p className="text-lg text-muted-foreground max-w-md">
           Check what sports are happening near you, right now.
         </p>
+
+        <p className="text-xs text-muted-foreground mt-6 max-w-md">
+          Built to understand how people discover live sports around them — before they plan anything.
+        </p>
+
       </section>
 
       {/* =========================
@@ -97,6 +102,10 @@ export default function LandingPage() {
         <p className="font-medium text-foreground">
           This is an early experiment.
         </p>
+        <p className="text-[11px] opacity-70">
+          Built and maintained by a single creator as a live product experiment.
+        </p>
+
 
         <p className="leading-relaxed">
           If there’s a match or event you think should be here,
