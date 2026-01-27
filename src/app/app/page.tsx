@@ -23,6 +23,7 @@ import type { AreaIndex } from "@/types/area";
 import { getDefaultDurationMs } from "@/lib/eventTime";
 import { getClientId } from "@/lib/clientId";
 import { isReturn24h } from "@/lib/returnCheck";
+import { shouldLogVisit } from "@/lib/visitThrottle";
 
 function getStartDate(e: any): Date | null {
   const raw = e.date ?? e.utcDate ?? e.startDate ?? null;
@@ -133,16 +134,6 @@ export default function HomePage() {
   useEffect(() => {
     // 1️⃣ 기존 코드 (그대로 둠)
     track("home_loaded");
-
-    // 2️⃣ ⬇️ 이걸 "바로 여기"에 추가하는 거임
-    fetch("/api/log/visit", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        client_id: getClientId(),
-        is_return_24h: isReturn24h(),
-      }),
-    });
     (async () => {
       // ⬅️ 공간 구조용 (나라/도시 추출)
       const areaRes = await fetch("/api/events?window=180d");
@@ -390,6 +381,21 @@ export default function HomePage() {
       source: sharedSource ?? "unknown",
     });
   }, [currentEvents, sharedEventId, sharedSource]);
+
+  useEffect(() => {
+    track("home_loaded");
+
+    if (shouldLogVisit()) {
+      fetch("/api/log/visit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          client_id: getClientId(),
+          is_within_first_24h: isReturn24h(),
+        }),
+      });
+    }
+  }, []);
 
   return (
     <main className="relative min-h-screen">
