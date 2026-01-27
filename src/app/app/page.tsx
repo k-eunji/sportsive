@@ -21,6 +21,8 @@ import { calcCityCenter } from "@/lib/calcCityCenter";
 import MapStatusPill from "@/app/components/home/MapStatusPill";
 import type { AreaIndex } from "@/types/area";
 import { getDefaultDurationMs } from "@/lib/eventTime";
+import { getClientId } from "@/lib/clientId";
+import { isReturn24h } from "@/lib/returnCheck";
 
 function getStartDate(e: any): Date | null {
   const raw = e.date ?? e.utcDate ?? e.startDate ?? null;
@@ -129,8 +131,18 @@ export default function HomePage() {
     typeof window !== "undefined" && window.innerWidth < 768;
 
   useEffect(() => {
+    // 1️⃣ 기존 코드 (그대로 둠)
     track("home_loaded");
 
+    // 2️⃣ ⬇️ 이걸 "바로 여기"에 추가하는 거임
+    fetch("/api/log/visit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        client_id: getClientId(),
+        is_return_24h: isReturn24h(),
+      }),
+    });
     (async () => {
       // ⬅️ 공간 구조용 (나라/도시 추출)
       const areaRes = await fetch("/api/events?window=180d");

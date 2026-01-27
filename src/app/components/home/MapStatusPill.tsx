@@ -1,3 +1,5 @@
+// src/app/components/home/MapStatusPill.tsx
+
 "use client";
 
 import type { Event } from "@/types";
@@ -9,6 +11,13 @@ function getStartDate(e: any): Date | null {
   if (!raw) return null;
   const d = new Date(raw);
   return isNaN(d.getTime()) ? null : d;
+}
+
+function formatTime(dt: Date) {
+  return dt.toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 
 export type MapScope = "user" | "global" | "observer";
@@ -24,7 +33,7 @@ export default function MapStatusPill({
 }) {
   if (events.length === 0) return null;
 
-  const now = Date.now();
+  const now = new Date(); // ✅ Date 객체로 통일
 
   let liveCount = 0;
   let nextAt: Date | null = null;
@@ -34,7 +43,7 @@ export default function MapStatusPill({
     if (status === "LIVE") liveCount += 1;
 
     const start = getStartDate(e);
-    if (start && start.getTime() > now) {
+    if (start && start.getTime() > now.getTime()) {
       if (!nextAt || start < nextAt) nextAt = start;
     }
   }
@@ -48,7 +57,7 @@ export default function MapStatusPill({
       ? "in this city"
       : "around you";
 
-  let label: string;
+  let label = "";
 
   /* ---------------- LIVE ---------------- */
 
@@ -59,17 +68,11 @@ export default function MapStatusPill({
         : `LIVE · ${liveCount} events ${where}`;
   }
 
-  /* ---------------- UPCOMING (today only) ---------------- */
+  /* ---------------- UPCOMING ---------------- */
 
   else if (nextAt) {
-    const t = nextAt.toLocaleTimeString(undefined, {
-      hour: "numeric",
-      minute: "2-digit",
-    });
+    const t = formatTime(nextAt);
 
-    // 🔧 핵심 수정:
-    // "전체 개수"가 아니라
-    // "같은 시간대(±2h)에 몰린 경기 수"만 센다
     const WINDOW_MS = 2 * 60 * 60 * 1000; // 2 hours
     const nextTs = nextAt.getTime();
 
@@ -79,8 +82,16 @@ export default function MapStatusPill({
       return Math.abs(s.getTime() - nextTs) <= WINDOW_MS;
     }).length;
 
+    const diffMin = Math.round(
+      (nextAt.getTime() - now.getTime()) / 60000
+    );
+
     if (clusteredCount <= 2) {
-      label = `Starting soon · ${t} · ${where}`;
+      if (diffMin <= 60) {
+        label = `Starting in ${diffMin} min · ${where}`;
+      } else {
+        label = `Starting later · ${t} · ${where}`;
+      }
     } else if (clusteredCount <= 4) {
       label = `Warming up · ${t} · a few ${where}`;
     } else {
@@ -91,10 +102,7 @@ export default function MapStatusPill({
   /* ---------------- QUIET ---------------- */
 
   else {
-    label =
-      events.length > 5
-        ? `Quiet now · more later · ${where}`
-        : `Quiet right now · ${where}`;
+    label = `Quiet right now · ${where}`;
   }
 
   /* ---------------- render ---------------- */

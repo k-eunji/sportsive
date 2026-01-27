@@ -112,11 +112,21 @@ function formatCityText(
   pulse: CityPulse,
   nextAt: Date | null
 ): string {
-  if (pulse === "LIVE") return "City is LIVE right now";
-  if (pulse === "WARMING_UP" && nextAt)
-    return `Warming up · ${formatTime(nextAt)}`;
-  return "Quiet for now";
+  if (pulse === "LIVE") {
+    return "LIVE now · more happening later";
+  }
+
+  if (pulse === "WARMING_UP" && nextAt) {
+    return `Next kickoff · ${formatTime(nextAt)}`;
+  }
+
+  if (nextAt) {
+    return `Quiet now · next match at ${formatTime(nextAt)}`;
+  }
+
+  return "Quiet today · nothing scheduled";
 }
+
 
 /* ---------- main ---------- */
 
