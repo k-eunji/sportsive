@@ -83,6 +83,9 @@ export default function HomePage() {
 
   const [timeScope, setTimeScope] = useState<TimeScope>("today");
   const [heroExpanded, setHeroExpanded] = useState(true);
+  const [sharedEventId, setSharedEventId] = useState<string | null>(null);
+  const [sharedSource, setSharedSource] = useState<string | null>(null);
+  const [enteredFromShare, setEnteredFromShare] = useState(false);
 
   const [mapViewMode, setMapViewMode] =
     useState<"user" | "global" | "observer">(
@@ -182,12 +185,13 @@ export default function HomePage() {
 
   useEffect(() => {
     if (!hasLocation || !pos || !mapRef.current) return;
+    if (sharedEventId) return; // 🔥 공유 링크 진입이면 내 위치로 안 감
 
     mapRef.current.panTo({
       lat: pos.lat,
       lng: pos.lng,
     });
-  }, [hasLocation, pos]);
+  }, [hasLocation, pos, sharedEventId]);
 
 
   // ✅ 공간 구조는 areaIndex 기준
@@ -310,6 +314,62 @@ export default function HomePage() {
     appliedBounds,
     mapViewMode,
   ]);
+
+
+  // ✅ City Pulse 전용 (위치 필터 제거)
+  const pulseEvents = useMemo(() => {
+    const now = new Date();
+    const todayStart = startOfLocalDay(now);
+    const todayEnd = new Date(todayStart);
+    todayEnd.setDate(todayEnd.getDate() + 1);
+
+    return currentEvents.filter((e: any) => {
+      const start = getStartDate(e);
+      if (!start) return false;
+
+      if (isSession(e)) {
+        const sStart = new Date(e.startDate);
+        const sEnd = new Date(e.endDate);
+        return overlaps(sStart, sEnd, todayStart, todayEnd);
+      }
+
+      return start >= todayStart && start < todayEnd;
+    });
+  }, [currentEvents]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const params = new URLSearchParams(window.location.search);
+    const eid = params.get("eventId");
+
+    setSharedEventId(eid);
+    setSharedSource(params.get("src"));
+
+    if (eid) {
+      setEnteredFromShare(true); // 🔥 추가
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!currentEvents.length) return;
+    if (!sharedEventId) return;
+    if (!mapRef.current) return;
+
+    const ev = currentEvents.find(e => String(e.id) === sharedEventId);
+    if (!ev) return;
+
+    // 🔥 지도 먼저 포커스
+    mapRef.current.focus(String(ev.id));
+
+    // 🔥 카드 상태 동기화
+    setSnapEvent(ev);
+
+    track("snapcard_opened_from_share", {
+      eventId: sharedEventId,
+      source: sharedSource ?? "unknown",
+    });
+  }, [currentEvents, sharedEventId, sharedSource]);
 
   return (
     <main className="relative min-h-screen">
@@ -450,8 +510,8 @@ export default function HomePage() {
       )}
 
       {/* 🟢 MAP STATUS PILL (today only) */}
-      {timeScope === "today" && filteredEvents.length > 0 && (
-        <MapStatusPill events={filteredEvents} />
+      {timeScope === "today" && pulseEvents.length > 0 && (
+        <MapStatusPill events={pulseEvents} />
       )}
 
       {snapEvent && (

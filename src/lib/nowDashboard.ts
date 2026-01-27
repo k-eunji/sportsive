@@ -2,21 +2,31 @@
 import type { Event } from "@/types";
 
 /**
- * ✅ MVP용으로 NowHero를 "checking tool"에 맞게 최소화한 상태 계산기
- * - TimeScope별 "LIVE 있냐 / NEXT가 언제냐 / 없냐"만 만든다
- * - peak, sportCounts, dayCount 등은 제거 (지금 UI에서 안 씀)
+ * NowHero / City status calculator
+ * 역할:
+ * - 이벤트 정보를 "도시 상태(Pulse)"로 해석
+ * - 숫자가 아니라 '결론 한 줄'을 만든다
  */
 
 export type TimeScope = "today" | "tomorrow" | "weekend" | "week";
+
+export type CityPulse =
+  | "LIVE"
+  | "WARMING_UP"
+  | "QUIET";
 
 export type NowStatus = {
   scope: TimeScope;
   kind: "live" | "next" | "empty";
   liveCount: number;
   nextAt: Date | null;
-  count: number; // scope 안의 전체 이벤트 수 (UI에서 안 쓰면 그냥 둬도 됨)
-  text: string;  // NowHero 메인 1줄
+  count: number;
+
+  pulse: CityPulse;   // ✅ 핵심
+  text: string;       // ✅ 도시 상태 한 줄
 };
+
+/* ---------- helpers ---------- */
 
 function getStartDate(e: any): Date | null {
   const raw = e.date ?? e.utcDate ?? e.startDate ?? null;
@@ -39,25 +49,26 @@ function isSameLocalDay(a: Date, b: Date) {
 
 function nextWeekendRange(now: Date) {
   const base = startOfLocalDay(now);
-  const day = base.getDay(); // 0 Sun ... 6 Sat
+  const day = base.getDay();
   const toSat = day === 6 ? 0 : (6 - day + 7) % 7;
   const sat = new Date(base);
   sat.setDate(sat.getDate() + toSat);
-
   const mon = new Date(sat);
-  mon.setDate(mon.getDate() + 2); // exclusive
+  mon.setDate(mon.getDate() + 2);
   return { start: sat, end: mon };
 }
 
 function formatTime(dt: Date) {
-  return dt.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+  return dt.toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 
 function inScope(start: Date, scope: TimeScope, now: Date) {
   const base = startOfLocalDay(now);
 
   if (scope === "today") {
-    // "지금 나갈까" 체크이므로 과거 시작은 제외 (토너먼트 예외는 events 필터에서 이미 처리하는 게 더 안전)
     return isSameLocalDay(start, now) && start >= now;
   }
 
@@ -74,11 +85,40 @@ function inScope(start: Date, scope: TimeScope, now: Date) {
     return start >= wk.start && start < wk.end;
   }
 
-  // week: next 7 days from start of today
   const end = new Date(base);
   end.setDate(end.getDate() + 7);
   return start >= now && start < end;
 }
+
+/* ---------- NEW: 해석 레이어 ---------- */
+
+function getCityPulse(
+  liveCount: number,
+  nextAt: Date | null,
+  now: Date
+): CityPulse {
+  if (liveCount > 0) return "LIVE";
+
+  if (nextAt) {
+    const diffH =
+      (nextAt.getTime() - now.getTime()) / (1000 * 60 * 60);
+    if (diffH <= 3) return "WARMING_UP";
+  }
+
+  return "QUIET";
+}
+
+function formatCityText(
+  pulse: CityPulse,
+  nextAt: Date | null
+): string {
+  if (pulse === "LIVE") return "City is LIVE right now";
+  if (pulse === "WARMING_UP" && nextAt)
+    return `Warming up · ${formatTime(nextAt)}`;
+  return "Quiet for now";
+}
+
+/* ---------- main ---------- */
 
 export function buildNowStatus(
   events: Event[],
@@ -96,7 +136,7 @@ export function buildNowStatus(
 
     count += 1;
 
-    const status = (e.status ?? "").toString().toUpperCase();
+    const status = (e.status ?? "").toUpperCase();
     if (status === "LIVE") liveCount += 1;
 
     if (start > now) {
@@ -104,43 +144,20 @@ export function buildNowStatus(
     }
   }
 
-  if (liveCount > 0) {
-    return {
-      scope,
-      kind: "live",
-      liveCount,
-      nextAt,
-      count,
-      text: `${liveCount} LIVE`,
-    };
-  }
-
-  if (nextAt) {
-    return {
-      scope,
-      kind: "next",
-      liveCount,
-      nextAt,
-      count,
-      text: `NEXT ${formatTime(nextAt)}`,
-    };
-  }
-
-  const label =
-    scope === "today"
-      ? "TODAY"
-      : scope === "tomorrow"
-      ? "TOMORROW"
-      : scope === "weekend"
-      ? "THIS WEEKEND"
-      : "THIS WEEK";
+  const pulse = getCityPulse(liveCount, nextAt, now);
 
   return {
     scope,
-    kind: "empty",
+    kind:
+      pulse === "LIVE"
+        ? "live"
+        : pulse === "WARMING_UP"
+        ? "next"
+        : "empty",
     liveCount,
-    nextAt: null,
+    nextAt,
     count,
-    text: `NO EVENTS ${label}`,
+    pulse,
+    text: formatCityText(pulse, nextAt),
   };
 }
