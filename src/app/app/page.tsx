@@ -24,6 +24,7 @@ import { getDefaultDurationMs } from "@/lib/eventTime";
 import { getClientId } from "@/lib/clientId";
 import { isReturn24h } from "@/lib/returnCheck";
 import { shouldLogVisit } from "@/lib/visitThrottle";
+import { detectEntryReason } from "@/lib/entryReason";
 
 function getStartDate(e: any): Date | null {
   const raw = e.date ?? e.utcDate ?? e.startDate ?? null;
@@ -392,6 +393,7 @@ export default function HomePage() {
         body: JSON.stringify({
           client_id: getClientId(),
           is_within_first_24h: isReturn24h(),
+          entry_reason: detectEntryReason(),
         }),
       });
     }

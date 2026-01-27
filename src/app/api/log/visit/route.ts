@@ -6,9 +6,13 @@ import { supabase } from "@/lib/supabaseServer";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { client_id, is_within_first_24h } = body;
+    const { client_id, is_within_first_24h, entry_reason } = body;
 
-    if (!client_id || typeof is_within_first_24h !== "boolean") {
+    if (
+      !client_id ||
+      typeof is_within_first_24h !== "boolean" ||
+      typeof entry_reason !== "string"
+    ) {
       return NextResponse.json(
         { error: "Invalid payload" },
         { status: 400 }
@@ -20,7 +24,8 @@ export async function POST(req: NextRequest) {
       .insert({
         client_id,
         is_within_first_24h,
-        visited_at: new Date().toISOString(), // ✅ 서버 시각
+        entry_reason,
+        visited_at: new Date().toISOString(),
       });
 
     if (error) {
