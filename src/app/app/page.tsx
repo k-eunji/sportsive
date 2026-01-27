@@ -1,4 +1,4 @@
-//src/app/page.tsx
+//src/app/app/page.tsx
 
 "use client";
 
@@ -351,6 +351,14 @@ export default function HomePage() {
     }
   }, []);
 
+  // ✅ 공유 링크 진입 시: 내 주변 필터 강제 해제
+  useEffect(() => {
+    if (!sharedEventId) return;
+
+    setMapViewMode("global"); // 🔥 이 한 줄이 핵심
+  }, [sharedEventId]);
+
+
   useEffect(() => {
     if (!currentEvents.length) return;
     if (!sharedEventId) return;
@@ -377,7 +385,7 @@ export default function HomePage() {
       <div className="fixed inset-0">
         <HomeMapStage
           ref={mapRef}
-          events={filteredEvents}
+          events={sharedEventId ? currentEvents : filteredEvents}
           timeScope={timeScope} 
           onDiscoverFromMap={(id) => {
             const ev = filteredEvents.find(e => e.id === id) ?? null;
