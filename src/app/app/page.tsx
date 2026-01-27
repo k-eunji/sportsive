@@ -518,8 +518,11 @@ export default function HomePage() {
       )}
 
       {/* 🟢 MAP STATUS PILL (today only) */}
-      {timeScope === "today" && pulseEvents.length > 0 && (
-        <MapStatusPill events={pulseEvents} />
+      {timeScope === "today" && filteredEvents.length > 0 && (
+        <MapStatusPill
+          events={filteredEvents}
+          scope={mapViewMode}
+        />
       )}
 
       {snapEvent && (
