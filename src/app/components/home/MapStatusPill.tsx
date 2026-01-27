@@ -33,7 +33,7 @@ export default function MapStatusPill({
 }) {
   if (events.length === 0) return null;
 
-  const now = new Date(); // ✅ Date 객체로 통일
+  const now = new Date();
 
   let liveCount = 0;
   let nextAt: Date | null = null;
@@ -48,14 +48,12 @@ export default function MapStatusPill({
     }
   }
 
-  /* ---------------- where label ---------------- */
-
   const where =
     scope === "global"
       ? "across the map"
       : scope === "observer"
       ? "in this city"
-      : "around you";
+      : "nearby";
 
   let label = "";
 
@@ -64,7 +62,7 @@ export default function MapStatusPill({
   if (liveCount > 0) {
     label =
       liveCount === 1
-        ? `LIVE · 1 event ${where}`
+        ? `LIVE nearby`
         : `LIVE · ${liveCount} events ${where}`;
   }
 
@@ -72,30 +70,14 @@ export default function MapStatusPill({
 
   else if (nextAt) {
     const t = formatTime(nextAt);
-
-    const WINDOW_MS = 2 * 60 * 60 * 1000; // 2 hours
-    const nextTs = nextAt.getTime();
-
-    const clusteredCount = events.filter((e: any) => {
-      const s = getStartDate(e);
-      if (!s) return false;
-      return Math.abs(s.getTime() - nextTs) <= WINDOW_MS;
-    }).length;
-
     const diffMin = Math.round(
       (nextAt.getTime() - now.getTime()) / 60000
     );
 
-    if (clusteredCount <= 2) {
-      if (diffMin <= 60) {
-        label = `Starting in ${diffMin} min · ${where}`;
-      } else {
-        label = `Starting later · ${t} · ${where}`;
-      }
-    } else if (clusteredCount <= 4) {
-      label = `Warming up · ${t} · a few ${where}`;
+    if (diffMin <= 60) {
+      label = `Starting in ${diffMin} min · ${where}`;
     } else {
-      label = `Busy later · ${t} · ${where}`;
+      label = `Next up · ${t} · ${where}`;
     }
   }
 

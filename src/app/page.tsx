@@ -1,3 +1,5 @@
+//src/app/page.tsx
+
 "use client";
 
 import Link from "next/link";
@@ -20,13 +22,12 @@ export default function LandingPage() {
         </div>
 
         <p className="text-lg text-muted-foreground max-w-md">
-          Check what sports are happening near you, right now.
+          A live map of sports happening around you.
         </p>
 
         <p className="text-xs text-muted-foreground mt-6 max-w-md">
-          Built to understand how people discover live sports around them — before they plan anything.
+          Open it anytime. See what’s actually happening nearby.
         </p>
-
       </section>
 
       {/* =========================
@@ -47,7 +48,7 @@ export default function LandingPage() {
             JUST A CHECK
           </p>
           <p className="mt-3 text-xl font-medium">
-            Open Sportsive anytime to see what’s actually happening nearby.
+            Open it when you’re wondering if anything’s happening nearby.
           </p>
         </div>
 
@@ -56,7 +57,7 @@ export default function LandingPage() {
             LOCATION & TIME FIRST
           </p>
           <p className="mt-3 text-xl font-medium">
-            Every event is shown by where and when it’s happening — nothing else.
+            Everything is shown by where and when it’s happening — nothing more.
           </p>
         </div>
       </section>
@@ -78,13 +79,12 @@ export default function LandingPage() {
             transition
           "
         >
-          Open full-screen map
+          See what’s happening now
         </Link>
-
       </section>
 
       {/* =========================
-          HELP SHAPE SPORTSIVE (FOOTER)
+          FOOTER
       ========================= */}
       <section
         className="
@@ -100,12 +100,8 @@ export default function LandingPage() {
         "
       >
         <p className="font-medium text-foreground">
-          This is an early experiment.
+          A simple way to check what sports are happening around you.
         </p>
-        <p className="text-[11px] opacity-70">
-          Built and maintained by a single creator as a live product experiment.
-        </p>
-
 
         <p className="leading-relaxed">
           If there’s a match or event you think should be here,
