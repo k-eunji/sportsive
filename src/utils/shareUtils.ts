@@ -30,13 +30,13 @@ export async function nativeShare(payload: {
   const nav = navigator as NativeShareNavigator;
 
   try {
+    // ✅ 모바일에서는 url만
     await nav.share?.({
-      text: payload.text,
       url: payload.url,
+      // text: payload.text ❌ 제거
     });
     return true;
   } catch {
-    // user cancelled or failed → silent
     return false;
   }
 }
