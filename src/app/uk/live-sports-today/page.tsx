@@ -39,6 +39,38 @@ export default function UKLiveSportsTodayPage() {
       >
         Open the live sports map
       </a>
+
+            {/* FAQ SECTION (SEO) */}
+      <section className="pt-12 space-y-4">
+        <h2 className="text-xl font-semibold">
+          Frequently asked questions
+        </h2>
+
+        <div className="space-y-4 text-muted-foreground">
+          <div>
+            <h3 className="font-medium text-foreground">
+              What sports are happening in the UK today?
+            </h3>
+            <p>
+              Football, rugby, tennis and other live sports events are
+              taking place across London today at stadiums, arenas
+              and local venues.
+            </p>
+          </div>
+
+          <div>
+            <h3 className="font-medium text-foreground">
+              Where can I find live sports near me in the UK?
+            </h3>
+            <p>
+              Sportsive helps you discover live sports events by
+              location and time, so you can quickly check what’s
+              happening nearby without following teams or leagues.
+            </p>
+          </div>
+        </div>
+      </section>
+
     </main>
   );
 }
