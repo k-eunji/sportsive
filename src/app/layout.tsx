@@ -1,6 +1,7 @@
 // src/app/layout.tsx
 
 import "./globals.css";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import Providers from "./Providers";
 import "@/lib/firebase";
@@ -8,32 +9,59 @@ import ClientShell from "./ClientShell";
 import GoogleMapsProvider from "@/components/GoogleMapsProvider";
 import { Analytics } from "@vercel/analytics/react";
 
-
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
   display: "swap",
 });
 
-export const metadata = {
+/* =========================
+   METADATA (SEO + GSC)
+========================= */
+export const metadata: Metadata = {
   title: "Sportsive",
   description: "Discover sports you can actually attend near you",
   manifest: "/manifest.json",
+
+  // ✅ Google Search Console verification
+  verification: {
+    google: "9OtVcxThar95vmRDQTol9vu8rJzHCq4A3EJ2CHn1Gs4",
+  },
+
+  // (선택) 기본 OG — 나중에 SEO 페이지별로 override 가능
+  openGraph: {
+    title: "Sportsive",
+    description: "See what sports are happening near you, right now.",
+    siteName: "Sportsive",
+    type: "website",
+  },
 };
 
-export const viewport = {
+/* =========================
+   VIEWPORT
+========================= */
+export const viewport: Viewport = {
   themeColor: "#2563eb",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+/* =========================
+   ROOT LAYOUT
+========================= */
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en" className={`${inter.variable} h-full`}>
-      
-      {/* ✅ 여기 */}
       <head>
+        {/* ✅ Apple PWA */}
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta
+          name="apple-mobile-web-app-status-bar-style"
+          content="black-translucent"
+        />
       </head>
 
       <body className="text-foreground antialiased">
@@ -61,9 +89,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
 
+        {/* ✅ Vercel Analytics */}
         <Analytics />
       </body>
-
     </html>
   );
 }
