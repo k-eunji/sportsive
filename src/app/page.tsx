@@ -22,7 +22,7 @@ export default function LandingPage() {
         </div>
 
         <p className="text-lg text-muted-foreground max-w-md">
-          A live map of sports happening around you.
+          A sports radar you open when you’re bored.
         </p>
 
         <p className="text-xs text-muted-foreground mt-6 max-w-md">
@@ -79,7 +79,7 @@ export default function LandingPage() {
             transition
           "
         >
-          See what’s happening now
+          See what’s happening on the map right now
         </Link>
       </section>
 
