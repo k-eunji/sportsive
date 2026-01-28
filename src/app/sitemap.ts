@@ -1,4 +1,4 @@
-//src/app/sitemap.ts
+// src/app/sitemap.ts
 
 import type { MetadataRoute } from "next";
 
@@ -10,6 +10,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
       url: `${baseUrl}/`,
       lastModified: new Date(),
     },
+
+    // 🇬🇧 UK
     {
       url: `${baseUrl}/uk/live-sports-today`,
       lastModified: new Date(),
@@ -19,21 +21,21 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: new Date(),
     },
     {
+      url: `${baseUrl}/uk/manchester/live-sports-today`,
+      lastModified: new Date(),
+    },
+    {
+      url: `${baseUrl}/uk/birmingham/live-sports-today`,
+      lastModified: new Date(),
+    },
+
+    // 🇮🇪 Ireland
+    {
       url: `${baseUrl}/ireland/live-sports-today`,
       lastModified: new Date(),
     },
     {
       url: `${baseUrl}/ireland/dublin/live-sports-today`,
-      lastModified: new Date(),
-    },
-
-    // 종목 페이지 (아래 2️⃣에서 만들 것)
-    {
-      url: `${baseUrl}/uk/london/football-today`,
-      lastModified: new Date(),
-    },
-    {
-      url: `${baseUrl}/uk/london/rugby-today`,
       lastModified: new Date(),
     },
   ];

@@ -25,13 +25,28 @@ export default function UKLiveSportsTodayPage() {
         based on location and time — without accounts or subscriptions.
       </p>
 
-      <ul className="list-disc pl-6 text-muted-foreground">
+      <h2 className="text-xl font-semibold pt-8">
+        Live sports by city
+      </h2>
+
+      <ul className="list-disc pl-6 text-muted-foreground space-y-1">
         <li>
           <a href="/uk/london/live-sports-today" className="underline">
             Live sports in London today
           </a>
         </li>
+        <li>
+          <a href="/uk/manchester/live-sports-today" className="underline">
+            Live sports in Manchester today
+          </a>
+        </li>
+        <li>
+          <a href="/uk/birmingham/live-sports-today" className="underline">
+            Live sports in Birmingham today
+          </a>
+        </li>
       </ul>
+
 
       <a
         href="/app"
@@ -52,9 +67,12 @@ export default function UKLiveSportsTodayPage() {
               What sports are happening in the UK today?
             </h3>
             <p>
-              Football, rugby, tennis and other live sports events are
-              taking place across London today at stadiums, arenas
-              and local venues.
+              <p>
+                Football, rugby, tennis and other live sports events are
+                taking place across the UK today, including matches
+                in major cities such as London, Manchester, Birmingham and the UK.
+              </p>
+
             </p>
           </div>
 
