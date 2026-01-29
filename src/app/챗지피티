@@ -1,0 +1,1018 @@
+내 플랫폼은 이거야. 근데 내가 지금 돈이 안보여... 이게 문제야...내 불편한 점으로 만들기 시작했는데, 지도 기반으로만 하면 사람들이 머무르지 않고, 투자도 못받을 것 같아서, 계정만들기, 피드, 채팅, 밋업, 팀페이지 기능을 넣었었어. 근데 이게 결국 산으로 가더라고. 그냥 스포츠 커뮤니티? 그래서 완전히 줄이고 줄여서 지도기반으로만 둔거야. 그래서 이걸로 투자를 받을 방법이 없을까 싶은거지. 투자를 받아야 영국에 창업비자나 글로벌 탤런트 비자를 신청할텐데...투자가 안보이지? 
+
+사실은 티켓 링크 기능도 없었어. 근데 이거라도 넣으면 커미션 방향이라도 생기지 않을까하는 생각에 넣은거야. 내가 티켓 url을 찾다보니 느낀건 모든 티켓은 각자의 구단 홈피에서만 살수 있다는거야. 그래서 의도를 가지고 홈페이지에 들어가지 않는 이상 스포츠를 접하기 힘든거야. 일단 슈파베이스에 각 링크 다 넣었어. 그리고 목표를 약간 수정했는데, 나가기전 행동 직전의 플랫폼이 아니라 심심할 때 '주변에 무슨 경기가 열리나....'를 열어볼 수 있는? 
+
+그런 플랫폼을 만들고 싶어 참고로 지금 당장 거약 투자? 이런거 안바라. 소액 엔젤 투자자라도 얻고 싶어. 사람들이 심심할때 그냥 한번 열어보고 닫을 무언가가 없을까. 내가 나가기전에 열어보는 웹으로 목적을 두니까 이게 너무 돈이 안보여서
+
+참고로 서프라이즈 미 이런 기능이랑 'there is quite around you' 이런 기능들 넣었었는데 내 제품이랑 안맞아
+
+슈파베이스에 티켓 클릭 순간 테이블에 찍히라고 연결도 해놨어.
+
+“사람들이 ‘확인해야 할 이유’를 얼마나 자주 만들어줄 수 있을까?”
+
+그리고 지금 난관에 부딫혔어...생각보다 리그도 많은데 그 종목의 토너먼트도 많고...뭔가 내가 커버하기 힘들것같ㅇ다는 생각이 들면서 과연 이게 맞는 길인가 싶은거야...이제 모르겠어
+
+내가 지금 이 목적으로 플랫폼을 하나 만들었어. 앱으로는 아직 안만들거야. 재방문 사람들이 1000명이 되면 그떄 만들려고. 지금은 영국 프리미어리그, 챔피언십, 프리미어십럭비, 호스레이싱 영국에서만 열리는 테니스, efl리그원, efl리그투, 다트 경기 일정을 넣었어.
+
+그리고 내가 한창 Dev에 유로 2025여자축구 분석글을 쓰다가 6개월을 쉬고 이틀 전에 플랫폼 하나 시작했다고 올렸어. 근데 그 이후로 어떤 사람이 날 팔로우 하더니 오늘은 나한테 
+
+
+Art light <art.miclight@gmail.com>
+AM 11:14 (2시간 전)
+나에게
+
+Hello, this is Art from Dev.to
+
+http://dev.to/art_light
+http://github.com/criticalPathway
+
+I have a business idea, and I am looking for a reliable, talented co-worker who can grow and build long-term success together.
+
+Please contact me via these platforms:
+Telegram: light4661
+Discord: lighthouse4661
+
+이런식으로 메일을 보낸거야. 사실 이틀전부터 하루에 3명씩 새유저가 들어오거든? 재방문은 없고...근데 이 사람이 지금 계속 들어오는 느낌이야.
+같은 나라가 하나도 없어. 새 이용자가 다 다른 나라야, 이상해. 
+내 아이디어 훔치려하나
+
+// src/lib/analytics.ts
+
+export type EventName =
+  | "home_loaded"
+  | "surprise_clicked"
+  | "match_discovered"
+  | "daily_discovery_completed"
+  | "map_opened"
+  | "map_closed"
+  | "stamp_earned"
+  | "details_opened"
+  | "live_opened";
+
+export type EventProps = Record<string, string>;
+
+/**
+ * 개발자(본인) 여부
+ * - 로컬 / dev 환경: 자동 true
+ * - 배포 환경: NEXT_PUBLIC_IS_DEV=true 인 브라우저만 true
+ */
+const isDevUser =
+  process.env.NODE_ENV !== "production" ||
+  process.env.NEXT_PUBLIC_IS_DEV === "true";
+
+export function logEvent(
+  name: EventName | string,
+  props?: EventProps
+) {
+  const finalProps: EventProps = {
+    ...(props ?? {}),
+    ...(isDevUser ? { is_dev: "true" } : {}),
+  };
+
+  if (process.env.NODE_ENV !== "production") {
+    if (Object.keys(finalProps).length > 0) {
+      console.log(`[analytics] ${name}`, finalProps);
+    } else {
+      console.log(`[analytics] ${name}`);
+    }
+  }
+
+  // 미래:
+  // GA4:
+  // logEvent(analytics, name, finalProps)
+
+  // PostHog:
+  // posthog.capture(name, finalProps)
+}
+
+// src/lib/eventTime.ts
+
+export type EventTimeState =
+  | "LIVE"
+  | "SOON"
+  | "UPCOMING"
+  | "ENDED";
+
+export function getDefaultDurationMs(e: {
+  durationMs?: number;
+  sport?: string;
+}): number {
+  if (e.durationMs) return e.durationMs;
+
+  switch (e.sport) {
+    case "football":
+    case "rugby":
+      return 2.5 * 60 * 60 * 1000;
+    case "basketball":
+      return 2 * 60 * 60 * 1000;
+    case "tennis":
+      return 3 * 60 * 60 * 1000;
+    case "horse-racing":
+      return 6 * 60 * 60 * 1000;
+    default:
+      return 2 * 60 * 60 * 1000;
+  }
+}
+
+export function getSoonWindowMs(e: {
+  soonWindowMs?: number;
+  sport?: string;
+}): number {
+  if (e.soonWindowMs) return e.soonWindowMs;
+
+  switch (e.sport) {
+    case "tennis":
+      return 60 * 60 * 1000;
+    case "basketball":
+      return 90 * 60 * 1000;
+    case "horse-racing":
+      return 4 * 60 * 60 * 1000;
+    default:
+      return 2 * 60 * 60 * 1000;
+  }
+}
+
+export function getEventTimeState(
+  e: {
+    startDate?: string | Date;
+    date?: string | Date;
+    utcDate?: string | Date;
+    durationMs?: number;
+    soonWindowMs?: number;
+    sport?: string;
+  },
+  now: Date = new Date()
+): EventTimeState {
+  const raw = e.startDate ?? e.date ?? e.utcDate;
+  const start = new Date(raw as any);
+
+  if (isNaN(start.getTime())) return "ENDED";
+
+  const end = new Date(start.getTime() + getDefaultDurationMs(e));
+  const diffMs = start.getTime() - now.getTime();
+
+  if (now >= start && now <= end) return "LIVE";
+  if (diffMs > 0 && diffMs <= getSoonWindowMs(e)) return "SOON";
+  if (diffMs > 0) return "UPCOMING";
+
+  return "ENDED";
+}
+
+// src/lib/nowDashboard.ts
+import type { Event } from "@/types";
+
+/**
+ * NowHero / City status calculator
+ * 역할:
+ * - 이벤트 정보를 "도시 상태(Pulse)"로 해석
+ * - 숫자가 아니라 '결론 한 줄'을 만든다
+ */
+
+export type TimeScope = "today" | "tomorrow" | "weekend" | "week";
+
+export type CityPulse =
+  | "LIVE"
+  | "WARMING_UP"
+  | "QUIET";
+
+export type NowStatus = {
+  scope: TimeScope;
+  kind: "live" | "next" | "empty";
+  liveCount: number;
+  nextAt: Date | null;
+  count: number;
+
+  pulse: CityPulse;   // ✅ 핵심
+  text: string;       // ✅ 도시 상태 한 줄
+};
+
+/* ---------- helpers ---------- */
+
+function getStartDate(e: any): Date | null {
+  const raw = e.date ?? e.utcDate ?? e.startDate ?? null;
+  if (!raw) return null;
+  const d = new Date(raw);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function startOfLocalDay(d: Date) {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+function isSameLocalDay(a: Date, b: Date) {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+function nextWeekendRange(now: Date) {
+  const base = startOfLocalDay(now);
+  const day = base.getDay();
+  const toSat = day === 6 ? 0 : (6 - day + 7) % 7;
+  const sat = new Date(base);
+  sat.setDate(sat.getDate() + toSat);
+  const mon = new Date(sat);
+  mon.setDate(mon.getDate() + 2);
+  return { start: sat, end: mon };
+}
+
+function formatTime(dt: Date) {
+  return dt.toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function inScope(start: Date, scope: TimeScope, now: Date) {
+  const base = startOfLocalDay(now);
+
+  if (scope === "today") {
+    return isSameLocalDay(start, now) && start >= now;
+  }
+
+  if (scope === "tomorrow") {
+    const t0 = new Date(base);
+    t0.setDate(t0.getDate() + 1);
+    const t1 = new Date(t0);
+    t1.setDate(t1.getDate() + 1);
+    return start >= t0 && start < t1;
+  }
+
+  if (scope === "weekend") {
+    const wk = nextWeekendRange(now);
+    return start >= wk.start && start < wk.end;
+  }
+
+  const end = new Date(base);
+  end.setDate(end.getDate() + 7);
+  return start >= now && start < end;
+}
+
+/* ---------- NEW: 해석 레이어 ---------- */
+
+function getCityPulse(
+  liveCount: number,
+  nextAt: Date | null,
+  now: Date
+): CityPulse {
+  if (liveCount > 0) return "LIVE";
+
+  if (nextAt) {
+    const diffH =
+      (nextAt.getTime() - now.getTime()) / (1000 * 60 * 60);
+    if (diffH <= 3) return "WARMING_UP";
+  }
+
+  return "QUIET";
+}
+
+function formatCityText(
+  pulse: CityPulse,
+  nextAt: Date | null
+): string {
+  if (pulse === "LIVE") {
+    return "LIVE now · more happening later";
+  }
+
+  if (pulse === "WARMING_UP" && nextAt) {
+    return `Next kickoff · ${formatTime(nextAt)}`;
+  }
+
+  if (nextAt) {
+    return `Quiet now · next match at ${formatTime(nextAt)}`;
+  }
+
+  return "Quiet today · nothing scheduled";
+}
+
+
+/* ---------- main ---------- */
+
+export function buildNowStatus(
+  events: Event[],
+  scope: TimeScope,
+  now = new Date()
+): NowStatus {
+  let liveCount = 0;
+  let nextAt: Date | null = null;
+  let count = 0;
+
+  for (const e of events as any[]) {
+    const start = getStartDate(e);
+    if (!start) continue;
+    if (!inScope(start, scope, now)) continue;
+
+    count += 1;
+
+    const status = (e.status ?? "").toUpperCase();
+    if (status === "LIVE") liveCount += 1;
+
+    if (start > now) {
+      if (!nextAt || start < nextAt) nextAt = start;
+    }
+  }
+
+  const pulse = getCityPulse(liveCount, nextAt, now);
+
+  return {
+    scope,
+    kind:
+      pulse === "LIVE"
+        ? "live"
+        : pulse === "WARMING_UP"
+        ? "next"
+        : "empty",
+    liveCount,
+    nextAt,
+    count,
+    pulse,
+    text: formatCityText(pulse, nextAt),
+  };
+}
+
+
+//src/app/page.tsx
+"use client";
+
+import Link from "next/link";
+
+export default function LandingPage() {
+  return (
+    <main className="min-h-screen bg-background text-foreground flex flex-col">
+      {/* =========================
+          HERO
+      ========================= */}
+      <section className="min-h-[70vh] flex flex-col items-center justify-center text-center px-6">
+        <div className="mb-6 select-none">
+          <span className="font-extrabold text-[3.2rem] leading-none">
+            sp
+            <span className="inline-block bg-gradient-to-r from-red-500 via-yellow-400 via-green-500 to-blue-500 text-transparent bg-clip-text">
+              o
+            </span>
+            rtsive
+          </span>
+        </div>
+
+        <p className="text-lg text-muted-foreground max-w-md">
+          Check what sports are happening near you, right now.
+        </p>
+
+        <p className="text-xs text-muted-foreground mt-6 max-w-md">
+          Built to understand how people discover live sports around them — before they plan anything.
+        </p>
+
+      </section>
+
+      {/* =========================
+          WHAT IT IS / IS NOT
+      ========================= */}
+      <section className="px-6 py-20 max-w-2xl mx-auto space-y-14">
+        <div>
+          <p className="text-xs font-semibold tracking-widest text-muted-foreground">
+            NOT A FAN PLATFORM
+          </p>
+          <p className="mt-3 text-xl font-medium">
+            You don’t need to follow teams, leagues, or schedules.
+          </p>
+        </div>
+
+        <div>
+          <p className="text-xs font-semibold tracking-widest text-muted-foreground">
+            JUST A CHECK
+          </p>
+          <p className="mt-3 text-xl font-medium">
+            Open Sportsive anytime to see what’s actually happening nearby.
+          </p>
+        </div>
+
+        <div>
+          <p className="text-xs font-semibold tracking-widest text-muted-foreground">
+            LOCATION & TIME FIRST
+          </p>
+          <p className="mt-3 text-xl font-medium">
+            Every event is shown by where and when it’s happening — nothing else.
+          </p>
+        </div>
+      </section>
+
+      {/* =========================
+          CTA
+      ========================= */}
+      <section className="px-6 pb-16 max-w-xl mx-auto w-full">
+        <Link
+          href="/app"
+          className="
+            block w-full
+            text-center
+            rounded-2xl
+            bg-black text-white
+            py-4
+            text-sm font-semibold
+            hover:opacity-90
+            transition
+          "
+        >
+          Open full-screen map
+        </Link>
+
+      </section>
+
+      {/* =========================
+          HELP SHAPE SPORTSIVE (FOOTER)
+      ========================= */}
+      <section
+        className="
+          max-w-xl mx-auto
+          text-center
+          text-xs
+          text-muted-foreground
+          space-y-4
+          pt-8
+          pb-10
+          border-t border-border/60
+          px-6
+        "
+      >
+        <p className="font-medium text-foreground">
+          This is an early experiment.
+        </p>
+        <p className="text-[11px] opacity-70">
+          Built and maintained by a single creator as a live product experiment.
+        </p>
+
+
+        <p className="leading-relaxed">
+          If there’s a match or event you think should be here,
+          or if something feels missing, I’d love to hear from you.
+        </p>
+
+        <div className="flex justify-center gap-4">
+          <a
+            href="https://www.instagram.com/sportsive_/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline underline-offset-4"
+          >
+            Instagram
+          </a>
+          <a
+            href="https://www.linkedin.com/in/kim-eg/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline underline-offset-4"
+          >
+            LinkedIn
+          </a>
+        </div>
+
+        <p className="opacity-70">
+          I read every message.
+        </p>
+      </section>
+    </main>
+  );
+}
+// src/app/components/home/HomeMapStage.tsx
+"use client";
+
+import { forwardRef } from "react";
+import type { Event } from "@/types";
+import type { TimeScope } from "@/lib/nowDashboard";
+import HomeEventMap, { HomeEventMapRef } from "@/app/components/map-hero/HomeEventMap";
+
+type Props = {
+  events: Event[];
+  timeScope: TimeScope;
+  onDiscoverFromMap: (eventId: string) => void;
+  onBoundsChanged?: (bounds: google.maps.LatLngBoundsLiteral) => void;
+};
+
+const HomeMapStage = forwardRef<HomeEventMapRef, Props>(
+  function HomeMapStage(
+    { events, timeScope, onDiscoverFromMap, onBoundsChanged }, // ✅ 여기!
+    ref
+  ) {
+    return (
+      <HomeEventMap
+        ref={ref}
+        events={events}
+        timeScope={timeScope}          // ✅ 정상
+        onDiscover={onDiscoverFromMap}
+        onBoundsChanged={onBoundsChanged}
+      />
+    );
+  }
+);
+
+export default HomeMapStage;
+
+// src/app/components/home/LocationSheet.tsx
+"use client";
+
+import { useMemo, useState } from "react";
+
+export default function LocationSheet({
+  regions,
+  cities,
+  observerRegion,
+  onPickRegion,
+  onPickCity,
+  onClose,
+}: {
+  regions: string[];
+  cities: string[];
+  observerRegion: string | null;
+  onPickRegion: (r: string | null) => void;
+  onPickCity: (c: string) => void;
+  onClose: () => void;
+}) {
+  const [query, setQuery] = useState("");
+
+  const filteredCities = useMemo(() => {
+    if (!query) return cities;
+    return cities.filter((c) =>
+      c.toLowerCase().includes(query.toLowerCase())
+    );
+  }, [cities, query]);
+
+  return (
+    <div className="fixed inset-0 z-50">
+      {/* overlay */}
+      <button
+        className="absolute inset-0 bg-black/40"
+        onClick={onClose}
+        aria-label="Close"
+      />
+
+      {/* sheet */}
+      <div
+        className="
+          absolute bottom-0 left-0 right-0
+          bg-background
+          rounded-t-2xl
+          px-4 pt-3 pb-[env(safe-area-inset-bottom)]
+          max-h-[70svh]
+          overflow-y-auto
+        "
+      >
+        {/* handle + close */}
+        <div className="relative flex items-center justify-center mb-3">
+          <div className="h-1.5 w-10 rounded-full bg-border/60" />
+          <button
+            onClick={onClose}
+            className="absolute right-0 text-sm text-muted-foreground"
+            aria-label="Close sheet"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* title */}
+        <p className="text-sm font-semibold mb-3">Location</p>
+
+        {/* REGION – compact, progressive */}
+        <div className="flex gap-2 overflow-x-auto pb-1 mb-4">
+          <button
+            onClick={() => onPickRegion(null)}
+            className={[
+              "shrink-0 px-3 py-1.5 rounded-full text-sm border",
+              observerRegion === null
+                ? "bg-black text-white border-black"
+                : "border-border/60",
+            ].join(" ")}
+          >
+            All
+          </button>
+
+          {regions.slice(0, 6).map((r) => {
+            const active = r === observerRegion;
+            return (
+              <button
+                key={r}
+                onClick={() => onPickRegion(r)}
+                className={[
+                  "shrink-0 px-3 py-1.5 rounded-full text-sm border",
+                  active
+                    ? "bg-black text-white border-black"
+                    : "border-border/60",
+                ].join(" ")}
+              >
+                {r}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* CITY – search first */}
+        {observerRegion && (
+          <div className="space-y-3">
+            <input
+              type="search"
+              placeholder={`Search city in ${observerRegion}`}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="
+                w-full h-11
+                rounded-xl
+                bg-muted/40
+                px-4
+                text-sm
+                outline-none
+              "
+            />
+
+            <div className="divide-y">
+              {filteredCities.map((c) => (
+                <button
+                  key={c}
+                  onClick={() => {
+                    onPickCity(c);
+                    onClose(); // ✅ 선택 즉시 닫힘 (2026 패턴)
+                  }}
+                  className="
+                    w-full py-3
+                    text-left text-sm
+                    active:scale-[0.98]
+                    transition
+                  "
+                >
+                  {c}
+                </button>
+              ))}
+
+              {filteredCities.length === 0 && (
+                <p className="py-6 text-center text-sm text-muted-foreground">
+                  No cities found
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// src/app/components/home/MapStatusPill.tsx
+
+"use client";
+
+import type { Event } from "@/types";
+
+/* ---------------- helpers ---------------- */
+
+function getStartDate(e: any): Date | null {
+  const raw = e.date ?? e.utcDate ?? e.startDate ?? null;
+  if (!raw) return null;
+  const d = new Date(raw);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function formatTime(dt: Date) {
+  return dt.toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+export type MapScope = "user" | "global" | "observer";
+
+/* ---------------- component ---------------- */
+
+export default function MapStatusPill({
+  events,
+  scope,
+}: {
+  events: Event[];
+  scope: MapScope;
+}) {
+  if (events.length === 0) return null;
+
+  const now = new Date(); // ✅ Date 객체로 통일
+
+  let liveCount = 0;
+  let nextAt: Date | null = null;
+
+  for (const e of events as any[]) {
+    const status = (e.status ?? "").toUpperCase();
+    if (status === "LIVE") liveCount += 1;
+
+    const start = getStartDate(e);
+    if (start && start.getTime() > now.getTime()) {
+      if (!nextAt || start < nextAt) nextAt = start;
+    }
+  }
+
+  /* ---------------- where label ---------------- */
+
+  const where =
+    scope === "global"
+      ? "across the map"
+      : scope === "observer"
+      ? "in this city"
+      : "around you";
+
+  let label = "";
+
+  /* ---------------- LIVE ---------------- */
+
+  if (liveCount > 0) {
+    label =
+      liveCount === 1
+        ? `LIVE · 1 event ${where}`
+        : `LIVE · ${liveCount} events ${where}`;
+  }
+
+  /* ---------------- UPCOMING ---------------- */
+
+  else if (nextAt) {
+    const t = formatTime(nextAt);
+
+    const WINDOW_MS = 2 * 60 * 60 * 1000; // 2 hours
+    const nextTs = nextAt.getTime();
+
+    const clusteredCount = events.filter((e: any) => {
+      const s = getStartDate(e);
+      if (!s) return false;
+      return Math.abs(s.getTime() - nextTs) <= WINDOW_MS;
+    }).length;
+
+    const diffMin = Math.round(
+      (nextAt.getTime() - now.getTime()) / 60000
+    );
+
+    if (clusteredCount <= 2) {
+      if (diffMin <= 60) {
+        label = `Starting in ${diffMin} min · ${where}`;
+      } else {
+        label = `Starting later · ${t} · ${where}`;
+      }
+    } else if (clusteredCount <= 4) {
+      label = `Warming up · ${t} · a few ${where}`;
+    } else {
+      label = `Busy later · ${t} · ${where}`;
+    }
+  }
+
+  /* ---------------- QUIET ---------------- */
+
+  else {
+    label = `Quiet right now · ${where}`;
+  }
+
+  /* ---------------- render ---------------- */
+
+  return (
+    <div
+      className="
+        pointer-events-none
+        fixed
+        left-1/2 -translate-x-1/2
+        bottom-[calc(env(safe-area-inset-bottom)+96px)]
+        z-50
+      "
+    >
+      <div
+        className="
+          rounded-full
+          bg-black/85
+          text-white
+          text-xs
+          font-semibold
+          px-4
+          py-2
+          shadow-lg
+          tracking-wide
+          whitespace-nowrap
+        "
+      >
+        {label}
+      </div>
+    </div>
+  );
+}
+
+// src/app/components/home/NowHeroScopeBar.tsx
+
+"use client";
+
+import type { TimeScope } from "@/lib/nowDashboard";
+
+export default function NowHeroScopeBar({
+  scope,
+  onScopeChange,
+}: {
+  scope: TimeScope;
+  onScopeChange: (s: TimeScope) => void;
+}) {
+  return (
+    <div
+      className="
+        inline-flex items-center
+        rounded-full
+        bg-background/60
+        ring-1 ring-border/40
+        p-1
+      "
+    >
+      {(["today", "tomorrow", "weekend", "week"] as TimeScope[]).map((s) => (
+        <button
+          key={s}
+          onClick={() => onScopeChange(s)}
+          className={[
+            "px-2.5 py-1.5 text-[12px] font-semibold rounded-full transition",
+            scope === s
+              ? "bg-foreground text-background shadow-sm"
+              : "text-muted-foreground",
+          ].join(" ")}
+        >
+          {s === "today" ? "Today" :
+           s === "tomorrow" ? "Tomorrow" :
+           s === "weekend" ? "Weekend" : "Week"}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+//src/app/components/home/useDistanceUnit.ts
+
+"use client";
+
+import { useEffect, useState } from "react";
+import { detectDefaultUnit, DistanceUnit } from "@/lib/distance";
+
+const STORAGE_KEY = "sportsive_distance_unit";
+
+export function useDistanceUnit() {
+  const [unit, setUnit] = useState<DistanceUnit>("km");
+
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEY) as DistanceUnit | null;
+    if (saved === "km" || saved === "mi") {
+      setUnit(saved);
+    } else {
+      setUnit(detectDefaultUnit());
+    }
+  }, []);
+
+  const toggle = () => {
+    setUnit((prev) => {
+      const next = prev === "km" ? "mi" : "km";
+      localStorage.setItem(STORAGE_KEY, next);
+      return next;
+    });
+  };
+
+  return { unit, toggle };
+}
+
+//src/app/components/home/useLocationMode.ts
+
+"use client";
+
+import { useUserLocation } from "./useUserLocation";
+
+export type LocationMode =
+  | "observer"   // 위치 없음 (기본)
+  | "located";   // 위치 있음
+
+export function useLocationMode(): {
+  mode: LocationMode;
+  hasLocation: boolean;
+} {
+  const { pos } = useUserLocation();
+
+  if (pos) {
+    return { mode: "located", hasLocation: true };
+  }
+
+  return { mode: "observer", hasLocation: false };
+}
+
+//src/app/components/home/useUserLocation.ts
+
+"use client";
+
+import { useEffect, useState } from "react";
+
+export type LatLng = { lat: number; lng: number };
+
+export function useUserLocation(options?: { enabled?: boolean }) {
+  const [pos, setPos] = useState<LatLng | null>(null);
+  const [denied, setDenied] = useState(false);
+
+  useEffect(() => {
+    if (options?.enabled === false) return;
+    if (!navigator.geolocation) return;
+
+    navigator.geolocation.getCurrentPosition(
+      (p) => {
+        setPos({ lat: p.coords.latitude, lng: p.coords.longitude });
+      },
+      () => setDenied(true),
+      { enableHighAccuracy: false, timeout: 7000 }
+    );
+  }, [options?.enabled]);
+
+  return { pos, denied };
+}
+
+export function haversineKm(a: LatLng, b: LatLng) {
+  const toRad = (x: number) => (x * Math.PI) / 180;
+  const R = 6371;
+
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+
+  const s1 =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+
+  const c = 2 * Math.atan2(Math.sqrt(s1), Math.sqrt(1 - s1));
+  return R * c;
+}
+
+// src/app/api/go/ticket/route.ts
+import { NextRequest, NextResponse } from "next/server";
+import { supabase } from "../../../../lib/supabaseServer";
+
+/**
+ * Ticket click = high-intent action
+ * This log is the KPI source of truth for investor conversations.
+ */
+type TicketClickLog = {
+  type: "ticket_click";
+  ts: string;
+  eventId: string;
+  sport: string | null;
+  city: string | null;
+
+  // where the click happened
+  source: "snap_card" | "map" | "list" | "unknown";
+
+  userAgent: string | null;
+  ip: string | null;
+  referrer: string | null;
+};
+
+async function logTicketClick(log: TicketClickLog) {
+  await supabase.from("ticket_clicks").insert({
+    event_id: log.eventId,
+    sport: log.sport,
+    city: log.city,
+    source: log.source,
+  });
+}
+
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+
+  const eventId = searchParams.get("eventId");
+  const target = searchParams.get("target");
+
+  if (!eventId || !target) {
+    return NextResponse.json({ error: "Bad request" }, { status: 400 });
+  }
+
+  // ✅ Validate target URL (security & data integrity)
+  try {
+    new URL(target);
+  } catch {
+    return NextResponse.json({ error: "Invalid target" }, { status: 400 });
+  }
+
+  // ✅ Click source (default: unknown)
+  const sourceParam = searchParams.get("source");
+  const source: TicketClickLog["source"] =
+    sourceParam === "snap_card" ||
+    sourceParam === "map" ||
+    sourceParam === "list"
+      ? sourceParam
+      : "unknown";
+
+  // ✅ Client IP extraction (proxy / Vercel safe)
+  const forwardedFor = req.headers.get("x-forwarded-for");
+  const ip = forwardedFor
+    ? forwardedFor.split(",")[0].trim()
+    : null;
+
+  await logTicketClick({
+    type: "ticket_click",
+    ts: new Date().toISOString(),
+    eventId,
+    sport: searchParams.get("sport"),
+    city: searchParams.get("city"),
+    source,
+    userAgent: req.headers.get("user-agent"),
+    ip,
+    referrer: req.headers.get("referer"),
+  });
+
+  // ✅ Redirect after logging
+  return NextResponse.redirect(target, { status: 302 });
+}
+
+

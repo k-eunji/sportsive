@@ -61,7 +61,7 @@ export function getEventTimeState(
   },
   now: Date = new Date()
 ): EventTimeState {
-  const raw = e.startDate ?? e.date ?? e.utcDate;
+  const raw = e.date ?? e.utcDate ?? e.startDate;
   const start = new Date(raw as any);
 
   if (isNaN(start.getTime())) return "ENDED";

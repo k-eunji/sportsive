@@ -5,11 +5,20 @@ import { GET as getFootballEvents } from "./england/football/route";
 import { GET as getRugbyEvents } from "./england/rugby/route";
 import { GET as getTennisEvents } from "./england/tennis/route";
 import { GET as getHorseRacingEvents } from "./england/horseRacing/route";
-import { GET as getBasketballEvents } from "./england/basketball/route"; // ✅ 추가
-import { GET as getDartEvents } from "./england/dart/route"; // ✅ 추가
+import { GET as getBasketballEvents } from "./england/basketball/route";
+import { GET as getDartEvents } from "./england/dart/route";
 
 import { isEventActiveInWindow } from "@/lib/events/lifecycle";
 import { buildAreaIndex } from "@/lib/events/buildAreaIndex";
+
+/* =========================
+   🔧 DEDUPE HELPER (핵심)
+========================= */
+function dedupeById(events: any[]) {
+  return Array.from(
+    new Map(events.map((e) => [e.id, e])).values()
+  );
+}
 
 export async function GET(req: Request) {
   try {
@@ -22,39 +31,51 @@ export async function GET(req: Request) {
       tennisRes,
       horseRacingRes,
       basketballRes,
-      dartRes, // ✅ 추가
+      dartRes,
     ] = await Promise.all([
       getFootballEvents(),
       getRugbyEvents(),
       getTennisEvents(),
       getHorseRacingEvents(),
       getBasketballEvents(),
-      getDartEvents(), // ✅ 추가
+      getDartEvents(),
     ]);
-
 
     const footballData = await footballRes.json();
     const rugbyData = await rugbyRes.json();
     const tennisData = await tennisRes.json();
     const horseRacingData = await horseRacingRes.json();
-    const basketballData = await basketballRes.json(); // ✅ 추가
-    const dartData = await dartRes.json(); 
+    const basketballData = await basketballRes.json();
+    const dartData = await dartRes.json();
 
-    const merged = [
+    /* =========================
+       1️⃣ RAW MERGE (중복 허용)
+    ========================= */
+    const mergedRaw = [
       ...(footballData.matches ?? footballData.events ?? []),
       ...(rugbyData.matches ?? rugbyData.events ?? []),
       ...(tennisData.matches ?? tennisData.events ?? []),
       ...(horseRacingData.matches ?? horseRacingData.events ?? []),
       ...(basketballData.events ?? []),
-      ...(dartData.matches ?? dartData.events ?? []), // ✅ dart 추가
+      ...(dartData.matches ?? dartData.events ?? []),
     ];
 
-    // 🔹 area index 전용 (지도 구조용)
+    /* =========================
+       2️⃣ 🔥 DEDUPE BY EVENT ID
+    ========================= */
+    const merged = dedupeById(mergedRaw);
+
+    /* =========================
+       3️⃣ AREA INDEX (지도 구조)
+    ========================= */
     if (window === "180d") {
       const areas = buildAreaIndex(merged);
       return NextResponse.json({ areas });
     }
 
+    /* =========================
+       4️⃣ TIME WINDOW FILTER
+    ========================= */
     const now = new Date();
     const windowEnd = new Date(now);
 
