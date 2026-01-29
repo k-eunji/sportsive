@@ -1,4 +1,4 @@
-// src/app/layout.tsx
+/// src/app/layout.tsx
 
 import "./globals.css";
 import type { Metadata, Viewport } from "next";
