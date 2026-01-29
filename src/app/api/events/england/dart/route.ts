@@ -54,7 +54,7 @@ export async function GET() {
         venue: "Utilita Arena",
         city: "Newcastle",
         region: "England",
-        location: { lat: 54.9699, lng: -1.6214 },
+        location: { lat: 54.963986262976896, lng: -1.6231025893713809 },
 
         isPaid: true,
         homepageUrl: "https://www.pdc.tv/news/2025/10/23/2026-betmgm-premier-league-tickets-general-sale",
@@ -106,7 +106,7 @@ export async function GET() {
         venue: "SSE Arena",
         city: "Belfast",
         region: "Northern Ireland",
-        location: { lat: 54.6028, lng: -5.9181 },
+        location: { lat: 54.60374240397762, lng: -5.914238731724927 },
 
         isPaid: true,
         homepageUrl: "https://www.pdc.tv/news/2025/10/23/2026-betmgm-premier-league-tickets-general-sale",
@@ -132,7 +132,8 @@ export async function GET() {
         venue: "Utilita Arena",
         city: "Cardiff",
         region: "Wales",
-        location: { lat: 51.4781, lng: -3.1825 },
+        
+        location: { lat: 51.47909906474979, lng: -3.171678790091936 },
 
         isPaid: true,
         homepageUrl: "https://www.pdc.tv/news/2025/10/23/2026-betmgm-premier-league-tickets-general-sale",
@@ -158,7 +159,8 @@ export async function GET() {
         venue: "Motorpoint Arena",
         city: "Nottingham",
         region: "England",
-        location: { lat: 52.9548, lng: -1.1351 },
+         
+        location: { lat: 52.95294231251168, lng: -1.1396378895097654 },
 
         isPaid: true,
         homepageUrl: "https://www.pdc.tv/news/2025/10/23/2026-betmgm-premier-league-tickets-general-sale",
@@ -210,7 +212,8 @@ export async function GET() {
         venue: "Brighton Centre",
         city: "Brighton",
         region: "England",
-        location: { lat: 50.8225, lng: -0.1372 },
+        
+        location: { lat: 50.821327061687036, lng: -0.14639840129474252 },
 
         isPaid: true,
         homepageUrl: "https://www.pdc.tv/news/2025/10/23/2026-betmgm-premier-league-tickets-general-sale",
@@ -262,7 +265,8 @@ export async function GET() {
         venue: "P&J Live",
         city: "Aberdeen",
         region: "Scotland",
-        location: { lat: 57.1660, lng: -2.1570 },
+        
+        location: { lat: 57.18576919917849,  lng: -2.1941248738713033 },
 
         isPaid: true,
         homepageUrl: "https://www.pdc.tv/news/2025/10/23/2026-betmgm-premier-league-tickets-general-sale",
@@ -288,7 +292,8 @@ export async function GET() {
         venue: "First Direct Arena",
         city: "Leeds",
         region: "England",
-        location: { lat: 53.8008, lng: -1.5491 },
+        
+        location: { lat: 53.803553548251365, lng: -1.542082558765449 },
 
         isPaid: true,
         homepageUrl: "https://www.pdc.tv/news/2025/10/23/2026-betmgm-premier-league-tickets-general-sale",
@@ -314,7 +319,8 @@ export async function GET() {
         venue: "Utilita Arena",
         city: "Birmingham",
         region: "England",
-        location: { lat: 52.4794, lng: -1.9130 },
+        
+        location: { lat: 52.47986312876064, lng: -1.9147494348356515 },
 
         isPaid: true,
         homepageUrl: "https://www.pdc.tv/news/2025/10/23/2026-betmgm-premier-league-tickets-general-sale",
@@ -366,10 +372,11 @@ export async function GET() {
         venue: "Butlin’s Minehead Resort",
         city: "Minehead",
         region: "England",
-        location: { lat: 51.2053, lng: -3.4782 },
+        
+        location: { lat: 51.20683845019285, lng: -3.4614799031196966 },
 
         isPaid: true,
-        homepageUrl: "https://www.butlins.com/bigweekenders/weekends/pdc-darts-finals",
+        homepageUrl: "https://www.butlins.com/bigweekenders/weekends/pdc-darts-finals/minehead-050326?utm_source=chatgpt.com#headliners",
 
         payload: {
           structure: "tournament",
@@ -392,7 +399,8 @@ export async function GET() {
         venue: "Winter Gardens",
         city: "Blackpool",
         region: "England",
-        location: { lat: 53.8162, lng: -3.0555 },
+        
+        location: { lat: 53.816780852241585, lng: -3.0515672722571643 },
 
         isPaid: true,
         homepageUrl: "https://www.pdc.tv/tickets",
@@ -418,7 +426,8 @@ export async function GET() {
         venue: "Morningside Arena",
         city: "Leicester",
         region: "England",
-        location: { lat: 52.6369, lng: -1.1398 },
+        
+        location: { lat: 52.64410595996604, lng: -1.1310521183665534 },
 
         isPaid: true,
         homepageUrl: "https://www.pdc.tv/tickets",

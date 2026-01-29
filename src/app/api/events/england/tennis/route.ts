@@ -28,7 +28,8 @@ export async function GET() {
         venue: "Nottingham Tennis Centre",
         city: "Nottingham",
         region: "England",
-        location: { lat: 52.9399, lng: -1.1956 },
+         
+        location: { lat: 52.93506907012659, lng: -1.1904778760183983 },
 
         isPaid: true,
         homepageUrl:
@@ -55,7 +56,8 @@ export async function GET() {
         venue: "Queen’s Club",
         city: "London",
         region: "England",
-        location: { lat: 51.4871, lng: -0.2059 },
+        
+        location: { lat: 51.48690614473145, lng: -0.21219290804584984 },
 
         isPaid: true,
         homepageUrl: "https://www.queensclub.co.uk/HSBC_Championships",
@@ -81,10 +83,11 @@ export async function GET() {
         venue: "All England Lawn Tennis Club",
         city: "London",
         region: "England",
-        location: { lat: 51.4340, lng: -0.2145 },
+        
+        location: { lat: 51.43447166058049, lng: -0.2144239300899227 },
 
         isPaid: true,
-        homepageUrl: "https://www.wimbledon.com/en_GB/",
+        homepageUrl: "https://www.wimbledon.com/en_GB/atoz/ticket_prices.html",
 
         payload: {
           structure: "tournament",
