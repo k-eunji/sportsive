@@ -58,14 +58,27 @@ export default function EventListItem({
   const time = formatMatchTime(e);
   const horseSession = formatHorseRacingSession(e);
 
-  const title =
-    e.sport === "horse-racing"
-      ? e.code
-        ? `${e.title} · ${e.code}`
-        : e.title
-      : e.sport === "tennis" || e.sport === "darts"
-      ? e.title
-      : `${e.homeTeam} vs ${e.awayTeam}`;
+  const title = (() => {
+    // 🐎 Horse racing: meeting / venue 중심
+    if (e.sport === "horse-racing") {
+        if (e.title && e.code) return `${e.title} · ${e.code}`;
+        if (e.title) return e.title;
+        return "Horse racing";
+    }
+
+    // 🎯 Darts / 🎾 Tennis: session / tournament
+    if (e.sport === "darts" || e.sport === "tennis") {
+        return e.title ?? "Event";
+    }
+
+    // ⚽️ 🏉 Match sports
+    if (e.homeTeam && e.awayTeam) {
+        return `${e.homeTeam} vs ${e.awayTeam}`;
+    }
+
+    // 🔒 최종 안전망
+    return e.title ?? "Event";
+    })();
 
   return (
     <button

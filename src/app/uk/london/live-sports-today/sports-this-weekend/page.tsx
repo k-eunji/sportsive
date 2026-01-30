@@ -1,4 +1,4 @@
-// src/app/page.tsx
+//src/app/uk/london/sports-this-weekend/page.tsx
 
 "use client";
 
@@ -11,7 +11,7 @@ export default function LandingPage() {
   const [events, setEvents] = useState<Event[]>([]);
 
   useEffect(() => {
-    fetch("/api/events?window=30d") 
+    fetch("/api/events?window=7d")
       .then((r) => r.json())
       .then((d) => setEvents(d.events ?? []));
   }, []);

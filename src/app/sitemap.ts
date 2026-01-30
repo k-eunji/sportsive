@@ -38,5 +38,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
       url: `${baseUrl}/ireland/dublin/live-sports-today`,
       lastModified: new Date(),
     },
+    {
+      url: `${baseUrl}/uk/sports-this-weekend`,
+      lastModified: new Date(),
+    },
+    {
+      url: `${baseUrl}/uk/london/sports-this-weekend`,
+      lastModified: new Date(),
+    },
+
   ];
 }

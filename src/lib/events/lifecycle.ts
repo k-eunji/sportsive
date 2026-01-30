@@ -1,4 +1,4 @@
-//src/lib/events/lifecycle.ts
+// src/lib/events/lifecycle.ts
 
 export function isEventActiveInWindow(
   event: {
@@ -10,15 +10,23 @@ export function isEventActiveInWindow(
   windowStart: Date,
   windowEnd: Date
 ): boolean {
-  // 1) 단일 시점 이벤트 (match)
-  if (event.kind === "match" || !event.startDate) {
-    const at = new Date(event.date);
-    return at >= windowStart && at <= windowEnd;
+  // ✅ SESSION EVENT (darts / tournaments)
+  if (event.kind === "session" && event.startDate) {
+    let start = new Date(event.startDate);
+    let end = new Date(event.endDate ?? event.startDate);
+
+    // 날짜만 있으면 하루 전체
+    if (event.startDate.length === 10) {
+      start.setHours(0, 0, 0, 0);
+    }
+    if ((event.endDate ?? event.startDate).length === 10) {
+      end.setHours(23, 59, 59, 999);
+    }
+
+    return end >= windowStart && start <= windowEnd;
   }
 
-  // 2) 기간 이벤트 (session / round)
-  const start = new Date(event.startDate);
-  const end = new Date(event.endDate ?? event.startDate);
-
-  return end >= windowStart && start <= windowEnd;
+  // MATCH / POINT EVENT
+  const at = new Date(event.date);
+  return at >= windowStart && at <= windowEnd;
 }
