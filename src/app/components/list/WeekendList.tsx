@@ -92,12 +92,15 @@ export default function WeekendList({
   subtitle,
   events,
   defaultScope,
+  statusText,   // ✅ 추가
 }: {
   title: string;
   subtitle: string;
   events: Event[];
   defaultScope: TimeScope;
+  statusText?: string; // ✅
 }) {
+
   const [scope, setScope] = useState<TimeScope>(defaultScope);
   const [q, setQ] = useState("");
 
@@ -124,6 +127,13 @@ export default function WeekendList({
       <header className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <h1 className="text-2xl font-bold">{title}</h1>
+
+          {statusText && (
+            <p className="mt-1 text-sm font-medium text-foreground">
+              {statusText}
+            </p>
+          )}
+
           <p className="text-sm text-muted-foreground mt-1">
             {subtitle}
           </p>
