@@ -23,6 +23,13 @@ function isHorseRacing(e: any) {
     .replace(/[\s_]/g, "-") === "horse-racing";
 }
 
+function isSameLocalDay(a: Date, b: Date) {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
 
 function nextWeekendRange(now: Date) {
   const base = startOfLocalDay(now);
@@ -220,6 +227,49 @@ export default function WeekendList({
         return aStart - bStart;
       });
 
+    // 🔥 WEEKEND 전용 분기
+    if (scope === "weekend") {
+      const { start: sat, end: mon } = nextWeekendRange(now);
+      const sun = new Date(sat);
+      sun.setDate(sun.getDate() + 1);
+
+      const result: Record<
+        "saturday" | "sunday",
+        Record<string, Event[]>
+      > = {
+        saturday: {},
+        sunday: {},
+      };
+
+      filtered.forEach((e: any) => {
+        const start = getStartDate(e);
+        if (!start) return;
+
+        const days: ("saturday" | "sunday")[] = [];
+
+        // session → 양쪽에 들어갈 수 있음
+        if (e.kind === "session" && e.startDate && e.endDate) {
+          const s = new Date(e.startDate);
+          const end = new Date(e.endDate);
+
+          if (s < sun && end > sat) days.push("saturday");
+          if (s < mon && end > sun) days.push("sunday");
+        } else {
+          if (isSameLocalDay(start, sat)) days.push("saturday");
+          if (isSameLocalDay(start, sun)) days.push("sunday");
+        }
+
+        days.forEach((d) => {
+          const sport = e.sport ?? "other";
+          result[d][sport] ||= [];
+          result[d][sport].push(e);
+        });
+      });
+
+      return result;
+    }
+
+    // 🔹 기존 로직 (today / tomorrow / week)
     return filtered.reduce<Record<string, Event[]>>((acc, e) => {
       const key = e.sport ?? "other";
       acc[key] ||= [];
@@ -285,23 +335,55 @@ export default function WeekendList({
 
       {/* LIST */}
       <section className="divide-y">
-        {Object.entries(grouped).map(([sport, list]) => (
-          <div key={sport}>
-            <h3 className="mt-6 mb-2 text-sm font-semibold">
-              {sport}
-            </h3>
+        {scope === "weekend" ? (
+          <>
+            {(["saturday", "sunday"] as const).map((day) => (
+              <div key={day}>
+                <h2 className="mt-6 mb-2 text-sm font-semibold">
+                  {day === "saturday" ? "Saturday" : "Sunday"}
+                </h2>
 
-            {list.map((e) => (
-              <TimetableRow
-                key={e.id}
-                time={formatTime(e)}
-                title={titleOf(e)}
-                meta={metaOf(e)}
-                status={getEventTimeState(e)}
-              />
+                {Object.entries(grouped[day] ?? ({} as Record<string, Event[]>)).map(
+                  ([sport, list]) => (
+
+                  <div key={sport}>
+                    <h3 className="mt-4 mb-1 text-xs font-semibold">
+                      {sport}
+                    </h3>
+
+                    {(list as Event[]).map((e: Event) => (
+                      <TimetableRow
+                        key={e.id}
+                        time={formatTime(e)}
+                        title={titleOf(e)}
+                        meta={metaOf(e)}
+                        status={getEventTimeState(e)}
+                      />
+                    ))}
+                  </div>
+                ))}
+              </div>
             ))}
-          </div>
-        ))}
+          </>
+        ) : (
+          Object.entries(grouped).map(([sport, list]) => (
+            <div key={sport}>
+              <h3 className="mt-6 mb-2 text-sm font-semibold">
+                {sport}
+              </h3>
+
+              {(list as Event[]).map((e: Event) => (
+                <TimetableRow
+                  key={e.id}
+                  time={formatTime(e)}
+                  title={titleOf(e)}
+                  meta={metaOf(e)}
+                  status={getEventTimeState(e)}
+                />
+              ))}
+            </div>
+          ))
+        )}
 
         {Object.keys(grouped).length === 0 && (
           <p className="py-10 text-center text-sm text-muted-foreground">
@@ -309,6 +391,7 @@ export default function WeekendList({
           </p>
         )}
       </section>
+
     </main>
   );
 }

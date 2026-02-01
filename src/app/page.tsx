@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Event } from "@/types";
 
 import WeekendList from "@/app/components/list/WeekendList";
@@ -14,10 +14,21 @@ import { getClientId } from "@/lib/clientId";
 import { isReturn24h } from "@/lib/returnCheck";
 import { detectEntryReason } from "@/lib/entryReason";
 
+// ✅ 위치 관련 훅
+import { useLocationMode } from "@/app/components/home/useLocationMode";
+import { useUserLocation, haversineKm } from "@/app/components/home/useUserLocation";
+
 export default function LandingPage() {
   const [events, setEvents] = useState<Event[]>([]);
 
-  // ✅ 1️⃣ 랜딩 진입 = visit log
+  // ✅ 위치 상태
+  const { hasLocation } = useLocationMode();
+  const { pos } = useUserLocation({ enabled: hasLocation });
+
+  /* =========================
+     VISIT LOG
+  ========================= */
+
   useEffect(() => {
     if (!shouldLogVisit()) return;
 
@@ -30,22 +41,61 @@ export default function LandingPage() {
         entry_reason: detectEntryReason(),
       }),
     }).catch(() => {
-      // ❌ 실패해도 UX 영향 없게 (조용히 무시)
+      // 실패해도 UX 영향 없게 무시
     });
   }, []);
 
-  // ✅ 2️⃣ 이벤트 데이터 로드 (기존 그대로)
+  /* =========================
+     EVENTS LOAD
+  ========================= */
+
   useEffect(() => {
     fetch("/api/events?window=30d")
       .then((r) => r.json())
       .then((d) => setEvents(d.events ?? []));
   }, []);
 
+  /* =========================
+     LOCATION FILTER
+  ========================= */
+
+  const filteredEvents = useMemo(() => {
+    // 위치 없으면 전체 그대로
+    if (!hasLocation || !pos) return events;
+
+    // 위치 있으면 반경 필터
+    return events.filter((e: any) => {
+      if (!e.location) return false;
+
+      try {
+        return haversineKm(pos, e.location) <= 50; // ⭕ 50km 기준
+      } catch {
+        return false;
+      }
+    });
+  }, [events, hasLocation, pos]);
+
+  /* =========================
+     COPY (중요)
+  ========================= */
+
+  const title = hasLocation
+    ? "Live sports near you"
+    : "Live sports happening now";
+
+  const subtitle = hasLocation
+    ? "Based on your location"
+    : "Across the UK & Ireland";
+
+  /* =========================
+     RENDER
+  ========================= */
+
   return (
     <WeekendList
-      title="Live sports near you"
-      subtitle="Quick scan. No accounts. Official links."
-      events={events}
+      title={title}
+      subtitle={subtitle}
+      events={filteredEvents}
       defaultScope={getDefaultScope(new Date())}
     />
   );
