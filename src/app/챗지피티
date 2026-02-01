@@ -5,11 +5,11 @@
 
 
 근데 이런식으로 가다간 방문자도 없을 것 같아서 결국 약간 목적을 수정했어. 일단 메인 페이지의 리스트 형식을 약간 수정해야할 것 같아. 검색도 용이하고 쉽게 들어오기 위해
-맵은 도시형 인프라로 사용하게 하거나 종목 클럽들이 본인들 경기 열리는 날 어떤 종목의 경기가 열리는지 한눈에 볼 수 있게 하는 용도. 그래서 관중들을 데리고 오는 방안을 짤 수 있게 그리고 검색해서 들어올 사람들을 위해 그냥 리스트 제공. 이건 메인 페이지에 하려고 해. 어때? 사람들도 너무 안들어오고 재방문 요소도 없어서...그래서 이렇게 수정했어. 구글에서 검색어로 유입할 수 있게 만들어야해. 일단 이렇게 만들었거든? 근데 확실히 좋긴한데 플랫폼 느낌이 안나서... 혹시 좋은 예시 없나?  
+맵은 도시형 인프라로 사용하게 하거나 종목 클럽들이 본인들 경기 열리는 날 어떤 종목의 경기가 열리는지 한눈에 볼 수 있게 하는 용도. 그래서 관중들을 데리고 오는 방안을 짤 수 있게 그리고 검색해서 들어올 사람들을 위해 그냥 리스트 제공. 이건 메인 페이지에 하려고 해. 어때? 사람들도 너무 안들어오고 재방문 요소도 없어서...그래서 이렇게 수정했어. 구글에서 검색어로 유입할 수 있게 만들어야해. 일단 이렇게 만들었거든? 근데 확실히 좋긴한데 플랫폼 느낌이 안나서... 혹시 좋은 예시 없나?  참고로 앱은 아직 만들생각 없어. 사람도 없고, 재방문자도 없거든
 
 Sportsive는 결과적으로 **단일 타깃 서비스가 아니라**, 도시에서 스포츠와 이벤트를 둘러싼 의사결정에 공통으로 참조되는 **확인 레이어**로 기능한다. | 사용자 유형 | Sportsive가 제공하는 가치 | | ------- | ------------------ | | 개인 사용자 | 외출 전 “지금 뭐라도 있나?” | | 지자체 | 도시 스포츠 활성도, 밀집 가능성 | | 이벤트 운영자 | 날짜·시간대 경쟁 강도 판단 | | 클럽·리그 | 경기일의 도시 맥락 파악 | 중요한 점은, **질문은 다르지만 보는 화면은 동일하다는 것**이다. 이는 Sportsive가 콘텐츠 플랫폼이 아니라 **도시 맥락을 공유하는 인프라**임을 의미한다.
 
-//src/app/sitemap.ts
+// src/app/sitemap.ts
 
 import type { MetadataRoute } from "next";
 
@@ -21,6 +21,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
       url: `${baseUrl}/`,
       lastModified: new Date(),
     },
+
+    // 🇬🇧 UK
     {
       url: `${baseUrl}/uk/live-sports-today`,
       lastModified: new Date(),
@@ -30,6 +32,16 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: new Date(),
     },
     {
+      url: `${baseUrl}/uk/manchester/live-sports-today`,
+      lastModified: new Date(),
+    },
+    {
+      url: `${baseUrl}/uk/birmingham/live-sports-today`,
+      lastModified: new Date(),
+    },
+
+    // 🇮🇪 Ireland
+    {
       url: `${baseUrl}/ireland/live-sports-today`,
       lastModified: new Date(),
     },
@@ -37,16 +49,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
       url: `${baseUrl}/ireland/dublin/live-sports-today`,
       lastModified: new Date(),
     },
+    {
+      url: `${baseUrl}/uk/sports-this-weekend`,
+      lastModified: new Date(),
+    },
+    {
+      url: `${baseUrl}/uk/london/sports-this-weekend`,
+      lastModified: new Date(),
+    },
 
-    // 종목 페이지 (아래 2️⃣에서 만들 것)
-    {
-      url: `${baseUrl}/uk/london/football-today`,
-      lastModified: new Date(),
-    },
-    {
-      url: `${baseUrl}/uk/london/rugby-today`,
-      lastModified: new Date(),
-    },
   ];
 }
 
