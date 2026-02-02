@@ -14,7 +14,7 @@ type TicketClickLog = {
   city: string | null;
 
   // where the click happened
-  source: "snap_card" | "map" | "list" | "unknown";
+  source: "snap_card" | "map" | "list" | "event_page" | "unknown";
 
   userAgent: string | null;
   ip: string | null;
@@ -52,7 +52,8 @@ export async function GET(req: NextRequest) {
   const source: TicketClickLog["source"] =
     sourceParam === "snap_card" ||
     sourceParam === "map" ||
-    sourceParam === "list"
+    sourceParam === "list" ||
+    sourceParam === "event_page"
       ? sourceParam
       : "unknown";
 

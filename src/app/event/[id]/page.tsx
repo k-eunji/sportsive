@@ -93,6 +93,16 @@ export default async function EventDetailPage(props: {
   const mapsEmbedUrl = `https://www.google.com/maps?q=${destination}&z=15&output=embed`;
   const mapsDirUrl = `https://www.google.com/maps/dir/?api=1&destination=${destination}`;
 
+  const ticketHref =
+    e.officialUrl
+      ? `/api/go/ticket` +
+        `?eventId=${id}` +
+        `&sport=${event.sport ?? ""}` +
+        `&city=${event.city ?? ""}` +
+        `&source=event_page` +
+        `&target=${encodeURIComponent(e.officialUrl)}`
+      : null;
+
   /* =========================
      UI HELPERS
   ========================= */
@@ -221,14 +231,14 @@ export default async function EventDetailPage(props: {
               Get directions
             </a>
 
-            {e.officialUrl && (
+            {ticketHref && (
               <a
-                href={e.officialUrl}
+                href={ticketHref}
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center justify-center rounded-2xl border py-3 text-sm font-semibold"
               >
-                Official event info
+                {e.isPaid ? "Buy official tickets" : "View official event info"}
               </a>
             )}
           </div>
