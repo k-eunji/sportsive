@@ -16,7 +16,13 @@ const BLOCKED_CLIENT_IDS = new Set([
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { client_id, is_within_first_24h, entry_reason } = body;
+
+    const {
+      client_id,
+      is_within_first_24h,
+      entry_reason,
+      document_visibility, // 👈 추가
+    } = body;
 
     // ✅ 특정 client_id는 기록 안 함
     if (client_id && BLOCKED_CLIENT_IDS.has(client_id)) {
@@ -42,6 +48,7 @@ export async function POST(req: NextRequest) {
         client_id,
         is_within_first_24h,
         entry_reason,
+        document_visibility: document_visibility ?? null, // 👈 추가
         visited_at: new Date().toISOString(),
       });
 

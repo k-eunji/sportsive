@@ -394,6 +394,7 @@ export default function HomePage() {
           client_id: getClientId(),
           is_within_first_24h: isReturn24h(),
           entry_reason: detectEntryReason(),
+          document_visibility: document.visibilityState,
         }),
       });
     }

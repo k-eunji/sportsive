@@ -80,6 +80,7 @@ export default function LandingPage() {
         client_id: getClientId(),
         is_within_first_24h: isReturn24h(),
         entry_reason: detectEntryReason(),
+        document_visibility: document.visibilityState, 
       }),
     }).catch(() => {});
   }, []);
@@ -128,6 +129,51 @@ export default function LandingPage() {
       return true;
     });
   }, [events, hasLocation, pos, observerCity, priceFilter]);
+
+  
+  const todayEvents = useMemo(() => {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const end = new Date(start);
+    end.setDate(end.getDate() + 1);
+
+    return filteredEvents.filter((e: any) => {
+      const raw = e.date ?? e.utcDate ?? e.startDate;
+      if (!raw) return false;
+      const d = new Date(raw);
+      return d >= start && d < end;
+    });
+  }, [filteredEvents]);
+
+  const todayBreakdown = useMemo(() => {
+    const now = new Date();
+
+    let live = 0;
+    let soon = 0;
+    let later = 0;
+
+    for (const e of todayEvents as any[]) {
+      const status = (e.status ?? "").toUpperCase();
+
+      if (status === "LIVE") {
+        live += 1;
+        continue;
+      }
+
+      const raw = e.date ?? e.utcDate ?? e.startDate;
+      if (!raw) continue;
+
+      const start = new Date(raw);
+      const diffH =
+        (start.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+      if (diffH <= 3) soon += 1;
+      else later += 1;
+    }
+
+    return { live, soon, later };
+  }, [todayEvents]);
+
 
   /* =========================
      DATE WINDOW
@@ -221,7 +267,34 @@ export default function LandingPage() {
       </header>
 
       {/* LIST */}
-      <section className="max-w-3xl mx-auto px-4 pb-10">
+      {/* ✅ TODAY SUMMARY (추가만) */}
+      <section className="max-w-3xl mx-auto px-4 pb-4">
+        <div className="rounded-2xl bg-muted/40 px-4 py-4 space-y-2">
+          <div className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+            Today
+          </div>
+
+          {todayEvents.length === 0 && (
+            <div className="text-sm text-muted-foreground">
+              Nothing happening
+            </div>
+          )}
+
+          {todayEvents.length > 0 && (
+            <div className="flex flex-wrap gap-3 text-sm font-medium">
+              {todayBreakdown.live > 0 && (
+                <span>LIVE ({todayBreakdown.live})</span>
+              )}
+              {todayBreakdown.soon > 0 && (
+                <span>Starting soon ({todayBreakdown.soon})</span>
+              )}
+              {todayBreakdown.later > 0 && (
+                <span>Later today ({todayBreakdown.later})</span>
+              )}
+            </div>
+          )}
+        </div>
+
         <EventList events={visibleEvents} />
 
         <button
