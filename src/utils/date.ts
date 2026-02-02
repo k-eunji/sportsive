@@ -102,3 +102,17 @@ export function timeAgoModern(input: any): string {
   });
 }
 
+// ✅ 리스트용 짧은 시간 표시 (Songkick 스타일)
+export function formatEventTimeShort(
+  date: string | Date,
+  locale: string = "en-GB"
+): string {
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return "";
+
+  return d.toLocaleTimeString(locale, {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+}

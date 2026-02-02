@@ -1,6 +1,6 @@
 // src/types/event.ts
 
-import type { Location, Timestamp } from "./common";
+import type { Location } from "./common";
 
 export interface Event {
   id: string;
@@ -17,6 +17,7 @@ export interface Event {
   price?: number;
   free: boolean;
   logo?: string;
+  code?: string;
   organizerId: string;
   attendees: string[];
   tags?: string[];

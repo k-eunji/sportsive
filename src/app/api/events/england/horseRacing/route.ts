@@ -65,7 +65,7 @@ export async function GET() {
       );
 
       return {
-        id: `horse-racing-${s.course}-${s.date}`,
+        id: String(s.id),
         sport: (s.sport || "horse-racing").toLowerCase(),
         kind: s.kind || "session",
 

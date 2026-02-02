@@ -28,7 +28,6 @@ export const metadata: Metadata = {
     google: "9OtVcxThar95vmRDQTol9vu8rJzHCq4A3EJ2CHn1Gs4",
   },
 
-  // (선택) 기본 OG — 나중에 SEO 페이지별로 override 가능
   openGraph: {
     title: "Sportsive",
     description: "See what sports are happening near you, right now.",
@@ -55,8 +54,17 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} h-full`}>
       <head>
-        {/* ✅ Apple PWA */}
+        {/* =========================
+            PWA / MOBILE WEB APP
+        ========================= */}
+
+        {/* App icon */}
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+
+        {/* ✅ Standard (Chrome / Android / modern browsers) */}
+        <meta name="mobile-web-app-capable" content="yes" />
+
+        {/* ✅ Apple iOS (still required) */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta
           name="apple-mobile-web-app-status-bar-style"
@@ -71,7 +79,11 @@ export default function RootLayout({
           </GoogleMapsProvider>
         </Providers>
 
-        {/* ✅ Google Analytics (GA4) */}
+        {/* =========================
+            ANALYTICS
+        ========================= */}
+
+        {/* Google Analytics (GA4) */}
         <script
           async
           src="https://www.googletagmanager.com/gtag/js?id=G-1WRHN39RC6"
@@ -89,7 +101,7 @@ export default function RootLayout({
           }}
         />
 
-        {/* ✅ Vercel Analytics */}
+        {/* Vercel Analytics */}
         <Analytics />
       </body>
     </html>

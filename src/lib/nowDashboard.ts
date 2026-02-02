@@ -119,16 +119,15 @@ function formatCityText(
   }
 
   if (pulse === "WARMING_UP" && nextAt) {
-    return `Next kickoff · ${formatTime(nextAt)}`;
+    return `Starting soon · ${formatTime(nextAt)}`;
   }
 
   if (nextAt) {
-    return `Quiet now · next match at ${formatTime(nextAt)}`;
+    return `Quiet now · next event at ${formatTime(nextAt)}`;
   }
 
   return "Quiet today · nothing scheduled";
 }
-
 
 /* ---------- main ---------- */
 
