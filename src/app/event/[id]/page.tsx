@@ -11,6 +11,8 @@ import {
   buildMoreThisWeekend,
 } from "@/lib/events/nearby";
 import { getEventTimeState } from "@/lib/eventTime";
+import EventPageTracker from "@/app/components/tracking/EventPageTracker";
+
 
 /* =========================
    TYPES
@@ -162,6 +164,11 @@ export default async function EventDetailPage(props: {
 
   return (
     <main className="min-h-screen bg-background">
+      <EventPageTracker
+        eventId={String(id)}
+        sport={event.sport}
+        city={event.city}
+      />
       <div className="max-w-3xl mx-auto px-4 pt-10 pb-16">
         {/* HERO */}
         <header className="space-y-3">
