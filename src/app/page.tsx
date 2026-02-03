@@ -66,6 +66,7 @@ export default function LandingPage() {
   // location
   const { hasLocation } = useLocationMode();
   const { pos } = useUserLocation({ enabled: hasLocation });
+  const isReturn = localStorage.getItem("sportsive_has_visited") === "true";
 
   /* =========================
      VISIT LOG
@@ -73,16 +74,22 @@ export default function LandingPage() {
   useEffect(() => {
     if (!shouldLogVisit()) return;
 
+    const isReturn =
+      localStorage.getItem("sportsive_has_visited") === "true";
+
     fetch("/api/log/visit", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         client_id: getClientId(),
-        is_within_first_24h: isReturn24h(),
+        is_within_first_24h: isReturn, // ✅ 이름도 의미도 isReturn
         entry_reason: detectEntryReason(),
-        document_visibility: document.visibilityState, 
+        document_visibility: document.visibilityState,
       }),
     }).catch(() => {});
+
+    // ✅ 방문 표시 (다음부터는 재방문)
+    localStorage.setItem("sportsive_has_visited", "true");
   }, []);
 
   /* =========================
@@ -250,7 +257,7 @@ export default function LandingPage() {
               transition
             "
           >
-            Open map
+            Check the city pulse
           </a>
         </div>
         <h1 className="text-3xl font-bold">
