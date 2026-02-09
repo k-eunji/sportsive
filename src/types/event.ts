@@ -9,7 +9,14 @@ export interface Event {
   date: string;
   startDate?: string; // "2026-06-29"
   endDate?: string;  
-  sport: 'football' | 'rugby' | 'tennis' | 'basketball' | 'racing' | 'dart' | 'horse-racing';
+  sport:
+  | 'football'
+  | 'rugby'
+  | 'basketball'
+  | 'tennis'
+  | 'darts'
+  | 'horse-racing';
+
   kind: 'match' | 'session' | 'race' | 'round';
   description?: string;
   location: Location;

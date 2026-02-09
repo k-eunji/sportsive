@@ -1,9 +1,11 @@
 // src/types/area.ts
+
 export type AreaIndex = {
-  city: string;
-  region: string;
-  center: {
+  city?: string;
+  region?: string;
+  center?: {
     lat: number;
     lng: number;
   };
+  bounds?: google.maps.LatLngBoundsLiteral;
 };

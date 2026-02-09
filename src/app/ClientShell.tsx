@@ -16,19 +16,19 @@ export default function ClientShell({
 }) {
   const pathname = usePathname() ?? "";
 
-  const isHome = pathname === "/";
+  const isHome = pathname === "/ops";
   const isLiveRoom =
     pathname.startsWith("/live/") && pathname.split("/").length === 4;
 
   return (
     <>
-      {/* HEADER */}
-      <Header />
+      {/* HEADER – 앱 홈에서는 숨김 */}
+      {!isHome && <Header />}
 
       <main
         className={`
           min-h-screen
-          ${HEADER_HEIGHT}
+          ${!isHome ? HEADER_HEIGHT : ""}
           ${!isHome ? "flex flex-col px-4 pb-[calc(58px+env(safe-area-inset-bottom))]" : ""}
         `}
       >

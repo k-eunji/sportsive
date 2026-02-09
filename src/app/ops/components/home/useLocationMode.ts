@@ -1,4 +1,4 @@
-//src/app/components/home/useLocationMode.ts
+//src/app/ops/components/home/useLocationMode.ts
 
 "use client";
 

@@ -11,22 +11,21 @@ import { buildNowStatus } from "@/lib/nowDashboard";
 // visit log
 import { shouldLogVisit } from "@/lib/visitThrottle";
 import { getClientId } from "@/lib/clientId";
-import { isReturn24h } from "@/lib/returnCheck";
 import { detectEntryReason } from "@/lib/entryReason";
 
 // location
-import { useLocationMode } from "@/app/components/home/useLocationMode";
+import { useLocationMode } from "@/app/ops/components/home/useLocationMode";
 import {
   useUserLocation,
   haversineKm,
-} from "@/app/components/home/useUserLocation";
+} from "@/app/ops/components/home/useUserLocation";
 
 // UI
-import LocationAnchor from "@/app/components/home/LocationAnchor";
-import LocationSheet from "@/app/components/home/LocationSheet";
+import LocationAnchor from "@/app/components/LocationAnchor";
+import LocationSheet from "@/app/components/LocationSheet";
 import PriceIntentBar, {
   PriceFilter,
-} from "@/app/components/home/PriceIntentBar";
+} from "@/app/components/PriceIntentBar";
 
 // area helpers
 import { extractRegions, extractCities } from "@/lib/eventAreas";
@@ -229,49 +228,68 @@ export default function LandingPage() {
   ========================= */
   return (
     <main>
-      {/* HERO */}
-      <header className="max-w-3xl mx-auto px-4 pt-6 pb-6 space-y-3">
-        {/* TOP BAR */}
-        <div className="flex items-center justify-between">
-          <div className="flex flex-wrap items-center gap-2">
-            <LocationAnchor
-              hasLocation={hasLocation}
-              observerCity={observerCity}
-              onOpenLocationSheet={() => setLocationOpen(true)}
-            />
+      {/* HERO (Image-based) */}
+        <section className="relative w-full min-h-[calc(420px+64px)] pt-[20px] overflow-hidden">
+          {/* Background image */}
+          <div
+            className="absolute inset-0 bg-cover bg-center"
+            style={{
+              backgroundImage: "url(/images/hero-city-sports.jpg)",
+            }}
+          />
 
-            <PriceIntentBar
-              value={priceFilter}
-              onChange={setPriceFilter}
-            />
+          {/* Dark gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-black/10" />
+
+          {/* Content */}
+          <div className="relative z-10 max-w-5xl mx-auto px-6 pt-24 space-y-5 text-white">
+            {/* Top utilities */}
+            <div className="flex flex-wrap items-center gap-3">
+              <LocationAnchor
+                hasLocation={hasLocation}
+                observerCity={observerCity}
+                onOpenLocationSheet={() => setLocationOpen(true)}
+              />
+
+              <PriceIntentBar
+                value={priceFilter}
+                onChange={setPriceFilter}
+              />
+            </div>
+
+            {/* Hero copy */}
+            <h1 className="text-4xl md:text-5xl font-bold leading-tight max-w-2xl">
+              Sports events, by time and location
+            </h1>
+
+            <p className="text-lg md:text-xl font-medium max-w-xl text-white/90">
+              See what’s happening today and this weekend
+            </p>
+
+            <p className="text-sm text-white/70 max-w-xl">
+              Understand when and where events overlap.
+            </p>
+
+
+            {/* CTA */}
+            <div className="pt-2">
+              <a
+                href="/ops"
+                className="
+                  inline-flex items-center gap-2
+                  rounded-full
+                  bg-white text-black
+                  px-5 py-3
+                  text-sm font-semibold
+                  hover:bg-white/90
+                  transition
+                "
+              >
+                View operational outlook →
+              </a>
+            </div>
           </div>
-
-          {/* OPEN MAP CTA */}
-          <a
-            href="/app"
-            className="
-              text-sm font-semibold
-              text-foreground
-              underline underline-offset-4
-              hover:opacity-80
-              transition
-            "
-          >
-            Check the city pulse
-          </a>
-        </div>
-        <h1 className="text-3xl font-bold">
-          Is your city alive today?
-        </h1>
-
-        <p className="text-lg font-medium">
-          {todayStatus.text}
-        </p>
-
-        <p className="text-sm text-muted-foreground">
-          Official tickets & directions — in one tap.
-        </p>
-      </header>
+        </section>
 
       {/* LIST */}
       {/* ✅ TODAY SUMMARY (추가만) */}

@@ -1,557 +1,172 @@
-내 플랫폼은 이거야. 참고로 epl, 챔피언쉼, efl 1, efl 2, 영국에서 열리는 다트랑 테니스, 경마(아일랜드 포함), 농구, 프리미어쉽 럭비 데이터가 있어 목적을 약간 바꿨어. 처음에는 그냥 사람들이 '오늘 여기서 뭐하는지 궁금한데 뭐 볼게 없나'라는 생각으로 접근하게 만들었었다?  
+지금 내 플랫폼을 평가해줘.
+
+내가 지금 비투비 용, 그러니까 리그/구단, 이벤트 운영자 들을 위한 지도 기반 스포츠 이벤트를 만들고 있어. 이피엘, 챔피언쉽, efl1, efl2, 영국리그농구, 프리미어쉽 럭비, 영국에서만 열리는 테니스와 다트, 경마(영국, 아일랜드)가 있어. 
+ 
+이게 처음에는 비투씨 용으로 출발했다가 바뀐거야.
+ 
+사실상 이건 지자체보다 스포츠 리그 운영자나 이벤트 회사에서 더 많이 볼텐데. 지자체는 그냥 따라오는 용도로 써야하고 내 메인 타켓은 이들이야. 
+ 
+참고로, 앱을 만들 생각이 없어. 돈이 안되니까 현재는. 1순위 리그/구단, 2순위는 이벤트 회사야 
+
+레이아웃보면 
+
+Dashboard
+Schedules
+Risk & Impact
+Reports
+
+이 탭들이 있어. 지금은 대시보드를 어느정도 마무리하려고 해
 
 
-처음에는 지도 기반으로만 하면 사람들이 머무르지 않고, 투자도 못받을 것 같아서, 계정만들기, 피드, 채팅, 밋업, 팀페이지 기능을 넣었었어. 근데 이게 결국 산으로 가더라고. 그냥 스포츠 커뮤니티? 그래서 완전히 줄이고 줄여서 지도기반으로만 둔거야.  
+// src/app/ops/anchor/AnchorSetupSheet.tsx
+"use client";
 
+import { useEffect, useRef, useState } from "react";
 
-사실은 티켓 링크 기능도 없었어. 근데 이거라도 넣으면 커미션 방향이라도 생기지 않을까하는 생각에 넣은거야. 내가 티켓 url을 찾다보니 느낀건 모든 티켓은 각자의 구단 홈피에서만 살수 있다는거야. 그래서 의도를 가지고 홈페이지에 들어가지 않는 이상 스포츠를 접하기 힘든거야. 일단 슈파베이스에 각 링크 다 넣었어. 그리고 목표를 약간 수정했는데, 나가기전 행동 직전의 플랫폼이 아니라 심심할 때 '주변에 무슨 경기가 열리나....'를 열어볼 수 있는? 
-
-
-근데 이런식으로 가다간 방문자도 없을 것 같아서 결국 약간 목적을 수정했어. 처음에는 '오늘 뭐있지' 라는 목적으로 다가오게 했었는데, 이 플랫폼은 사람이 없을 것 같아서 날짜, 시간 기반이 아닌 그냥 팀 기반으로 바꾸게 된거야. 그러면서 리스트도 songKick 형식을 차용하게 됐어.
-
-일단 사람들이 '심심할때' 굳이 스포츠를 탐색할 것 같지 않아서 구조를 바꾸긴 했는데, https://www.fixturecalendar.com/country-united-kingdom/city-london-1 이 느낌이 많이나. 나는 무료 경기도 넣을꺼라 차별점이 있긴한데 그래도 '목적'이 뚜렷하지 못하니까 자꾸 구조를 바꾸는 느낌이야. 
-
-Sportsive는 결과적으로 **단일 타깃 서비스가 아니라**, 도시에서 스포츠와 이벤트를 둘러싼 의사결정에 공통으로 참조되는 **확인 레이어**로 기능한다. | 사용자 유형 | Sportsive가 제공하는 가치 | | ------- | ------------------ | | 개인 사용자 | 외출 전 “지금 뭐라도 있나?” | | 지자체 | 도시 스포츠 활성도, 밀집 가능성 | | 이벤트 운영자 | 날짜·시간대 경쟁 강도 판단 | | 클럽·리그 | 경기일의 도시 맥락 파악 | 중요한 점은, **질문은 다르지만 보는 화면은 동일하다는 것**이다. 이는 Sportsive가 콘텐츠 플랫폼이 아니라 **도시 맥락을 공유하는 인프라**임을 의미한다.
-
-// src/app/sitemap.ts
-
-import type { MetadataRoute } from "next";
-
-export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = "https://sportsive.vercel.app";
-
-  return [
-    {
-      url: `${baseUrl}/`,
-      lastModified: new Date(),
-    },
-
-    // 🇬🇧 UK
-    {
-      url: `${baseUrl}/uk/live-sports-today`,
-      lastModified: new Date(),
-    },
-    {
-      url: `${baseUrl}/uk/london/live-sports-today`,
-      lastModified: new Date(),
-    },
-    {
-      url: `${baseUrl}/uk/manchester/live-sports-today`,
-      lastModified: new Date(),
-    },
-    {
-      url: `${baseUrl}/uk/birmingham/live-sports-today`,
-      lastModified: new Date(),
-    },
-
-    // 🇮🇪 Ireland
-    {
-      url: `${baseUrl}/ireland/live-sports-today`,
-      lastModified: new Date(),
-    },
-    {
-      url: `${baseUrl}/ireland/dublin/live-sports-today`,
-      lastModified: new Date(),
-    },
-    {
-      url: `${baseUrl}/uk/sports-this-weekend`,
-      lastModified: new Date(),
-    },
-    {
-      url: `${baseUrl}/uk/london/sports-this-weekend`,
-      lastModified: new Date(),
-    },
-
-  ];
-}
-
-// src/app/layout.tsx
-
-import "./globals.css";
-import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
-import Providers from "./Providers";
-import "@/lib/firebase";
-import ClientShell from "./ClientShell";
-import GoogleMapsProvider from "@/components/GoogleMapsProvider";
-import { Analytics } from "@vercel/analytics/react";
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-  display: "swap",
-});
-
-/* =========================
-   METADATA (SEO + GSC)
-========================= */
-export const metadata: Metadata = {
-  title: "Sportsive",
-  description: "Discover sports you can actually attend near you",
-  manifest: "/manifest.json",
-
-  // ✅ Google Search Console verification
-  verification: {
-    google: "9OtVcxThar95vmRDQTol9vu8rJzHCq4A3EJ2CHn1Gs4",
-  },
-
-  // (선택) 기본 OG — 나중에 SEO 페이지별로 override 가능
-  openGraph: {
-    title: "Sportsive",
-    description: "See what sports are happening near you, right now.",
-    siteName: "Sportsive",
-    type: "website",
-  },
-};
-
-/* =========================
-   VIEWPORT
-========================= */
-export const viewport: Viewport = {
-  themeColor: "#2563eb",
-};
-
-/* =========================
-   ROOT LAYOUT
-========================= */
-export default function RootLayout({
-  children,
+export default function AnchorSetupSheet({
+  areaLabel,
+  onSubmit,
+  onClose,
 }: {
-  children: React.ReactNode;
+  areaLabel: string | null;
+  onSubmit: (
+    label: string,
+    location: { lat: number; lng: number }
+  ) => void;
+  onClose: () => void;
 }) {
-  return (
-    <html lang="en" className={`${inter.variable} h-full`}>
-      <head>
-        {/* ✅ Apple PWA */}
-        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta
-          name="apple-mobile-web-app-status-bar-style"
-          content="black-translucent"
-        />
-      </head>
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
 
-      <body className="text-foreground antialiased">
-        <Providers>
-          <GoogleMapsProvider>
-            <ClientShell>{children}</ClientShell>
-          </GoogleMapsProvider>
-        </Providers>
-
-        {/* ✅ Google Analytics (GA4) */}
-        <script
-          async
-          src="https://www.googletagmanager.com/gtag/js?id=G-1WRHN39RC6"
-        />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              gtag('js', new Date());
-              gtag('config', 'G-1WRHN39RC6', {
-                debug_mode: true,
-              });
-            `,
-          }}
-        />
-
-        {/* ✅ Vercel Analytics */}
-        <Analytics />
-      </body>
-    </html>
-  );
-}
-
-// src/lib/visitThrottle.ts
-const KEY = "sportsive_last_visit_log_ts";
-const GAP = 10 * 60 * 1000; // 10분
-
-export function shouldLogVisit() {
-  if (typeof window === "undefined") return false;
-
-  const now = Date.now();
-  const last = Number(localStorage.getItem(KEY) || 0);
-
-  if (now - last < GAP) return false;
-
-  localStorage.setItem(KEY, String(now));
-  return true;
-}
-
-//src/lib/clientId.ts
-
-export function getClientId(): string {
-  if (typeof window === "undefined") {
-    return "server";
-  }
-
-  const KEY = "sportsive_client_id";
-  let id = localStorage.getItem(KEY);
-
-  if (!id) {
-    id = crypto.randomUUID();
-    localStorage.setItem(KEY, id);
-  }
-
-  return id;
-}
-
-//src/lib/returnCheck.ts
-
-const KEY = "sportsive_first_visit_ts";
-const LIMIT = 24 * 60 * 60 * 1000; // 24h
-
-export function isReturn24h(): boolean {
-  if (typeof window === "undefined") return false;
-
-  const now = Date.now();
-  const first = localStorage.getItem(KEY);
-
-  if (!first) {
-    localStorage.setItem(KEY, String(now));
-    return false; // 첫 방문
-  }
-
-  return now - Number(first) <= LIMIT;
-}
-
-//src/app/uk/football-today/page.tsx
-
-import type { Metadata } from "next";
-
-export const metadata: Metadata = {
-  title: "Football Matches in the UK Today | Sportsive",
-  description:
-    "Find football matches happening across the UK today. Premier League, Championship and other fixtures — with links to other live sports like horse racing, rugby, basketball, tennis and darts.",
-};
-
-export default function UKFootballTodayPage() {
-  return (
-    <main className="max-w-3xl mx-auto px-6 py-16 space-y-6">
-      <h1 className="text-3xl font-bold">
-        Football matches happening in the UK today
-      </h1>
-
-      <p className="text-muted-foreground">
-        Looking for football matches in the UK today?
-        This page helps you discover live football games happening across
-        the United Kingdom, including Premier League, Championship, EFL League 1 and EFL League 2
-        lower league fixtures.
-      </p>
-
-      <p className="text-muted-foreground">
-        Football events are often spread across different club websites,
-        making them hard to find unless you already know what you’re looking for.
-        Sportsive brings live sports together so you can quickly check
-        what’s actually happening today.
-      </p>
-
-      <h2 className="text-xl font-semibold pt-4">
-        Other live sports happening in the UK today
-      </h2>
-
-      <p className="text-muted-foreground">
-        In addition to football, you can also discover other live sports
-        happening across the UK today:
-      </p>
-
-      <ul className="list-disc pl-6 text-muted-foreground space-y-1">
-        <li>
-          <strong>Horse racing</strong> — race meetings across England, Scotland and Wales
-        </li>
-        <li>
-          <strong>Rugby</strong> — Premiership Rugby and other domestic fixtures
-        </li>
-        <li>
-          <strong>Basketball</strong> — Super League Basketball(SLB), British Basketball League games
-        </li>
-        <li>
-          <strong>Tennis</strong> — tournaments and match sessions
-        </li>
-        <li>
-          <strong>Darts</strong> — professional and tournament events
-        </li>
-      </ul>
-
-      <h2 className="text-xl font-semibold pt-4">
-        Ireland sports note
-      </h2>
-
-      <p className="text-muted-foreground">
-        In Ireland, Sportsive currently focuses on horse racing events.
-        You can explore Irish race meetings and sessions separately.
-      </p>
-
-      <ul className="list-disc pl-6 text-muted-foreground">
-        <li>
-          <a
-            href="/ireland/horse-racing-today"
-            className="underline underline-offset-4"
-          >
-            Horse racing in Ireland today
-          </a>
-        </li>
-      </ul>
-
-      <a
-        href="/app"
-        className="inline-block mt-6 underline underline-offset-4"
-      >
-        Open the live sports map
-      </a>
-    </main>
-  );
-}
-
-///src/app/uk/live-sports-today/page.tsx
-
-export const metadata = {
-  title: "Live Sports in the UK Today | Sportsive",
-  description:
-    "Find live sports matches happening across the UK today. Football, rugby, tennis and more — shown by city, location and time.",
-};
-
-export default function UKLiveSportsTodayPage() {
-  return (
-    <main className="max-w-3xl mx-auto px-6 py-16 space-y-6">
-      <h1 className="text-3xl font-bold">
-        Live sports happening across the UK today
-      </h1>
-
-      <p className="text-muted-foreground">
-        Looking for live sports happening in the UK today?
-        This page helps you discover football, rugby, tennis and other
-        sports matches taking place across major UK cities.
-      </p>
-
-      <p className="text-muted-foreground">
-        Sports events are often hard to find unless you already follow
-        specific teams or leagues. Sportsive shows what’s happening
-        based on location and time — without accounts or subscriptions.
-      </p>
-
-      <ul className="list-disc pl-6 text-muted-foreground">
-        <li>
-          <a href="/uk/london/live-sports-today" className="underline">
-            Live sports in London today
-          </a>
-        </li>
-      </ul>
-
-      <a
-        href="/app"
-        className="inline-block mt-6 underline underline-offset-4"
-      >
-        Open the live sports map
-      </a>
-    </main>
-  );
-}
-
-///src/app/uk/london/live-sports-today/page.tsx
-
-export const metadata = {
-  title: "Live Sports in London Today | Sportsive",
-  description:
-    "See live sports matches happening in London today. Football, rugby, tennis and more — mapped by location and time.",
-};
-
-export default function LondonLiveSportsTodayPage() {
-  return (
-    <main className="max-w-3xl mx-auto px-6 py-16 space-y-6">
-      <h1 className="text-3xl font-bold">
-        Live sports happening in London today
-      </h1>
-
-      <p className="text-muted-foreground">
-        Looking for live sports happening in London today?
-        This page shows football, rugby, tennis and other matches
-        taking place around London, based on location and time.
-      </p>
-
-      <p className="text-muted-foreground">
-        Most sports events in London are difficult to find unless
-        you already follow the right teams or venues.
-        Sportsive makes it easy to quickly check what’s happening nearby.
-      </p>
-
-      <a
-        href="/app"
-        className="inline-block mt-6 underline underline-offset-4"
-      >
-        See what’s happening on the map right now
-      </a>
-    </main>
-  );
-}
-
-
-
-// src/lib/analytics.ts
-
-export type EventName =
-  | "home_loaded"
-  | "surprise_clicked"
-  | "match_discovered"
-  | "daily_discovery_completed"
-  | "map_opened"
-  | "map_closed"
-  | "stamp_earned"
-  | "details_opened"
-  | "live_opened";
-
-export type EventProps = Record<string, string>;
-
-/**
- * 개발자(본인) 여부
- * - 로컬 / dev 환경: 자동 true
- * - 배포 환경: NEXT_PUBLIC_IS_DEV=true 인 브라우저만 true
- */
-const isDevUser =
-  process.env.NODE_ENV !== "production" ||
-  process.env.NEXT_PUBLIC_IS_DEV === "true";
-
-export function logEvent(
-  name: EventName | string,
-  props?: EventProps
-) {
-  const finalProps: EventProps = {
-    ...(props ?? {}),
-    ...(isDevUser ? { is_dev: "true" } : {}),
+  const handleClose = () => {
+    onClose();
   };
 
-  if (process.env.NODE_ENV !== "production") {
-    if (Object.keys(finalProps).length > 0) {
-      console.log(`[analytics] ${name}`, finalProps);
-    } else {
-      console.log(`[analytics] ${name}`);
-    }
-  }
+  useEffect(() => {
+    if (!inputRef.current) return;
+    if (!window.google?.maps?.places) return;
 
-  // 미래:
-  // GA4:
-  // logEvent(analytics, name, finalProps)
+    autocompleteRef.current =
+      new google.maps.places.Autocomplete(inputRef.current, {
+        fields: ["formatted_address", "geometry"],
+      });
 
-  // PostHog:
-  // posthog.capture(name, finalProps)
+    autocompleteRef.current.addListener("place_changed", () => {
+      const place = autocompleteRef.current!.getPlace();
+      if (!place.geometry?.location) return;
+
+      onSubmit(
+        place.formatted_address || "Selected location",
+        {
+          lat: place.geometry.location.lat(),
+          lng: place.geometry.location.lng(),
+        }
+      );
+
+      onClose();
+    });
+  }, [onSubmit, onClose]);
+
+  return (
+    <div className="fixed inset-0 z-[9999] bg-background flex flex-col">
+      <div className="flex items-center gap-2 p-4 border-b">
+        <button
+          onClick={handleClose}
+          className="text-sm font-semibold"
+        >
+          ← Back
+        </button>
+        <span className="text-sm font-semibold">
+          Search location
+        </span>
+      </div>
+
+      <div className="p-4 flex-1">
+        {areaLabel && (
+          <p className="text-xs text-muted-foreground mb-2">
+            {areaLabel}
+          </p>
+        )}
+
+        <input
+          ref={inputRef}
+          type="text"
+          placeholder="Search address, place, or city"
+          className="
+            w-full h-11
+            rounded-xl
+            bg-muted/40
+            px-4
+            text-sm
+            outline-none
+          "
+          autoFocus
+        />
+        <p className="mt-2 text-xs text-muted-foreground">
+          Select a place from the suggestions
+        </p>
+      </div>
+    </div>
+  );
 }
 
-// src/lib/eventTime.ts
+// src/app/ops/anchor/detectAnchorCandidates.ts
+import type { AreaIndex } from "@/types/area";
 
-export type EventTimeState =
-  | "LIVE"
-  | "SOON"
-  | "UPCOMING"
-  | "ENDED";
+export function detectAnchorArea(
+  pos: { lat: number; lng: number } | null,
+  areas: AreaIndex[]
+): string | null {
+  if (!pos) return null;
 
-export function getDefaultDurationMs(e: {
-  durationMs?: number;
-  sport?: string;
-}): number {
-  if (e.durationMs) return e.durationMs;
+  const nearby = areas.find(
+    (a) =>
+      a.center &&
+      Math.abs(a.center.lat - pos.lat) < 0.5 &&
+      Math.abs(a.center.lng - pos.lng) < 0.5
+  );
 
-  switch (e.sport) {
-    case "football":
-    case "rugby":
-      return 2.5 * 60 * 60 * 1000;
-    case "basketball":
-      return 2 * 60 * 60 * 1000;
-    case "tennis":
-      return 3 * 60 * 60 * 1000;
-    case "horse-racing":
-      return 6 * 60 * 60 * 1000;
-    default:
-      return 2 * 60 * 60 * 1000;
-  }
+  if (!nearby) return null;
+
+  return nearby.city
+    ? `${nearby.city} area detected`
+    : nearby.region
+    ? `${nearby.region} region detected`
+    : null;
 }
 
-export function getSoonWindowMs(e: {
-  soonWindowMs?: number;
-  sport?: string;
-}): number {
-  if (e.soonWindowMs) return e.soonWindowMs;
-
-  switch (e.sport) {
-    case "tennis":
-      return 60 * 60 * 1000;
-    case "basketball":
-      return 90 * 60 * 1000;
-    case "horse-racing":
-      return 4 * 60 * 60 * 1000;
-    default:
-      return 2 * 60 * 60 * 1000;
-  }
-}
-
-export function getEventTimeState(
-  e: {
-    startDate?: string | Date;
-    date?: string | Date;
-    utcDate?: string | Date;
-    durationMs?: number;
-    soonWindowMs?: number;
-    sport?: string;
-  },
-  now: Date = new Date()
-): EventTimeState {
-  const raw = e.startDate ?? e.date ?? e.utcDate;
-  const start = new Date(raw as any);
-
-  if (isNaN(start.getTime())) return "ENDED";
-
-  const end = new Date(start.getTime() + getDefaultDurationMs(e));
-  const diffMs = start.getTime() - now.getTime();
-
-  if (now >= start && now <= end) return "LIVE";
-  if (diffMs > 0 && diffMs <= getSoonWindowMs(e)) return "SOON";
-  if (diffMs > 0) return "UPCOMING";
-
-  return "ENDED";
-}
-
-// src/lib/nowDashboard.ts
-import type { Event } from "@/types";
-
-/**
- * NowHero / City status calculator
- * 역할:
- * - 이벤트 정보를 "도시 상태(Pulse)"로 해석
- * - 숫자가 아니라 '결론 한 줄'을 만든다
- */
-
-export type TimeScope = "today" | "tomorrow" | "weekend" | "week";
-
-export type CityPulse =
-  | "LIVE"
-  | "WARMING_UP"
-  | "QUIET";
-
-export type NowStatus = {
-  scope: TimeScope;
-  kind: "live" | "next" | "empty";
-  liveCount: number;
-  nextAt: Date | null;
-  count: number;
-
-  pulse: CityPulse;   // ✅ 핵심
-  text: string;       // ✅ 도시 상태 한 줄
+// src/app/ops/anchor/types.ts
+export type AnchorLocation = {
+  id: string;
+  label: string;        // "Old Trafford"
+  type: "venue" | "custom" | "city";
+  lat: number;
+  lng: number;
+  source: "suggested" | "user";
 };
 
-/* ---------- helpers ---------- */
+//src/app/ops/components/home/DatePresetBar.tsx
 
-function getStartDate(e: any): Date | null {
-  const raw = e.date ?? e.utcDate ?? e.startDate ?? null;
-  if (!raw) return null;
-  const d = new Date(raw);
-  return isNaN(d.getTime()) ? null : d;
-}
+"use client";
 
-function startOfLocalDay(d: Date) {
+import { useMemo } from "react";
+
+type Props = {
+  activeDate: Date;
+  onChange: (d: Date) => void;
+  maxDays?: number;
+  disabled?: boolean; // timeOpen 전달용
+};
+
+/* =========================
+   HELPERS
+========================= */
+
+function startOfDay(d: Date) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
 
-function isSameLocalDay(a: Date, b: Date) {
+function isSameDay(a: Date, b: Date) {
   return (
     a.getFullYear() === b.getFullYear() &&
     a.getMonth() === b.getMonth() &&
@@ -559,157 +174,115 @@ function isSameLocalDay(a: Date, b: Date) {
   );
 }
 
-function nextWeekendRange(now: Date) {
-  const base = startOfLocalDay(now);
-  const day = base.getDay();
-  const toSat = day === 6 ? 0 : (6 - day + 7) % 7;
-  const sat = new Date(base);
-  sat.setDate(sat.getDate() + toSat);
-  const mon = new Date(sat);
-  mon.setDate(mon.getDate() + 2);
-  return { start: sat, end: mon };
+function nextSaturday(now: Date) {
+  const d = startOfDay(now);
+  d.setDate(d.getDate() + ((6 - d.getDay() + 7) % 7));
+  return d;
 }
 
-function formatTime(dt: Date) {
-  return dt.toLocaleTimeString(undefined, {
-    hour: "numeric",
-    minute: "2-digit",
-  });
+function nextSunday(now: Date) {
+  const d = startOfDay(now);
+  d.setDate(d.getDate() + ((7 - d.getDay()) % 7));
+  return d;
 }
 
-function inScope(start: Date, scope: TimeScope, now: Date) {
-  const base = startOfLocalDay(now);
-
-  if (scope === "today") {
-    return isSameLocalDay(start, now) && start >= now;
-  }
-
-  if (scope === "tomorrow") {
-    const t0 = new Date(base);
-    t0.setDate(t0.getDate() + 1);
-    const t1 = new Date(t0);
-    t1.setDate(t1.getDate() + 1);
-    return start >= t0 && start < t1;
-  }
-
-  if (scope === "weekend") {
-    const wk = nextWeekendRange(now);
-    return start >= wk.start && start < wk.end;
-  }
-
-  const end = new Date(base);
-  end.setDate(end.getDate() + 7);
-  return start >= now && start < end;
+function toInputDate(d: Date) {
+  return d.toISOString().slice(0, 10);
 }
 
-/* ---------- NEW: 해석 레이어 ---------- */
+/* =========================
+   COMPONENT
+========================= */
 
-function getCityPulse(
-  liveCount: number,
-  nextAt: Date | null,
-  now: Date
-): CityPulse {
-  if (liveCount > 0) return "LIVE";
+export default function DatePresetBar({
+  activeDate,
+  onChange,
+  maxDays,
+  disabled,
+}: Props) {
+  const today = startOfDay(new Date());
+  const sat = useMemo(() => nextSaturday(today), [today]);
+  const sun = useMemo(() => nextSunday(today), [today]);
 
-  if (nextAt) {
-    const diffH =
-      (nextAt.getTime() - now.getTime()) / (1000 * 60 * 60);
-    if (diffH <= 3) return "WARMING_UP";
-  }
+  const btn = (label: string, date: Date) => (
+    <button
+      key={label}
+      type="button"
+      onClick={() => onChange(date)}
+      className={[
+        "px-2 py-1 text-[11px] font-medium rounded-full transition",
+        isSameDay(activeDate, date)
+          ? "bg-transparent text-foreground"
+          : "text-muted-foreground hover:text-foreground",
+      ].join(" ")}
+    >
+      {label}
+    </button>
+  );
 
-  return "QUIET";
-}
+  return (
+    <div className="inline-flex items-center gap-1">
+      <div className="inline-flex items-center gap-1">
+        {btn("Today", today)}
+        {btn("Sat", sat)}
+        {btn("Sun", sun)}
+      </div>
+      {/* 📅 Calendar (iOS-safe) */}
+      <div className="relative w-8 h-8 flex items-center justify-center">
+        <span className="pointer-events-none">📅</span>
 
-function formatCityText(
-  pulse: CityPulse,
-  nextAt: Date | null
-): string {
-  if (pulse === "LIVE") {
-    return "LIVE now · more happening later";
-  }
-
-  if (pulse === "WARMING_UP" && nextAt) {
-    return `Next kickoff · ${formatTime(nextAt)}`;
-  }
-
-  if (nextAt) {
-    return `Quiet now · next match at ${formatTime(nextAt)}`;
-  }
-
-  return "Quiet today · nothing scheduled";
-}
-
-
-/* ---------- main ---------- */
-
-export function buildNowStatus(
-  events: Event[],
-  scope: TimeScope,
-  now = new Date()
-): NowStatus {
-  let liveCount = 0;
-  let nextAt: Date | null = null;
-  let count = 0;
-
-  for (const e of events as any[]) {
-    const start = getStartDate(e);
-    if (!start) continue;
-    if (!inScope(start, scope, now)) continue;
-
-    count += 1;
-
-    const status = (e.status ?? "").toUpperCase();
-    if (status === "LIVE") liveCount += 1;
-
-    if (start > now) {
-      if (!nextAt || start < nextAt) nextAt = start;
-    }
-  }
-
-  const pulse = getCityPulse(liveCount, nextAt, now);
-
-  return {
-    scope,
-    kind:
-      pulse === "LIVE"
-        ? "live"
-        : pulse === "WARMING_UP"
-        ? "next"
-        : "empty",
-    liveCount,
-    nextAt,
-    count,
-    pulse,
-    text: formatCityText(pulse, nextAt),
-  };
+        {/* 🔥 핵심: Time 열려 있으면 input 자체를 DOM에서 제거 */}
+        {!disabled && (
+          <input
+            type="date"
+            className="absolute inset-0 opacity-0 cursor-pointer"
+            value={toInputDate(activeDate)}
+            min={toInputDate(today)}
+            max={
+              maxDays
+                ? toInputDate(
+                    new Date(
+                      today.getFullYear(),
+                      today.getMonth(),
+                      today.getDate() + maxDays
+                    )
+                  )
+                : undefined
+            }
+            onChange={(e) => {
+              if (!e.target.value) return;
+              onChange(startOfDay(new Date(e.target.value)));
+            }}
+          />
+        )}
+      </div>
+    </div>
+  );
 }
 
 
-// src/app/components/home/HomeMapStage.tsx
+// src/app/ops/components/home/HomeMapStage.tsx
 "use client";
 
 import { forwardRef } from "react";
 import type { Event } from "@/types";
-import type { TimeScope } from "@/lib/nowDashboard";
-import HomeEventMap, { HomeEventMapRef } from "@/app/components/map-hero/HomeEventMap";
+import HomeEventMap, { HomeEventMapRef } from "@/app/ops/components/map-hero/HomeEventMap";
 
 type Props = {
   events: Event[];
-  timeScope: TimeScope;
   onDiscoverFromMap: (eventId: string) => void;
   onBoundsChanged?: (bounds: google.maps.LatLngBoundsLiteral) => void;
 };
 
 const HomeMapStage = forwardRef<HomeEventMapRef, Props>(
   function HomeMapStage(
-    { events, timeScope, onDiscoverFromMap, onBoundsChanged }, // ✅ 여기!
+    { events, onDiscoverFromMap, onBoundsChanged }, // ✅ 여기!
     ref
   ) {
     return (
       <HomeEventMap
         ref={ref}
         events={events}
-        timeScope={timeScope}          // ✅ 정상
         onDiscover={onDiscoverFromMap}
         onBoundsChanged={onBoundsChanged}
       />
@@ -719,7 +292,7 @@ const HomeMapStage = forwardRef<HomeEventMapRef, Props>(
 
 export default HomeMapStage;
 
-// src/app/components/home/LocationSheet.tsx
+// src/app/ops/components/home/LocationSheet.tsx
 "use client";
 
 import { useMemo, useState } from "react";
@@ -731,14 +304,17 @@ export default function LocationSheet({
   onPickRegion,
   onPickCity,
   onClose,
+  onSetAnchor,              // 🔥 추가
 }: {
-  regions: string[];
+  regions: { key: string; label: string }[]
+  onPickRegion: (key: string | null) => void
   cities: string[];
   observerRegion: string | null;
-  onPickRegion: (r: string | null) => void;
   onPickCity: (c: string) => void;
   onClose: () => void;
+  onSetAnchor: () => void;  // 🔥 추가
 }) {
+
   const [query, setQuery] = useState("");
 
   const filteredCities = useMemo(() => {
@@ -781,7 +357,7 @@ export default function LocationSheet({
         </div>
 
         {/* title */}
-        <p className="text-sm font-semibold mb-3">Location</p>
+        <p className="text-sm font-semibold mb-3">Event footprint</p>
 
         {/* REGION – compact, progressive */}
         <div className="flex gap-2 overflow-x-auto pb-1 mb-4">
@@ -794,15 +370,16 @@ export default function LocationSheet({
                 : "border-border/60",
             ].join(" ")}
           >
-            All
-          </button>
+              Portfolio-wide
+            </button>
 
-          {regions.slice(0, 6).map((r) => {
-            const active = r === observerRegion;
+          {regions.map(({ key, label }) => {
+            const active = key === observerRegion;
+
             return (
               <button
-                key={r}
-                onClick={() => onPickRegion(r)}
+                key={key}
+                onClick={() => onPickRegion(key)}   // 🔥 key만 넘김
                 className={[
                   "shrink-0 px-3 py-1.5 rounded-full text-sm border",
                   active
@@ -810,10 +387,11 @@ export default function LocationSheet({
                     : "border-border/60",
                 ].join(" ")}
               >
-                {r}
+                {label}  {/* UI 전용 */}
               </button>
             );
           })}
+
         </div>
 
         {/* CITY – search first */}
@@ -821,7 +399,7 @@ export default function LocationSheet({
           <div className="space-y-3">
             <input
               type="search"
-              placeholder={`Search city in ${observerRegion}`}
+              placeholder={`Search local footprint in ${observerRegion}`}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className="
@@ -861,194 +439,32 @@ export default function LocationSheet({
             </div>
           </div>
         )}
+
+        {/* OPERATIONAL BASE */}
+        <div className="mt-6 pt-4 border-t">
+          <button
+            onClick={() => {
+              onClose();      // LocationSheet 닫고
+              onSetAnchor();  // AnchorSetupSheet 열기
+            }}
+            className="
+              w-full h-11
+              rounded-xl
+              border
+              text-sm font-semibold
+              active:scale-[0.98]
+              transition
+            "
+          >
+            Set operational base
+          </button>
+        </div>
       </div>
     </div>
   );
 }
 
-// src/app/components/home/MapStatusPill.tsx
-
-"use client";
-
-import type { Event } from "@/types";
-
-/* ---------------- helpers ---------------- */
-
-function getStartDate(e: any): Date | null {
-  const raw = e.date ?? e.utcDate ?? e.startDate ?? null;
-  if (!raw) return null;
-  const d = new Date(raw);
-  return isNaN(d.getTime()) ? null : d;
-}
-
-function formatTime(dt: Date) {
-  return dt.toLocaleTimeString(undefined, {
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
-
-export type MapScope = "user" | "global" | "observer";
-
-/* ---------------- component ---------------- */
-
-export default function MapStatusPill({
-  events,
-  scope,
-}: {
-  events: Event[];
-  scope: MapScope;
-}) {
-  if (events.length === 0) return null;
-
-  const now = new Date(); // ✅ Date 객체로 통일
-
-  let liveCount = 0;
-  let nextAt: Date | null = null;
-
-  for (const e of events as any[]) {
-    const status = (e.status ?? "").toUpperCase();
-    if (status === "LIVE") liveCount += 1;
-
-    const start = getStartDate(e);
-    if (start && start.getTime() > now.getTime()) {
-      if (!nextAt || start < nextAt) nextAt = start;
-    }
-  }
-
-  /* ---------------- where label ---------------- */
-
-  const where =
-    scope === "global"
-      ? "across the map"
-      : scope === "observer"
-      ? "in this city"
-      : "around you";
-
-  let label = "";
-
-  /* ---------------- LIVE ---------------- */
-
-  if (liveCount > 0) {
-    label =
-      liveCount === 1
-        ? `LIVE · 1 event ${where}`
-        : `LIVE · ${liveCount} events ${where}`;
-  }
-
-  /* ---------------- UPCOMING ---------------- */
-
-  else if (nextAt) {
-    const t = formatTime(nextAt);
-
-    const WINDOW_MS = 2 * 60 * 60 * 1000; // 2 hours
-    const nextTs = nextAt.getTime();
-
-    const clusteredCount = events.filter((e: any) => {
-      const s = getStartDate(e);
-      if (!s) return false;
-      return Math.abs(s.getTime() - nextTs) <= WINDOW_MS;
-    }).length;
-
-    const diffMin = Math.round(
-      (nextAt.getTime() - now.getTime()) / 60000
-    );
-
-    if (clusteredCount <= 2) {
-      if (diffMin <= 60) {
-        label = `Starting in ${diffMin} min · ${where}`;
-      } else {
-        label = `Starting later · ${t} · ${where}`;
-      }
-    } else if (clusteredCount <= 4) {
-      label = `Warming up · ${t} · a few ${where}`;
-    } else {
-      label = `Busy later · ${t} · ${where}`;
-    }
-  }
-
-  /* ---------------- QUIET ---------------- */
-
-  else {
-    label = `Quiet right now · ${where}`;
-  }
-
-  /* ---------------- render ---------------- */
-
-  return (
-    <div
-      className="
-        pointer-events-none
-        fixed
-        left-1/2 -translate-x-1/2
-        bottom-[calc(env(safe-area-inset-bottom)+96px)]
-        z-50
-      "
-    >
-      <div
-        className="
-          rounded-full
-          bg-black/85
-          text-white
-          text-xs
-          font-semibold
-          px-4
-          py-2
-          shadow-lg
-          tracking-wide
-          whitespace-nowrap
-        "
-      >
-        {label}
-      </div>
-    </div>
-  );
-}
-
-// src/app/components/home/NowHeroScopeBar.tsx
-
-"use client";
-
-import type { TimeScope } from "@/lib/nowDashboard";
-
-export default function NowHeroScopeBar({
-  scope,
-  onScopeChange,
-}: {
-  scope: TimeScope;
-  onScopeChange: (s: TimeScope) => void;
-}) {
-  return (
-    <div
-      className="
-        inline-flex items-center
-        rounded-full
-        bg-background/60
-        ring-1 ring-border/40
-        p-1
-      "
-    >
-      {(["today", "tomorrow", "weekend", "week"] as TimeScope[]).map((s) => (
-        <button
-          key={s}
-          onClick={() => onScopeChange(s)}
-          className={[
-            "px-2.5 py-1.5 text-[12px] font-semibold rounded-full transition",
-            scope === s
-              ? "bg-foreground text-background shadow-sm"
-              : "text-muted-foreground",
-          ].join(" ")}
-        >
-          {s === "today" ? "Today" :
-           s === "tomorrow" ? "Tomorrow" :
-           s === "weekend" ? "Weekend" : "Week"}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-//src/app/components/home/useDistanceUnit.ts
+//src/app/ops/components/home/useDistanceUnit.ts
 
 "use client";
 
@@ -1080,7 +496,8 @@ export function useDistanceUnit() {
   return { unit, toggle };
 }
 
-//src/app/components/home/useLocationMode.ts
+
+//src/app/ops/components/home/useLocationMode.ts
 
 "use client";
 
@@ -1103,29 +520,63 @@ export function useLocationMode(): {
   return { mode: "observer", hasLocation: false };
 }
 
-//src/app/components/home/useUserLocation.ts
-
+// src/app/ops/components/home/useUserLocation.ts
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export type LatLng = { lat: number; lng: number };
 
 export function useUserLocation(options?: { enabled?: boolean }) {
   const [pos, setPos] = useState<LatLng | null>(null);
   const [denied, setDenied] = useState(false);
+  const watchIdRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (options?.enabled === false) return;
-    if (!navigator.geolocation) return;
+    if (!navigator.geolocation) {
+      setDenied(true);
+      return;
+    }
 
+    // 1️⃣ 즉시 한 번 요청 (빠른 초기 값)
     navigator.geolocation.getCurrentPosition(
       (p) => {
-        setPos({ lat: p.coords.latitude, lng: p.coords.longitude });
+        setPos({
+          lat: p.coords.latitude,
+          lng: p.coords.longitude,
+        });
       },
       () => setDenied(true),
-      { enableHighAccuracy: false, timeout: 7000 }
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 0,
+      }
     );
+
+    // 2️⃣ 이후 정확도 개선용 watch
+    watchIdRef.current = navigator.geolocation.watchPosition(
+      (p) => {
+        setPos({
+          lat: p.coords.latitude,
+          lng: p.coords.longitude,
+        });
+      },
+      () => setDenied(true),
+      {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+      }
+    );
+
+    // cleanup
+    return () => {
+      if (watchIdRef.current != null) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+        watchIdRef.current = null;
+      }
+    };
   }, [options?.enabled]);
 
   return { pos, denied };
@@ -1140,1936 +591,209 @@ export function haversineKm(a: LatLng, b: LatLng) {
 
   const s1 =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    Math.cos(toRad(a.lat)) *
+      Math.cos(toRad(b.lat)) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2);
 
   const c = 2 * Math.atan2(Math.sqrt(s1), Math.sqrt(1 - s1));
   return R * c;
 }
 
-// src/app/api/go/ticket/route.ts
-import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "../../../../lib/supabaseServer";
+//src/lib/infra/attentionLevel.ts
 
-/**
- * Ticket click = high-intent action
- * This log is the KPI source of truth for investor conversations.
- */
-type TicketClickLog = {
-  type: "ticket_click";
-  ts: string;
-  eventId: string;
-  sport: string | null;
-  city: string | null;
+import type { PeakScope } from "@/types/infra";
 
-  // where the click happened
-  source: "snap_card" | "map" | "list" | "unknown";
+export type AttentionLevel = "low" | "medium" | "high";
 
-  userAgent: string | null;
-  ip: string | null;
-  referrer: string | null;
-};
+export function getAttentionLevel(
+  count: number,
+  scope: PeakScope
+): AttentionLevel {
+  const isCity = scope.type === "city";
 
-async function logTicketClick(log: TicketClickLog) {
-  await supabase.from("ticket_clicks").insert({
-    event_id: log.eventId,
-    sport: log.sport,
-    city: log.city,
-    source: log.source,
-  });
-}
-
-export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-
-  const eventId = searchParams.get("eventId");
-  const target = searchParams.get("target");
-
-  if (!eventId || !target) {
-    return NextResponse.json({ error: "Bad request" }, { status: 400 });
+  if (isCity) {
+    if (count <= 2) return "low";
+    if (count <= 4) return "medium";
+    return "high";
   }
 
-  // ✅ Validate target URL (security & data integrity)
+  // region or all
+  if (count <= 4) return "low";
+  if (count <= 7) return "medium";
+  return "high";
+}
+
+//src/lib/impact/presets.ts
+
+import { ImpactProfile } from "./types";
+
+export const SPORT_IMPACT_PRESETS: Record<string, ImpactProfile> = {
+  football: {
+    type: "fixed",
+    phases: [
+      // 경기 시작 전 유입
+      { offset: -90, duration: 60, weight: 1.0 },
+      // 경기 종료 전/후 이탈
+      { offset: 85, duration: 50, weight: 0.8 },
+    ],
+    confidence: "high",
+  },
+
+  rugby: {
+    type: "fixed",
+    phases: [
+      { offset: -90, duration: 60, weight: 1.0 },
+      { offset: 90, duration: 55, weight: 0.8 },
+    ],
+    confidence: "high",
+  },
+
+  basketball: {
+    type: "fixed",
+    phases: [
+      { offset: -50, duration: 40, weight: 0.9 },
+      { offset: 65, duration: 35, weight: 0.7 },
+    ],
+    confidence: "medium",
+  },
+
+  tennis: {
+    type: "session",
+    phases: [
+      // 하루 종일 조금씩 유입/유출
+      { offset: -180, duration: 360, weight: 0.3 },
+    ],
+    confidence: "low",
+  },
+
+  darts: {
+    type: "session",
+    phases: [
+      { offset: -120, duration: 240, weight: 0.35 },
+    ],
+    confidence: "low",
+  },
+
+  horse_racing: {
+    type: "block",
+    window: {
+      startHour: 11,
+      endHour: 17,
+    },
+    confidence: "medium",
+  },
+};
+
+// src/app/api/events/route.ts
+
+import { NextResponse } from "next/server";
+import { GET as getFootballEvents } from "./england/football/route";
+import { GET as getRugbyEvents } from "./england/rugby/route";
+import { GET as getTennisEvents } from "./england/tennis/route";
+import { GET as getHorseRacingEvents } from "./england/horseRacing/route";
+import { GET as getBasketballEvents } from "./england/basketball/route";
+import { GET as getDartEvents } from "./england/dart/route";
+
+import { isEventActiveInWindow } from "@/lib/events/lifecycle";
+import { buildAreaIndex } from "@/lib/events/buildAreaIndex";
+
+/* =========================
+   🔧 DEDUPE HELPER (핵심)
+========================= */
+function dedupeById(events: any[]) {
+  return Array.from(
+    new Map(events.map((e) => [e.id, e])).values()
+  );
+}
+
+export async function GET(req: Request) {
   try {
-    new URL(target);
-  } catch {
-    return NextResponse.json({ error: "Invalid target" }, { status: 400 });
-  }
+    const url = new URL(req.url);
+    const window = url.searchParams.get("window") ?? "7d";
 
-  // ✅ Click source (default: unknown)
-  const sourceParam = searchParams.get("source");
-  const source: TicketClickLog["source"] =
-    sourceParam === "snap_card" ||
-    sourceParam === "map" ||
-    sourceParam === "list"
-      ? sourceParam
-      : "unknown";
+    const [
+      footballRes,
+      rugbyRes,
+      tennisRes,
+      horseRacingRes,
+      basketballRes,
+      dartRes,
+    ] = await Promise.all([
+      getFootballEvents(),
+      getRugbyEvents(),
+      getTennisEvents(),
+      getHorseRacingEvents(),
+      getBasketballEvents(),
+      getDartEvents(),
+    ]);
 
-  // ✅ Client IP extraction (proxy / Vercel safe)
-  const forwardedFor = req.headers.get("x-forwarded-for");
-  const ip = forwardedFor
-    ? forwardedFor.split(",")[0].trim()
-    : null;
+    const footballData = await footballRes.json();
+    const rugbyData = await rugbyRes.json();
+    const tennisData = await tennisRes.json();
+    const horseRacingData = await horseRacingRes.json();
+    const basketballData = await basketballRes.json();
+    const dartData = await dartRes.json();
 
-  await logTicketClick({
-    type: "ticket_click",
-    ts: new Date().toISOString(),
-    eventId,
-    sport: searchParams.get("sport"),
-    city: searchParams.get("city"),
-    source,
-    userAgent: req.headers.get("user-agent"),
-    ip,
-    referrer: req.headers.get("referer"),
-  });
+    /* =========================
+       1️⃣ RAW MERGE (중복 허용)
+    ========================= */
+    const mergedRaw = [
+      ...(footballData.matches ?? footballData.events ?? []),
+      ...(rugbyData.matches ?? rugbyData.events ?? []),
+      ...(tennisData.matches ?? tennisData.events ?? []),
+      ...(horseRacingData.matches ?? horseRacingData.events ?? []),
+      ...(basketballData.events ?? []),
+      ...(dartData.matches ?? dartData.events ?? []),
+    ];
 
-  // ✅ Redirect after logging
-  return NextResponse.redirect(target, { status: 302 });
-}
+    /* =========================
+       2️⃣ 🔥 DEDUPE BY EVENT ID
+    ========================= */
+    const merged = dedupeById(mergedRaw);
 
-
-// src/app/components/map-hero/HomeEventMap.tsx
-
-"use client";
-
-import {
-  useEffect,
-  useRef,
-  useState,
-  forwardRef,
-  useImperativeHandle,
-} from "react";
-import type { Event } from "@/types";
-import { useGoogleMaps } from "@/components/GoogleMapsProvider";
-import type { TimeScope } from "@/lib/nowDashboard";
-import { getEventTimeState, getDefaultDurationMs } from "@/lib/eventTime";
-
-
-const DEFAULT_ZOOM = 8;
-const FOCUS_ZOOM = 16;
-const UK_CENTER = { lat: 54.5, lng: -3.0 };
-const UK_ZOOM = 7;
-
-// ======== Signal spec constants ========
-const SOON_WINDOW_MS = 2 * 60 * 60 * 1000; // 2h
-const PRESENCE_RECENT_MS = 2 * 60 * 1000; // 2m "someone just opened this"
-const PRESENCE_FADE_MS = 8 * 60 * 1000; // 8m "was here a moment ago"
-
-type MarkerStatus = "DEFAULT" | "SOON" | "LIVE";
-
-function getEventStart(e: Event): Date | null {
-  const raw = (e as any).date ?? (e as any).utcDate ?? (e as any).startDate;
-  if (!raw) return null;
-  const d = new Date(raw);
-  return isNaN(d.getTime()) ? null : d;
-}
-
-function getMarkerStatus(e: Event): MarkerStatus {
-  const state = getEventTimeState(e);
-
-  if (state === "LIVE") return "LIVE";
-  if (state === "SOON") return "SOON";
-  return "DEFAULT";
-}
-
-
-function markerBaseScaleForZoom(zoom: number) {
-  if (zoom >= 14) return 4.8;
-  if (zoom >= 12) return 5.4;
-  if (zoom >= 10) return 6.0;
-  return 6.6;
-}
-
-function thinByGrid(events: Event[], zoom: number) {
-  const cellKm =
-    zoom <= 10 ? 8 :
-    zoom <= 12 ? 4 :
-    2;
-
-  const grid = new Map<string, Event>();
-
-  for (const e of events) {
-    if (!e.location) continue;
-
-    const key =
-      Math.floor(e.location.lat / (cellKm / 110)) + ":" +
-      Math.floor(e.location.lng / (cellKm / 110));
-
-    const prev = grid.get(key);
-    if (!prev) {
-      grid.set(key, e);
-      continue;
+    /* =========================
+       3️⃣ AREA INDEX (지도 구조)
+    ========================= */
+    if (window === "180d") {
+      const areas = buildAreaIndex(merged);
+      return NextResponse.json({ areas });
     }
 
-    // 우선순위: LIVE > SOON > DEFAULT
-    const p = getMarkerStatus(prev);
-    const n = getMarkerStatus(e);
-
-    if (
-      (n === "LIVE" && p !== "LIVE") ||
-      (n === "SOON" && p === "DEFAULT")
-    ) {
-      grid.set(key, e);
-    }
-  }
-
-  return Array.from(grid.values());
-}
-
-function computePulse(phase: number) {
-  // phase: 0..1
-  // smooth pulse in [0..1]
-  const t = phase * Math.PI * 2;
-  return (Math.sin(t) + 1) / 2;
-}
-
-function getMarkerIcon(e: Event, zoom: number, phase: number): google.maps.Symbol {
-  const status = getMarkerStatus(e);
-
-  const base = markerBaseScaleForZoom(zoom);
-
-  // Default is intentionally low presence so LIVE/SOON pops by contrast
-  let fillColor = "#0f172a";
-  let fillOpacity = 0.48;        // ⬅️ 확실히 보이게
-  let scale = base * 1.1;
-  // Live/Soon: signal, not POI
-  if (status === "SOON") {
-    // subtle pulse; still readable
-    const p = computePulse(phase);
-    fillColor = "#ef4444";
-    fillOpacity = 0.70 + p * 0.18; // 0.70..0.88
-    scale = base * (1.08 + p * 0.08); // 1.08..1.16
-  }
-
-  if (status === "LIVE") {
-    // stronger pulse
-    const p = computePulse(phase);
-    fillColor = "#ef4444";
-    fillOpacity = 0.82 + p * 0.15; // 0.82..0.97
-    scale = base * (1.18 + p * 0.12); // 1.18..1.30
-  }
-
-  return {
-    path: google.maps.SymbolPath.CIRCLE,
-    scale,
-    fillColor,
-    fillOpacity,
-    // add a subtle stroke to lift off the light map (this is what makes it "seen")
-    strokeColor: "rgba(255,255,255,0.85)",
-    strokeOpacity: status === "DEFAULT" ? 0.75 : 0.85,
-    strokeWeight: status === "DEFAULT" ? 1.5 : 2,
-  };
-}
-
-function getHaloIcon(zoom: number, phase: number): google.maps.Symbol {
-  // A thin ring for SOON (and optionally LIVE) — helps "this is a signal" readability
-  const base = markerBaseScaleForZoom(zoom);
-
-  const p = computePulse(phase);
-  const scale = base * (1.55 + p * 0.15); // expanding ring
-  const opacity = 0.20 + p * 0.18;
-
-  return {
-    path: google.maps.SymbolPath.CIRCLE,
-    scale,
-    fillOpacity: 0,
-    strokeColor: "rgba(239,68,68,1)",
-    strokeOpacity: opacity,
-    strokeWeight: 2,
-  };
-}
-
-// =========================
-// (기존 히트맵 보조 함수들: 남겨둠 — 혹시 다른 곳에서 참조할 수 있어 유지)
-// ⚠️ 단, google.maps.visualization 타입은 제거(visualization lib 제거했기 때문)
-// =========================
-function buildHeatmapPoints(events: Event[]) {
-  return events
-    .filter((e) => e.location?.lat && e.location?.lng)
-    .map((e) => {
-      const status = getMarkerStatus(e);
-
-      // weight is "influence", not color
-      let weight = 1;
-      if (status === "LIVE") weight = 3;
-      else if (status === "SOON") weight = 2;
-
-      return {
-        location: new google.maps.LatLng(e.location!.lat, e.location!.lng),
-        weight,
-      };
-    });
-}
-
-function spreadPoints(
-  lat: number,
-  lng: number,
-  weight: number,
-  zoom: number
-): any[] {
-  // zoom이 낮을수록 더 넓게 퍼짐
-  const spreadMeters =
-    zoom <= 6 ? 6000 :
-    zoom <= 7 ? 3500 :
-    zoom <= 8 ? 2000 :
-    800;
-
-  // weight이 클수록 점 개수 증가
-  const count = Math.round(weight * 4);
-
-  const points: any[] = [];
-
-  for (let i = 0; i < count; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const radius = Math.random() * spreadMeters;
-
-    // meters → lat/lng 변환
-    const dLat = (radius * Math.cos(angle)) / 111_000;
-    const dLng =
-      (radius * Math.sin(angle)) /
-      (111_000 * Math.cos((lat * Math.PI) / 180));
-
-    points.push({
-      location: new google.maps.LatLng(lat + dLat, lng + dLng),
-      weight: 1,
-    });
-  }
-
-  return points;
-}
-
-function heatmapRadiusForZoom(zoom: number) {
-  if (zoom <= 6) return 26;
-  if (zoom === 7) return 34;
-  if (zoom === 8) return 44;
-  if (zoom === 9) return 58;
-  return 0;
-}
-
-// =========================
-// ✅ NEW: Soft Density (Canvas Overlay) helpers
-// =========================
-function densityRadiusPxForZoom(zoom: number) {
-  // “근처” 감각: zoom 낮을수록 넓게
-  if (zoom <= 6) return 58;
-  if (zoom === 7) return 50;
-  if (zoom === 8) return 40;
-  if (zoom === 9) return 32;
-  return 0;
-}
-
-function densityBlurPxForZoom(zoom: number) {
-  if (zoom <= 6) return 38;
-  if (zoom === 7) return 32;
-  if (zoom === 8) return 24;
-  if (zoom === 9) return 18;
-  return 0;
-}
-
-function densityBaseAlphaForZoom(zoom: number) {
-  // 전체가 과하게 뿌옇게 되는 걸 방지 (zoom 낮을수록 더 옅게)
-  if (zoom <= 6) return 0.12;
-  if (zoom === 7) return 0.14;
-  if (zoom === 8) return 0.16;
-  if (zoom === 9) return 0.18;
-  return 0;
-}
-
-function getDensityWeight(e: Event, scope: TimeScope, now: Date) {
-  const start = getEventStart(e);
-  if (!start) return 0;
-
-  // =====================
-  // session 판별
-  // =====================
-  const isSession =
-    (e as any).kind === "session" &&
-    (e as any).startDate &&
-    (e as any).endDate;
-
-  const graceMs = 15 * 60 * 1000; // 🔧 15분 여유 (취향)
-
-  const sessionStart = isSession
-    ? new Date((e as any).startDate)
-    : start;
-
-  const sessionEnd = isSession
-    ? new Date((e as any).endDate)
-    : new Date(start.getTime() + getDefaultDurationMs(e) + graceMs);
-
-
-  // =====================
-  // scope 범위 계산
-  // =====================
-  const base = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-  let scopeStart: Date;
-  let scopeEnd: Date;
-
-  switch (scope) {
-    case "today":
-      scopeStart = base;
-      scopeEnd = new Date(base.getTime() + 24 * 60 * 60 * 1000);
-      break;
-
-    case "tomorrow":
-      scopeStart = new Date(base.getTime() + 24 * 60 * 60 * 1000);
-      scopeEnd = new Date(base.getTime() + 48 * 60 * 60 * 1000);
-      break;
-
-    case "weekend": {
-      const day = base.getDay(); // 0 Sun ... 6 Sat
-      const toSat = day === 6 ? 0 : (6 - day + 7) % 7;
-      const sat = new Date(base);
-      sat.setDate(sat.getDate() + toSat);
-      scopeStart = sat;
-      scopeEnd = new Date(sat.getTime() + 2 * 24 * 60 * 60 * 1000);
-      break;
-    }
-
-    case "week":
-    default:
-      scopeStart = now;
-      scopeEnd = new Date(base.getTime() + 7 * 24 * 60 * 60 * 1000);
-      break;
-  }
-
-  // =====================
-  // scope와 겹치는지 판단 (🔥 핵심)
-  // =====================
-  const inScope = isSession
-    ? sessionStart < scopeEnd && sessionEnd > scopeStart
-    : start >= scopeStart && start < scopeEnd;
-
-  if (!inScope) return 0;
-
-  // =====================
-  // 가중치 계산 (기존 로직 유지)
-  // =====================
-  const sport = ((e as any).sport ?? "").toString().toLowerCase();
-  const format = ((e as any).format ?? "").toString().toLowerCase();
-  const kind = ((e as any).kind ?? "").toString().toLowerCase();
-
-  const isTournament =
-    format === "tournament" ||
-    kind === "tournament" ||
-    sport === "darts" || // ✅ 다트는 기본적으로 토너먼트급
-    (sport === "tennis" && (format === "event" || format === "tourney"));
-
-  const diffH = (start.getTime() - now.getTime()) / (1000 * 60 * 60);
-
-  if (scope === "today") {
-    if (isTournament) return 0.6;
-    if (diffH > 6) return 0.15;
-    if (diffH > 3) return 0.30;
-    if (diffH > 1) return 0.60;
-    if (diffH > 0.25) return 1.00;
-    return 1.20;
-  }
-
-  if (scope === "tomorrow") {
-    return isTournament ? 0.40 : 0.35;
-  }
-
-  if (scope === "weekend") {
-    return isTournament ? 0.40 : 0.45;
-  }
-
-  return isTournament ? 0.30 : 0.25;
-}
-
-export interface HomeEventMapRef {
-  surprise: () => void;
-  focus: (eventId: string) => void;
-  closeSnap: () => void;
-  panTo: (latlng: { lat: number; lng: number }) => void;
-  resetToAll: () => void;
-}
-
-type MarkerBundle = {
-  eventId: string;
-  status: MarkerStatus;
-  main: google.maps.Marker;
-  halo?: google.maps.Marker;
-};
-
-const HomeEventMap = forwardRef<
-  HomeEventMapRef,
-  {
-    events: Event[];
-    onDiscover: (eventId: string) => void;
-    children?: React.ReactNode;
-    onBoundsChanged?: (bounds: google.maps.LatLngBoundsLiteral) => void;
-
-    // ✅ NEW: scope를 Density 레이어에 주입 (선택)
-    // 지금 당장 다른 파일 안 고쳐도 빌드되도록 optional + 기본값 today
-    timeScope?: TimeScope;
-  }
->(({ events, onDiscover, children, onBoundsChanged, timeScope }, ref) => {
-  const mapRef = useRef<google.maps.Map | null>(null);
-
-  const prevViewRef = useRef<{
-    center: google.maps.LatLngLiteral;
-    zoom: number;
-  } | null>(null);
-
-  const containerRef = useRef<HTMLDivElement | null>(null);
-
-  // replaces markersRef: we need bundles (main + optional halo + presence)
-  const markerBundlesRef = useRef<MarkerBundle[]>([]);
-
-  // ❌ HeatmapLayer removed (deprecated May 2026)
-  // const heatmapRef = useRef<google.maps.visualization.HeatmapLayer | null>(null);
-
-  // ✅ Density overlay refs
-  const densityOverlayRef = useRef<google.maps.OverlayView | null>(null);
-  const densityEventsRef = useRef<Event[]>([]);
-  const densityScopeRef = useRef<TimeScope>("today");
-  const densityActiveRef = useRef<boolean>(false);
-
-  const { isLoaded } = useGoogleMaps();
-
-  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-  const [showSnap, setShowSnap] = useState(false);
-  const [viewportTick, setViewportTick] = useState(0);
-  const [mapActive, setMapActive] = useState(false);
-  const [mapReady, setMapReady] = useState(false);
-  const ignoreNextBoundsRef = useRef(false);
-  const [zoomTick, setZoomTick] = useState(0);
-
-  // ✅ signal animation phase (0..1)
-  const phaseRef = useRef(0);
-  const [signalTick, setSignalTick] = useState(0);
-
-  const getZoom = () => mapRef.current?.getZoom?.() ?? 0;
-
-  const isDensity =
-    mapReady && !mapActive && getZoom() <= 9;
-
-  const SPORTSIVE_MAP_STYLE: google.maps.MapTypeStyle[] = [
-    { featureType: "road", elementType: "labels", stylers: [{ visibility: "off" }] },
-    { featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] },
-    { featureType: "administrative", elementType: "geometry.stroke", stylers: [{ visibility: "off" }] },
-    {
-      featureType: "administrative.locality",
-      elementType: "labels.text.fill",
-      stylers: [{ visibility: "on" }, { color: "#9ca3af" }, { weight: 0.4 }],
-    },
-    {
-      featureType: "administrative.locality",
-      elementType: "labels.text.stroke",
-      stylers: [{ visibility: "on" }, { color: "#ffffff" }, { weight: 3 }],
-    },
-    {
-      featureType: "administrative.country",
-      elementType: "labels.text.fill",
-      stylers: [{ visibility: "on" }, { color: "#cbd5e1" }, { weight: 0.3 }],
-    },
-    {
-      featureType: "administrative.country",
-      elementType: "labels.text.stroke",
-      stylers: [{ visibility: "on" }, { color: "#ffffff" }, { weight: 4 }],
-    },
-    { featureType: "poi.park", elementType: "geometry", stylers: [{ visibility: "on" }, { color: "#d9f0e3" }] },
-    { featureType: "road", elementType: "geometry", stylers: [{ color: "#d1d5db" }, { weight: 0.6 }] },
-    { featureType: "landscape", elementType: "geometry", stylers: [{ color: "#f1f5f9" }] },
-    { featureType: "water", elementType: "geometry", stylers: [{ color: "#e0f2fe" }] },
-    { featureType: "transit", elementType: "all", stylers: [{ visibility: "off" }] },
-  ];
-
-  const resetMap = () => {
-    if (mapRef.current && prevViewRef.current) {
-      mapRef.current.panTo(prevViewRef.current.center);
-      mapRef.current.setZoom(prevViewRef.current.zoom);
-    }
-
-    prevViewRef.current = null;
-    setShowSnap(false);
-    setSelectedEvent(null);
-    setMapActive(false);
-  };
-
-  const focusById = (eventId: string) => {
-    if (!mapRef.current) return;
-
-    // ✅ 이전 뷰 저장 (처음 진입 시만)
-    if (!prevViewRef.current) {
-      const center = mapRef.current.getCenter();
-      const zoom = mapRef.current.getZoom();
-
-      if (center && typeof zoom === "number") {
-        prevViewRef.current = {
-          center: { lat: center.lat(), lng: center.lng() },
-          zoom,
-        };
-      }
-    }
-
-    const picked = (events as any[]).find((x) => x.id === eventId);
-    if (!picked?.location) return;
-
-    setMapActive(true);
-
-    mapRef.current.panTo(picked.location);
-    mapRef.current.setZoom(FOCUS_ZOOM);
-
-    setTimeout(() => {
-      setSelectedEvent(picked);
-      setShowSnap(true);
-    }, 300);
-
-    onDiscover(picked.id);
-  };
-
-  useImperativeHandle(ref, () => ({
-    surprise() {},
-    focus(eventId) {
-      focusById(eventId);
-    },
-    closeSnap() {
-      resetMap();
-    },
-    panTo(latlng) {
-      if (!mapRef.current) return;
-      mapRef.current.panTo(latlng);
-      mapRef.current.setZoom(12);
-    },
-    resetToAll() {
-      if (!mapRef.current) return;
-
-      ignoreNextBoundsRef.current = true;
-
-      setMapActive(false);
-      setSelectedEvent(null);
-      setShowSnap(false);
-
-      mapRef.current.panTo(UK_CENTER);
-      mapRef.current.setZoom(UK_ZOOM);
-    },
-  }));
-
-  useEffect(() => {
-    if (!mapRef.current) return;
-
-    const ro = new ResizeObserver(() => {
-      google.maps.event.trigger(mapRef.current!, "resize");
-    });
-
-    ro.observe(containerRef.current!);
-    return () => ro.disconnect();
-  }, []);
-
-
-  // ✅ 1) signal animation (safe): update phase + bump tick every ~900ms
-  useEffect(() => {
-    const id = window.setInterval(() => {
-      phaseRef.current = (phaseRef.current + 0.14) % 1; // slow breathe
-      setSignalTick((t) => t + 1);
-    }, 900);
-    return () => window.clearInterval(id);
-  }, []);
-
-  // ✅ 2) Density overlay (Canvas) — replaces HeatmapLayer
-  useEffect(() => {
-    if (!mapRef.current || !isLoaded) return;
-
-    // keep latest refs for overlay.draw()
-    densityEventsRef.current = events;
-    densityScopeRef.current = (timeScope ?? "today");
-    densityActiveRef.current = isDensity;
-
-    const map = mapRef.current;
-
-    // create overlay once
-    if (!densityOverlayRef.current) {
-      class DensityOverlay extends google.maps.OverlayView {
-        private canvas: HTMLCanvasElement | null = null;
-        private ctx: CanvasRenderingContext2D | null = null;
-
-        onAdd() {
-          const canvas = document.createElement("canvas");
-          canvas.style.position = "absolute";
-          canvas.style.top = "0";
-          canvas.style.left = "0";
-          canvas.style.width = "100%";
-          canvas.style.height = "100%";
-          canvas.style.pointerEvents = "none";
-          canvas.style.zIndex = "2";
-
-          // ✅ 타입 안전: mapRef의 map 사용
-          const mapDiv = map.getDiv() as HTMLElement;
-          mapDiv.appendChild(canvas);
-
-          this.canvas = canvas;
-          this.ctx = canvas.getContext("2d");
-        }
-
-        onRemove() {
-          if (this.canvas?.parentNode) {
-            this.canvas.parentNode.removeChild(this.canvas);
-          }
-          this.canvas = null;
-          this.ctx = null;
-        }
-
-        draw() {
-          if (!this.canvas || !this.ctx) return;
-
-          const projection = this.getProjection();
-          if (!projection) return;
-
-          const mapDiv = map.getDiv() as HTMLElement;
-          const w = mapDiv.clientWidth;
-          const h = mapDiv.clientHeight;
-
-          const dpr = window.devicePixelRatio || 1;
-
-          if (
-            this.canvas.width !== Math.floor(w * dpr) ||
-            this.canvas.height !== Math.floor(h * dpr)
-          ) {
-            this.canvas.width = Math.floor(w * dpr);
-            this.canvas.height = Math.floor(h * dpr);
-            this.canvas.style.width = `${w}px`;
-            this.canvas.style.height = `${h}px`;
-          }
-
-          const ctx = this.ctx;
-          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-          ctx.clearRect(0, 0, w, h);
-
-          if (!densityActiveRef.current) return;
-
-          const zoom = map.getZoom() ?? 0;
-          const radius = densityRadiusPxForZoom(zoom);
-          const blur = densityBlurPxForZoom(zoom);
-          const baseAlpha = densityBaseAlphaForZoom(zoom);
-
-          if (radius <= 0 || baseAlpha <= 0) return;
-
-          const now = new Date();
-          const scope = densityScopeRef.current;
-          const evs = densityEventsRef.current;
-
-          const color = "15,23,42"; // #0f172a
-
-          for (const e of evs) {
-            if (!e.location?.lat || !e.location?.lng) continue;
-
-            const wgt = getDensityWeight(e, scope, now);
-            if (wgt <= 0) continue;
-
-            const p = projection.fromLatLngToContainerPixel(
-              new google.maps.LatLng(e.location.lat, e.location.lng)
-            );
-            if (!p) continue;
-
-            const alpha = Math.min(0.52, baseAlpha * wgt);
-
-            ctx.save();
-            ctx.beginPath();
-            ctx.globalAlpha = alpha;
-            ctx.fillStyle = `rgba(${color},1)`;
-            ctx.shadowColor = `rgba(${color},1)`;
-            ctx.shadowBlur = blur;
-
-            ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.restore();
-          }
-        }
-      }
-
-      densityOverlayRef.current = new DensityOverlay();
-      densityOverlayRef.current.setMap(map);
-    }
-
-
-
-    // toggle attach/detach
-    if (!densityActiveRef.current) {
-      densityOverlayRef.current?.setMap(null);
-      return;
-    }
-
-    densityOverlayRef.current.setMap(map);
-    // force redraw on events/scope updates
-    // @ts-ignore
-    densityOverlayRef.current.draw?.();
-  }, [events, isLoaded, mapActive, viewportTick, timeScope, zoomTick]);
-
-  // ✅ 3) create map once
-  useEffect(() => {
-    if (!isLoaded || !containerRef.current) return;
-    if (mapRef.current) return;
-
-    mapRef.current = new google.maps.Map(containerRef.current, {
-      center: UK_CENTER,
-      zoom: UK_ZOOM,
-      styles: SPORTSIVE_MAP_STYLE,
-      clickableIcons: false,
-      gestureHandling: "greedy",
-      draggable: true,
-      zoomControl: false,
-      fullscreenControl: false,
-      streetViewControl: false,
-    });
-
-    setMapReady(true);
-
-    mapRef.current.addListener("click", () => {
-      if (mapActive) resetMap();
-    });
-  }, [isLoaded]);
-
-  // ✅ 4) marker bundles create/update (when not density mode)
-  useEffect(() => {
-    if (!mapRef.current) return;
-
-    // density mode: clear markers
-    if (isDensity) {
-      markerBundlesRef.current.forEach((b) => {
-        b.main.setMap(null);
-        b.halo?.setMap(null);
-      });
-      markerBundlesRef.current = [];
-      return;
-    }
-
-    // clear existing
-    markerBundlesRef.current.forEach((b) => {
-      b.main.setMap(null);
-      b.halo?.setMap(null);
-    });
-    markerBundlesRef.current = [];
-
-    const z = mapRef.current.getZoom() ?? 12;
-    const phase = phaseRef.current;
-
-    const visibleEvents =
-      z >= 10 ? thinByGrid(events, z) : events;
-
-    visibleEvents.forEach((e) => {
-      if (!e.location) return;
-
-      const status = getMarkerStatus(e);
-
-      const main = new google.maps.Marker({
-        position: e.location,
-        map: mapRef.current!,
-        title: (e as any).title ?? "",
-        icon: getMarkerIcon(e, z, phase),
-        clickable: true,
-        zIndex: status === "LIVE" ? 30 : status === "SOON" ? 20 : 10,
-        shape: { type: "circle", coords: [0, 0, 18] },
-      });
-      main.addListener("click", () => {
-        focusById((e as any).id);
-      });
-
-      let halo: google.maps.Marker | undefined;
-      if (status === "SOON" || status === "LIVE") {
-        halo = new google.maps.Marker({
-          position: e.location,
-          map: mapRef.current!,
-          clickable: false,
-          icon: getHaloIcon(z, phase),
-          zIndex: status === "LIVE" ? 25 : 15,
-        });
-      }
-      // If you want LIVE ring too, uncomment:
-      // if (status === "LIVE") { ... }
-
-      markerBundlesRef.current.push({
-        eventId: (e as any).id,
-        status,
-        main,
-        halo,
-      });
-    });
-  }, [events, events.length, viewportTick, mapActive, zoomTick, isDensity]);
-
-  // ✅ 5) animate icons without recreating markers (cheap updates)
-  useEffect(() => {
-    if (!mapRef.current) return;
-    if (isDensity) return;
-
-    const z = mapRef.current.getZoom() ?? 12;
-    const phase = phaseRef.current;
-
-    for (const b of markerBundlesRef.current) {
-      // We need event object to compute status; but we stored status at creation-time.
-      // Status can change as time passes (SOON->LIVE), so re-evaluate from events list.
-      const ev = (events as any[]).find((x) => x.id === b.eventId) as Event | undefined;
-      if (!ev) continue;
-
-      const statusNow = getMarkerStatus(ev);
-      b.status = statusNow;
-
-      b.main.setIcon(getMarkerIcon(ev, z, phase));
-      b.main.setZIndex(statusNow === "LIVE" ? 30 : statusNow === "SOON" ? 20 : 10);
-
-      // Halo: only for SOON
-      if (statusNow === "SOON" || statusNow === "LIVE") {
-        if (!b.halo) {
-          b.halo = new google.maps.Marker({
-            position: ev.location!,
-            map: mapRef.current!,
-            clickable: false,
-            icon: getHaloIcon(z, phase),
-            zIndex: 15,
-          });
-        } else {
-          b.halo.setIcon(getHaloIcon(z, phase));
-          b.halo.setMap(mapRef.current!);
-        }
-      } else {
-        b.halo?.setMap(null);
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [signalTick, events]);
-
-  // ✅ 6) idle listener: viewportTick, density↔markers hint, bounds
-  const lastDensityRef = useRef<boolean | null>(null);
-  
-  useEffect(() => {
-    if (!mapRef.current) return;
-
-    const zListener = mapRef.current.addListener("zoom_changed", () => {
-      setZoomTick((t) => t + 1);
-    });
-
-    return () => zListener.remove();
-  }, []);
-
-  useEffect(() => {
-    if (!mapRef.current) return;
-
-    const listener = mapRef.current.addListener("idle", () => {
-      setViewportTick((v) => v + 1);
-
-      const zoom = mapRef.current!.getZoom() ?? 0;
-
-      // zoom out → end active → density mode
-      if (zoom <= 9 && mapActive) {
-        setMapActive(false);
-        setSelectedEvent(null);
-        setShowSnap(false);
-      }
-
-      // ✅ 히트맵 ↔ 마커 전환 힌트
-      const isDensityNow = !mapActive && zoom <= 8;
-      if (lastDensityRef.current === null) {
-        lastDensityRef.current = isDensityNow;
-      } else if (lastDensityRef.current !== isDensityNow) {
-        lastDensityRef.current = isDensityNow;
-      }
-
-      if (ignoreNextBoundsRef.current) {
-        ignoreNextBoundsRef.current = false;
-        return;
-      }
-
-      const b = mapRef.current!.getBounds();
-      if (!b) return;
-
-      onBoundsChanged?.({
-        north: b.getNorthEast().lat(),
-        east: b.getNorthEast().lng(),
-        south: b.getSouthWest().lat(),
-        west: b.getSouthWest().lng(),
-      });
-    });
-
-    return () => listener.remove();
-  }, [onBoundsChanged, mapActive]);
-
-  return (
-    <div className="fixed inset-0 overflow-visible">
-      {/* RADAR OVERLAY */}
-      {!isDensity && (
-        <div
-          className="pointer-events-none absolute inset-0 z-10"
-          style={{
-            background: `
-              radial-gradient(
-                circle at center,
-                rgba(255,255,255,0) 0%,
-                rgba(255,255,255,0) 55%,
-                rgba(15,23,42,0.35) 70%,
-                rgba(15,23,42,0.55) 100%
-              )
-            `,
-          }}
-        />
-      )}
-
-      {/* MAP CANVAS */}
-      <div ref={containerRef} className="absolute inset-0" />
-
-      {/* OPTIONAL CHILDREN OVER MAP */}
-      <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 w-[calc(100%-24px)] max-w-3xl">
-        {children}
-      </div>
-      {/* ❌ Removed: "Tap a marker..." */}
-    </div>
-  );
-});
-
-export default HomeEventMap;
-
-// src/app/components/map-hero/HomeMapSnapCard.tsx
-"use client";
-
-import type { Event } from "@/types";
-import { useMemo } from "react";
-import { getVibe } from "@/lib/vibe";
-import { track } from "@/lib/track";
-import { useUserLocation, haversineKm } from "@/app/components/home/useUserLocation";
-import { useDistanceUnit } from "@/app/components/home/useDistanceUnit";
-import { formatDistance } from "@/lib/distance";
-import { getEventTimeState } from "@/lib/eventTime";
-import { useShare } from "@/hooks/useShare"; 
-
-/* ---------------- helpers ---------------- */
-
-function getAnchorDate(e: any): Date | null {
-  const raw = e.date ?? e.utcDate ?? e.startDate ?? null;
-  if (!raw) return null;
-  const d = new Date(raw);
-  return isNaN(d.getTime()) ? null : d;
-}
-
-function formatStartsLabel(e: any) {
-  const state = getEventTimeState(e);
-
-  if (state === "LIVE") {
-    return { tone: "live" as const, text: "LIVE" };
-  }
-
-  if (state === "SOON") {
-    return { tone: "soon" as const, text: "SOON" };
-  }
-
-  if (state === "UPCOMING") {
-    return { tone: "upcoming" as const, text: "UPCOMING" };
-  }
-
-  return { tone: "upcoming" as const, text: "ENDED" };
-}
-
-function formatMatchTime(e: any) {
-  if (e.kind === "session") return null;
-  const d = getAnchorDate(e);
-  if (!d) return null;
-
-  return d.toLocaleString(undefined, {
-    weekday: "short",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
-
-function formatHorseRacingSession(e: any) {
-  if (e.sport !== "horse-racing" || e.kind !== "session") return null;
-
-  const label = e.payload?.sessionTime;
-  const start = new Date(e.startDate);
-  const end = new Date(e.endDate);
-
-  if (!label || isNaN(start.getTime()) || isNaN(end.getTime())) {
-    return label ?? null;
-  }
-
-  const timeOpts: Intl.DateTimeFormatOptions = {
-    hour: "numeric",
-    minute: "2-digit",
-  };
-
-  return `${label} · ${start.toLocaleTimeString(undefined, timeOpts)} – ${end.toLocaleTimeString(undefined, timeOpts)}`;
-}
-
-
-function formatSessionRange(e: any, now = new Date()) {
-  if (e.kind !== "session" || !e.startDate || !e.endDate) return null;
-
-  const start = new Date(e.startDate);
-  const end = new Date(e.endDate);
-
-  const opts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
-  const startLabel = start.toLocaleDateString(undefined, opts);
-  const endLabel = end.toLocaleDateString(undefined, opts);
-
-  const totalDays =
-    Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-
-  const dayIndex =
-    now >= start && now <= end
-      ? Math.floor(
-          (now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
-        ) + 1
-      : null;
-
-  return {
-    range: `${startLabel} – ${endLabel}`,
-    dayIndex,
-    totalDays,
-  };
-}
-
-/* ---------------- component ---------------- */
-
-export default function HomeMapSnapCard({
-  event,
-  onClose,
-}: {
-  event: Event;
-  onClose: () => void;
-}) {
-  const e: any = event;
-  const vibe = getVibe(e);
-
-  const { share, toastVisible } = useShare();
-
-  const shareUrl = useMemo(() => {
-    if (typeof window === "undefined") return "";
-    const base = `${window.location.origin}${window.location.pathname}`;
-    const u = new URL(base);
-    u.searchParams.set("eventId", String(e.id));
-    if (e.sport) u.searchParams.set("sport", String(e.sport));
-    if (e.city) u.searchParams.set("city", String(e.city));
-    u.searchParams.set("src", "snap_card");
-    return u.toString();
-  }, [e.id, e.sport, e.city]);
-
-  const starts = useMemo(() => formatStartsLabel(e), [e]);
-  const matchTime = useMemo(() => formatMatchTime(e), [e]);
-  const session = useMemo(() => formatSessionRange(e), [e]);
-
-  
-  const shareText = useMemo(() => {
-    // 너무 길게 말고, OS 공유 시트에 잘 보이게 한 줄 추천
-    const title =
-      e.sport === "horse-racing"
-        ? (e.code ? `${e.title} · ${e.code}` : e.title)
-        : (e.sport === "tennis" || e.sport === "darts")
-        ? e.title
-        : `${e.homeTeam} vs ${e.awayTeam}`;
-
-    const when = matchTime ? ` · ${matchTime}` : "";
-    return `${title}${when}`;
-  }, [e, matchTime]);
-
-
-  const horseSession = useMemo(
-    () => formatHorseRacingSession(e),
-    [e]
-  );
-
-  const { pos } = useUserLocation({ enabled: true });
-  const { unit } = useDistanceUnit();
-  
-
-  const distance =
-    pos && e.location
-      ? haversineKm(pos, e.location)
-      : null;
-
-  const mapsHref = useMemo(() => {
-    const { lat, lng } = e.location ?? {};
-    if (typeof lat !== "number" || typeof lng !== "number") return null;
-    return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
-  }, [e.location]);
-
-  const ticketHref = useMemo(() => {
-    if (!e.homepageUrl) return null;
-
-    return (
-      `/api/go/ticket` +
-      `?eventId=${e.id}` +
-      `&sport=${e.sport ?? ""}` +
-      `&city=${e.city ?? ""}` +
-      `&source=snap_card` + // ✅ 여기
-      `&target=${encodeURIComponent(e.homepageUrl)}`
-    );
-    }, [e]);
-
-
-  return (
-    <div
-      className="
-        fixed inset-x-0 z-[1000]
-        bottom-[calc(env(safe-area-inset-bottom)+12px)]
-        px-4
-      "
-      role="dialog"
-    >
-      <div
-        className="
-          max-w-3xl mx-auto
-          rounded-3xl
-          bg-white/85 dark:bg-black/80
-          backdrop-blur-xl
-          shadow-[0_-8px_40px_rgba(0,0,0,0.12)]
-        "
-      >
-        <div className="px-5 py-5">
-          {/* Header */}
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
-
-              {/* Team logos (team sports only) */}
-              {e.sport !== "tennis" && e.sport !== "darts" && (e.homeTeamLogo || e.awayTeamLogo) && (
-                <div className="flex items-center gap-1 mb-2">
-                  {e.homeTeamLogo && (
-                    <img
-                      src={e.homeTeamLogo}
-                      alt={e.homeTeam}
-                      className="w-7 h-7 rounded-full bg-white"
-                    />
-                  )}
-                  {e.awayTeamLogo && (
-                    <img
-                      src={e.awayTeamLogo}
-                      alt={e.awayTeam}
-                      className="w-7 h-7 rounded-full bg-white -ml-2"
-                    />
-                  )}
-                </div>
-              )}
-
-              {/* Title */}
-              <p className="text-lg font-semibold leading-tight truncate">
-                {e.sport === "horse-racing"
-                  ? e.code
-                    ? `${e.title} · ${e.code}`
-                    : e.title
-                  : e.sport === "tennis" || e.sport === "darts" // ✅ 추가
-                  ? e.title
-                  : `${e.homeTeam} vs ${e.awayTeam}`}
-              </p>
-
-              {/* Absolute time (match only) */}
-              {matchTime && (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {matchTime}
-                </p>
-              )}
-
-              {/* Session info */}
-              {horseSession && (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {horseSession}
-                </p>
-              )}
-
-              {e.kind === "session" && e.sport !== "horse-racing" && session && (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {session.range}
-                  {session.dayIndex && (
-                    <> · Day {session.dayIndex} of {session.totalDays}</>
-                  )}
-                </p>
-              )}
-
-              {/* Meta row */}
-              <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
-                {typeof distance === "number" && (
-                  <span>{formatDistance(distance, unit)}</span>
-                )}
-                {e.sport && <span>{e.sport}</span>}
-              </div>
-
-              {/* Pills */}
-              <div className="mt-3 flex flex-wrap gap-2">
-                <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium bg-muted/60">
-                  {vibe.emoji && <span>{vibe.emoji}</span>}
-                  <span>{vibe.label}</span>
-                </span>
-
-                <span
-                  className={[
-                    "inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold",
-                    starts.tone === "live"
-                      ? "bg-red-500/15 text-red-600"
-                      : starts.tone === "soon"
-                      ? "bg-amber-500/15 text-amber-700"
-                      : "bg-muted/60 text-muted-foreground",
-                  ].join(" ")}
-                >
-                  {starts.text}
-                </span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-
-            {/* Share (icon button) */}
-          
-            <button
-              onClick={() => {
-                track("snapcard_share_clicked", { eventId: e.id });
-                share(shareUrl, shareText);
-              }}
-              className="text-xs font-medium text-muted-foreground hover:text-foreground"
-            >
-              Share
-            </button>
-
-            {/* Close */}
-            <button
-              onClick={() => {
-                track("snapcard_closed", { eventId: e.id });
-                onClose();
-              }}
-              className="
-                inline-flex items-center justify-center
-                w-9 h-9
-                rounded-full
-                text-muted-foreground
-                hover:text-foreground hover:bg-muted/50
-                transition
-              "
-              aria-label="Close"
-              title="Close"
-            >
-              ✕
-            </button>
-          </div>
-
-            {/* ✅ 데스크탑 fallback(copy) 토스트 */}
-            {toastVisible && (
-              <div
-                className="
-                  mt-2
-                  w-full
-                  text-center
-                  text-xs
-                  text-muted-foreground
-                "
-                role="status"
-                aria-live="polite"
-              >
-                Link copied
-              </div>
-            )}
-          </div>
-
-          {/* ✅ 기존 CTA 그대로 */}
-          {mapsHref && (
-            <div className="mt-5">
-              <a
-                href={mapsHref}
-                target="_blank"
-                rel="noreferrer"
-                onClick={() => track("get_directions_clicked", { eventId: e.id })}
-                className="
-                  block w-full
-                  rounded-2xl
-                  bg-foreground
-                  text-background
-                  text-center
-                  py-3
-                  text-sm font-semibold
-                  hover:opacity-90
-                  transition
-                "
-              >
-                Get directions
-              </a>
-            </div>
-          )}
-
-          {ticketHref && (
-            <a
-              href={ticketHref}
-              target="_blank"
-              rel="noreferrer"
-              onClick={() =>
-                track("official_ticket_clicked", {
-                  eventId: e.id,
-                  sport: e.sport,
-                  city: e.city,
-                })
-              }
-              className="
-                block w-full
-                rounded-2xl
-                border border-border
-                text-center
-                py-2.5
-                text-sm font-semibold
-                text-foreground
-                hover:bg-muted/50
-                transition
-              "
-            >
-              {e.isPaid ? "Buy official tickets" : "View official event info"}
-            </a>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-//src/app/app/page.tsx
-
-"use client";
-
-import { useEffect, useMemo, useState, useRef  } from "react";
-import type { Event } from "@/types";
-
-import HomeMapStage from "@/app/components/home/HomeMapStage";
-import NowHeroScopeBar from "@/app/components/home/NowHeroScopeBar";
-
-import HomeMapSnapCard from "@/app/components/map-hero/HomeMapSnapCard";
-
-import LocationSheet from "@/app/components/home/LocationSheet";
-import { useLocationMode } from "@/app/components/home/useLocationMode";
-import { useUserLocation, haversineKm } from "@/app/components/home/useUserLocation";
-import { extractRegions, extractCities } from "@/lib/eventAreas";
-import { track } from "@/lib/track";
-import type { HomeEventMapRef } from "@/app/components/map-hero/HomeEventMap";
-import type { TimeScope } from "@/lib/nowDashboard";
-import { calcCityCenter } from "@/lib/calcCityCenter";
-import MapStatusPill from "@/app/components/home/MapStatusPill";
-import type { AreaIndex } from "@/types/area";
-import { getDefaultDurationMs } from "@/lib/eventTime";
-import { getClientId } from "@/lib/clientId";
-import { isReturn24h } from "@/lib/returnCheck";
-import { shouldLogVisit } from "@/lib/visitThrottle";
-import { detectEntryReason } from "@/lib/entryReason";
-
-function getStartDate(e: any): Date | null {
-  const raw = e.date ?? e.utcDate ?? e.startDate ?? null;
-  if (!raw) return null;
-  const d = new Date(raw);
-  return isNaN(d.getTime()) ? null : d;
-}
-
-function startOfLocalDay(d: Date) {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
-}
-function nextWeekendRange(now: Date) {
-  const base = startOfLocalDay(now);
-  const day = base.getDay(); // 0 Sun ... 6 Sat
-  const toSat = day === 6 ? 0 : (6 - day + 7) % 7;
-  const sat = new Date(base);
-  sat.setDate(sat.getDate() + toSat);
-  const mon = new Date(sat);
-  mon.setDate(mon.getDate() + 2);
-  return { start: sat, end: mon };
-}
-
-function isInBounds(
-  location: { lat: number; lng: number },
-  bounds: google.maps.LatLngBoundsLiteral
-) {
-  return (
-    location.lat <= bounds.north &&
-    location.lat >= bounds.south &&
-    location.lng <= bounds.east &&
-    location.lng >= bounds.west
-  );
-}
-
-// session = tennis tournaments, horse-racing meetings, etc.
-
-function isSession(e: any) {
-  return e.kind === "session";
-}
-
-function overlaps(aStart: Date, aEnd: Date, bStart: Date, bEnd: Date) {
-  return aStart < bEnd && aEnd > bStart;
-}
-
-export default function HomePage() {
-  const [areaIndex, setAreaIndex] = useState<AreaIndex[]>([]);
-  const [currentEvents, setCurrentEvents] = useState<Event[]>([]); // 이번 주 표시용
-
-  const { hasLocation } = useLocationMode();
-  const { pos } = useUserLocation({ enabled: hasLocation });
-    
-  const mapRef = useRef<HomeEventMapRef | null>(null);
-  const [snapEvent, setSnapEvent] = useState<Event | null>(null);
-
-  // observer mode (no geo permission)
-  const [observerRegion, setObserverRegion] = useState<string | null>(null);
-  const [observerCity, setObserverCity] = useState<string | null>(null);
-  const [locationOpen, setLocationOpen] = useState(false);
-  const HOME_RADIUS_KM = 25;
-
-  const [timeScope, setTimeScope] = useState<TimeScope>("today");
-  const [heroExpanded, setHeroExpanded] = useState(true);
-  const [sharedEventId, setSharedEventId] = useState<string | null>(null);
-  const [sharedSource, setSharedSource] = useState<string | null>(null);
-  const [enteredFromShare, setEnteredFromShare] = useState(false);
-
-  const [mapViewMode, setMapViewMode] =
-    useState<"user" | "global" | "observer">(
-      hasLocation ? "user" : "observer"
-    );
-
-  const toggleMapView = () => {
-    if (!hasLocation || !mapRef.current) return;
-
-    if (mapViewMode === "user") {
-      // 🌍 전체 히트맵으로
-      setMapViewMode("global");
-      setAppliedBounds(null);
-      setPendingBounds(null);
-
-      mapRef.current.resetToAll();
-      track("map_view_global_from_user");
-    } else {
-      // 📍 내 위치로 복귀
-      setMapViewMode("user");
-
-      if (pos) {
-        mapRef.current.panTo({
-          lat: pos.lat,
-          lng: pos.lng,
-        });
-      }
-
-      track("map_view_user_from_global");
-    }
-  };
-  const showNowHero = hasLocation || observerCity || !hasLocation;
-
-  const [pendingBounds, setPendingBounds] =
-    useState<google.maps.LatLngBoundsLiteral | null>(null);
-
-  const [appliedBounds, setAppliedBounds] =
-    useState<google.maps.LatLngBoundsLiteral | null>(null);
-
-  const isMobile =
-    typeof window !== "undefined" && window.innerWidth < 768;
-
-  useEffect(() => {
-    // 1️⃣ 기존 코드 (그대로 둠)
-    track("home_loaded");
-    (async () => {
-      // ⬅️ 공간 구조용 (나라/도시 추출)
-      const areaRes = await fetch("/api/events?window=180d");
-      const areaData = await areaRes.json();
-      setAreaIndex(areaData.areas ?? []);
-
-      // ⬅️ 실제 지도/마커용 (이번 주)
-      const curRes = await fetch("/api/events?window=7d");
-      const curData = await curRes.json();
-      setCurrentEvents(curData.events ?? []);
-    })();
-  }, []);
-
-  useEffect(() => {
-    if (hasLocation) {
-      setMapViewMode("user");
-    }
-  }, [hasLocation]);
-
-  // observer → located 전환 감지
-  useEffect(() => {
-    if (hasLocation && observerCity) {
-      setObserverRegion(null);
-      setObserverCity(null);
-      track("observer_to_located");
-    }
-  }, [hasLocation]);
-
-  // city 선택 시
-  useEffect(() => {
-    if (observerCity) {
-      localStorage.setItem("sportsive_observer_city", observerCity);
-    }
-  }, [observerCity]);
-
-  useEffect(() => {
-    if (!observerCity || !mapRef.current) return;
-
-    // 1) ✅ 이벤트 없어도 이동: areaIndex(center)로 이동
-    const area = areaIndex.find(a => a.city === observerCity);
-    if (area?.center) {
-      mapRef.current.panTo(area.center);
-      return;
-    }
-
-    // 2) (fallback) 혹시 areaIndex에 없으면 기존 방식(이벤트 평균)으로 이동
-    const center = calcCityCenter(currentEvents, observerCity);
-    if (center) {
-      mapRef.current.panTo(center);
-    }
-  }, [observerCity, areaIndex, currentEvents]);
-
-  useEffect(() => {
-    if (!hasLocation || !pos || !mapRef.current) return;
-    if (sharedEventId) return; // 🔥 공유 링크 진입이면 내 위치로 안 감
-
-    mapRef.current.panTo({
-      lat: pos.lat,
-      lng: pos.lng,
-    });
-  }, [hasLocation, pos, sharedEventId]);
-
-
-  // ✅ 공간 구조는 areaIndex 기준
-  const regions = useMemo(
-    () => extractRegions(areaIndex),
-    [areaIndex]
-  );
-
-  const cities = useMemo(
-    () => (observerRegion ? extractCities(areaIndex, observerRegion) : []),
-    [areaIndex, observerRegion]
-  );
-
-  // filteredEvents useMemo 내부
-  const filteredEvents = useMemo(() => {
+    /* =========================
+       4️⃣ TIME WINDOW FILTER
+    ========================= */
     const now = new Date();
-    const todayStart = startOfLocalDay(now);
+    const windowEnd = new Date(now);
 
-    const todayEnd = new Date(todayStart);
-    todayEnd.setDate(todayEnd.getDate() + 1);
-
-    const tomorrowStart = new Date(todayStart);
-    tomorrowStart.setDate(tomorrowStart.getDate() + 1);
-    const tomorrowEnd = new Date(tomorrowStart);
-    tomorrowEnd.setDate(tomorrowEnd.getDate() + 1);
-
-    const weekEnd = new Date(todayStart);
-    weekEnd.setDate(weekEnd.getDate() + 7);
-
-    const weekend = nextWeekendRange(now);
-
-    return currentEvents.filter((e: any) => {
-      /* ======================
-        1️⃣ 날짜 파싱
-      ====================== */
-      const start = getStartDate(e);
-      if (!start) return false;
-
-      // session 이벤트면 기간 사용
-      const isSessionEvent = isSession(e);
-      const sessionStart = isSessionEvent ? new Date(e.startDate) : start;
-      const sessionEnd = isSessionEvent
-        ? new Date(e.endDate)
-        : new Date(start.getTime() + getDefaultDurationMs(e));
-
-      /* ======================
-        2️⃣ 시간 필터 (scope 통합)
-      ====================== */
-
-      // scopeStart / scopeEnd 계산
-      let scopeStart: Date;
-      let scopeEnd: Date;
-
-      switch (timeScope) {
-        case "today":
-          scopeStart = todayStart;
-          scopeEnd = todayEnd;
-          break;
-
-        case "tomorrow":
-          scopeStart = tomorrowStart;
-          scopeEnd = tomorrowEnd;
-          break;
-
-        case "weekend":
-          scopeStart = weekend.start;
-          scopeEnd = weekend.end;
-          break;
-
-        case "week":
-        default:
-          scopeStart = now;
-          scopeEnd = weekEnd;
-          break;
-      }
-
-      // session / non-session 공통 처리
-      const inScope = isSessionEvent
-        ? overlaps(sessionStart, sessionEnd, scopeStart, scopeEnd)
-        : start >= scopeStart && start < scopeEnd;
-
-      if (!inScope) return false;
-
-      /* ======================
-        3️⃣ 위치 필터 (항상 적용)
-      ====================== */
-
-      // 📍 위치 공유 ON → 내 주변
-      if (hasLocation && pos && mapViewMode === "user") {
-        if (!e.location?.lat || !e.location?.lng) return false;
-
-        const distKm = haversineKm(pos, {
-          lat: e.location.lat,
-          lng: e.location.lng,
-        });
-
-        if (distKm > HOME_RADIUS_KM) return false;
-      }
-
-      // 👀 위치 공유 OFF + 도시 선택
-      if (!hasLocation && observerCity) {
-        if (e.city !== observerCity) return false;
-      }
-
-      /* ======================
-        4️⃣ Search this area
-      ====================== */
-      if (appliedBounds && e.location) {
-        if (!isInBounds(e.location, appliedBounds)) return false;
-      }
-
-      return true;
-    });
-  }, [
-    currentEvents,
-    hasLocation,
-    pos,
-    observerCity,
-    timeScope,
-    appliedBounds,
-    mapViewMode,
-  ]);
-
-
-  // ✅ City Pulse 전용 (위치 필터 제거)
-  const pulseEvents = useMemo(() => {
-    const now = new Date();
-    const todayStart = startOfLocalDay(now);
-    const todayEnd = new Date(todayStart);
-    todayEnd.setDate(todayEnd.getDate() + 1);
-
-    return currentEvents.filter((e: any) => {
-      const start = getStartDate(e);
-      if (!start) return false;
-
-      if (isSession(e)) {
-        const sStart = new Date(e.startDate);
-        const sEnd = new Date(e.endDate);
-        return overlaps(sStart, sEnd, todayStart, todayEnd);
-      }
-
-      return start >= todayStart && start < todayEnd;
-    });
-  }, [currentEvents]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const params = new URLSearchParams(window.location.search);
-    const eid = params.get("eventId");
-
-    setSharedEventId(eid);
-    setSharedSource(params.get("src"));
-
-    if (eid) {
-      setEnteredFromShare(true); // 🔥 추가
+    if (window === "today") {
+      windowEnd.setHours(23, 59, 59, 999);
+    } else if (window === "7d") {
+      windowEnd.setDate(windowEnd.getDate() + 7);
+    } else if (window === "30d") {
+      windowEnd.setDate(windowEnd.getDate() + 30);
+    } else if (window === "60d") {
+      windowEnd.setDate(windowEnd.getDate() + 60);
+    } else if (window === "180d") {
+      windowEnd.setDate(windowEnd.getDate() + 180);
     }
-  }, []);
 
-  // ✅ 공유 링크 진입 시: 내 주변 필터 강제 해제
-  useEffect(() => {
-    if (!sharedEventId) return;
+    const filtered = merged
+      .filter((e: any) => isEventActiveInWindow(e, now, windowEnd))
+      .map((e: any) => ({
+        ...e,
+        startAtUtc: e.date, // sorting & discovery 기준
+      }))
+      .sort(
+        (a: any, b: any) =>
+          new Date(a.startAtUtc).getTime() -
+          new Date(b.startAtUtc).getTime()
+      );
 
-    setMapViewMode("global"); // 🔥 이 한 줄이 핵심
-  }, [sharedEventId]);
-
-
-  useEffect(() => {
-    if (!currentEvents.length) return;
-    if (!sharedEventId) return;
-    if (!mapRef.current) return;
-
-    const ev = currentEvents.find(e => String(e.id) === sharedEventId);
-    if (!ev) return;
-
-    // 🔥 지도 먼저 포커스
-    mapRef.current.focus(String(ev.id));
-
-    // 🔥 카드 상태 동기화
-    setSnapEvent(ev);
-
-    track("snapcard_opened_from_share", {
-      eventId: sharedEventId,
-      source: sharedSource ?? "unknown",
-    });
-  }, [currentEvents, sharedEventId, sharedSource]);
-
-  useEffect(() => {
-    track("home_loaded");
-
-    if (shouldLogVisit()) {
-      fetch("/api/log/visit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          client_id: getClientId(),
-          is_within_first_24h: isReturn24h(),
-          entry_reason: detectEntryReason(),
-        }),
-      });
-    }
-  }, []);
-
-  return (
-    <main className="relative min-h-screen">
-      {/* FULLSCREEN MAP */}
-      <div className="fixed inset-0">
-        <HomeMapStage
-          ref={mapRef}
-          events={sharedEventId ? currentEvents : filteredEvents}
-          timeScope={timeScope} 
-          onDiscoverFromMap={(id) => {
-            const ev = filteredEvents.find(e => e.id === id) ?? null;
-            setSnapEvent(ev);
-          }}
-          onBoundsChanged={setPendingBounds}
-        />
-
-      </div>
-
-      {/* 🔍 NEARBY SPORTS SCAN BUTTON (observer only) */}
-      {!hasLocation && (
-        <button
-          onClick={() => setLocationOpen(true)}
-          className="
-            fixed right-4
-            bottom-[calc(env(safe-area-inset-bottom)+220px)]
-            z-[70]
-            w-10 h-10
-            rounded-full
-            bg-black
-            flex items-center justify-center
-            shadow-lg
-          "
-          aria-label="Scan nearby sports"
-        >
-          <span className="relative">
-            <span className="block w-2 h-2 bg-white rounded-full" />
-            <span className="absolute inset-0 rounded-full border border-white/40 animate-ping" />
-          </span>
-        </button>
-      )}
-
-      {/* 🔘 MAP VIEW TOGGLE BUTTON (located user only) */}
-      {hasLocation && (
-        <button
-          onClick={toggleMapView}
-          className="
-            fixed right-4
-            bottom-[calc(env(safe-area-inset-bottom)+220px)]
-            z-[70]
-            w-10 h-10
-            rounded-full
-            bg-black
-            flex items-center justify-center
-            shadow-lg
-          "
-          aria-label={
-            mapViewMode === "user"
-              ? "View all events"
-              : "Back to my location"
-          }
-        >
-          {mapViewMode === "user" ? "🌍" : "📍"}
-        </button>
-      )}
-
-      {/* NOW HERO (MAIN UI) */}
-      {showNowHero && (
-        <div
-          className="
-            fixed z-40
-            left-1/2 -translate-x-1/2
-            bottom-[calc(env(safe-area-inset-bottom)+12px)]
-            w-full max-w-3xl
-            pointer-events-none
-          "
-        >
-          <div className="px-4 pointer-events-auto">
-            {/* ✅ 항상 보이는 필터 바 */}
-            <div
-              className="
-                h-14
-                rounded-full
-                bg-background/80
-                backdrop-blur
-                ring-1 ring-border/40
-                flex items-center justify-center
-              "
-              onClick={() => setHeroExpanded(true)}
-            >
-              {/* 👉 NowHero에서 필터 UI만 분리해서 컴포넌트화 */}
-              <NowHeroScopeBar
-                scope={timeScope}
-                onScopeChange={setTimeScope}
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* LOCATION SHEET (observer only) */}
-      {locationOpen && (
-        <LocationSheet
-          regions={regions}
-          cities={cities}
-          observerRegion={observerRegion}
-          onPickRegion={(r) => {
-            // ✅ ALL 선택 (LocationSheet에서 null을 보냄)
-            if (r === null) {
-              setObserverRegion(null);
-              setObserverCity(null);
-
-              setAppliedBounds(null);
-              setPendingBounds(null);
-
-              setHeroExpanded(false); // 리스트 접고
-              setSnapEvent(null);     // 카드 닫고
-
-              mapRef.current?.resetToAll(); // 🔥 지도 + 상태 리셋
-
-              track("home_region_all_selected");
-              setLocationOpen(false);
-              return;
-            }
-
-            // ✅ 특정 region 선택
-            setObserverRegion(r);
-            setObserverCity(null);
-            track("home_region_selected", { r });
-          }}
-
-          onPickCity={(c) => {
-            setObserverCity(c);
-            setLocationOpen(false);
-          }}
-
-          onClose={() => setLocationOpen(false)}
-        />
-      )}
-
-      {/* 🟢 MAP STATUS PILL (today only) */}
-      {timeScope === "today" && filteredEvents.length > 0 && (
-        <MapStatusPill
-          events={filteredEvents}
-          scope={mapViewMode}
-        />
-      )}
-
-      {snapEvent && (
-        <HomeMapSnapCard
-          event={snapEvent}
-          onClose={() => {
-            mapRef.current?.closeSnap();  // 🔴 지도 원상복귀
-            setSnapEvent(null);
-          }}
-        />
-      )}
-
-    </main>
-  );
+    return NextResponse.json({ events: filtered });
+  } catch (error) {
+    console.error("❌ Error combining event APIs:", error);
+    return NextResponse.json({ events: [] }, { status: 500 });
+  }
 }
+

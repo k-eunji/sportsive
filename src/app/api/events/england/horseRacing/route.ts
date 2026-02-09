@@ -75,6 +75,8 @@ export async function GET() {
         startDate: start.toISOString(),
         endDate: end.toISOString(),
 
+        sessionTime: s.time, // "Afternoon" | "Evening" | "Floodlit"
+
         venue: s.courses?.venue,
         city: s.courses?.city,
         region: s.courses?.region,

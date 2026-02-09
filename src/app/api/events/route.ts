@@ -85,6 +85,8 @@ export async function GET(req: Request) {
       windowEnd.setDate(windowEnd.getDate() + 7);
     } else if (window === "30d") {
       windowEnd.setDate(windowEnd.getDate() + 30);
+    } else if (window === "60d") {
+      windowEnd.setDate(windowEnd.getDate() + 60);
     } else if (window === "180d") {
       windowEnd.setDate(windowEnd.getDate() + 180);
     }

@@ -132,24 +132,24 @@ export function getEventTimeState(
   e: any,
   now: Date = new Date()
 ): EventTimeState {
-  // 1️⃣ generic session (darts / tournaments)
-  const session = deriveSessionWindow(e);
-  if (session) {
-    if (now >= session.start && now <= session.end) return "LIVE";
-    if (session.start > now) {
-      const diffMs = session.start.getTime() - now.getTime();
+  // 1️⃣ 🐎 horse racing override (MUST come first)
+  const horse = deriveHorseRacingSessionWindow(e);
+  if (horse) {
+    if (now >= horse.start && now <= horse.end) return "LIVE";
+    if (horse.start > now) {
+      const diffMs = horse.start.getTime() - now.getTime();
       if (diffMs <= getSoonWindowMs(e)) return "SOON";
       return "UPCOMING";
     }
     return "ENDED";
   }
 
-  // 2️⃣ horse racing override
-  const horse = deriveHorseRacingSessionWindow(e);
-  if (horse) {
-    if (now >= horse.start && now <= horse.end) return "LIVE";
-    if (horse.start > now) {
-      const diffMs = horse.start.getTime() - now.getTime();
+  // 2️⃣ generic session (darts / tournaments)
+  const session = deriveSessionWindow(e);
+  if (session) {
+    if (now >= session.start && now <= session.end) return "LIVE";
+    if (session.start > now) {
+      const diffMs = session.start.getTime() - now.getTime();
       if (diffMs <= getSoonWindowMs(e)) return "SOON";
       return "UPCOMING";
     }

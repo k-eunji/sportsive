@@ -1,7 +1,5 @@
 // src/lib/nowDashboard.ts
 import type { Event } from "@/types";
-import { getEventTimeState } from "@/lib/eventTime";
-
 
 /**
  * NowHero / City status calculator

@@ -25,10 +25,16 @@ export function EventCard({ card }: { card: EventCardModel }) {
   let timeLabel = "";
 
   if (sportKey === "horseracing") {
+    // 경마: 세션 라벨 자체가 시간 의미
     timeLabel = card.event.payload?.sessionTime ?? "";
+
   } else if (card.event.kind === "session") {
-    timeLabel = "All day";
+    // 🎯 테니스 / 다트: 시작 시각만 표시
+    const t = card.event.payload?.typicalStartTime;
+    timeLabel = t ? `Starts ~${t}` : "";
+
   } else {
+    // 일반 경기
     timeLabel = formatEventTimeShort(card.event.date);
   }
 

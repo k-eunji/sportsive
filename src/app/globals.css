@@ -216,3 +216,10 @@ html, body {
   background-size: 160px 160px;
   mix-blend-mode: soft-light;
 }
+
+.ops-pill {
+  @apply px-3 py-1.5 text-xs font-semibold
+         rounded-full
+         bg-background/80
+         ring-1 ring-border/40;
+}
