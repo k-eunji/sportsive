@@ -7,6 +7,7 @@ import { GET as getTennisEvents } from "./england/tennis/route";
 import { GET as getHorseRacingEvents } from "./england/horseRacing/route";
 import { GET as getBasketballEvents } from "./england/basketball/route";
 import { GET as getDartEvents } from "./england/dart/route";
+import { GET as getCricketEvents } from "./england/cricket/route";
 
 import { isEventActiveInWindow } from "@/lib/events/lifecycle";
 import { buildAreaIndex } from "@/lib/events/buildAreaIndex";
@@ -32,6 +33,7 @@ export async function GET(req: Request) {
       horseRacingRes,
       basketballRes,
       dartRes,
+      cricketRes,
     ] = await Promise.all([
       getFootballEvents(),
       getRugbyEvents(),
@@ -39,6 +41,7 @@ export async function GET(req: Request) {
       getHorseRacingEvents(),
       getBasketballEvents(),
       getDartEvents(),
+      getCricketEvents(),
     ]);
 
     const footballData = await footballRes.json();
@@ -47,6 +50,7 @@ export async function GET(req: Request) {
     const horseRacingData = await horseRacingRes.json();
     const basketballData = await basketballRes.json();
     const dartData = await dartRes.json();
+    const cricketData = await cricketRes.json();
 
     /* =========================
        1️⃣ RAW MERGE (중복 허용)
@@ -58,6 +62,7 @@ export async function GET(req: Request) {
       ...(horseRacingData.matches ?? horseRacingData.events ?? []),
       ...(basketballData.events ?? []),
       ...(dartData.matches ?? dartData.events ?? []),
+      ...(cricketData.events ?? []),
     ];
 
     /* =========================

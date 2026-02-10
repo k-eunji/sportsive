@@ -1,6 +1,7 @@
 //src/lib/eventVisibility.ts
 
 import { getEventTimeState } from "@/lib/eventTime";
+import { resolveEventBehavior } from "@/lib/resolveEventBehavior";
 
 export type MapVisibility =
   | "ACTIVE"
@@ -29,9 +30,12 @@ export function getMapVisibility(e: any, now = new Date()): MapVisibility {
     now.getMonth(),
     now.getDate()
   );
+    
+  const behavior = resolveEventBehavior(e);
 
-  if (startDay.getTime() === nowDay.getTime()) {
-    return "ENDED_TODAY";
+  // day_span 이벤트는 하루 종료로 dim 처리 금지
+  if (behavior.timeModel === "day_span") {
+    return "ACTIVE";
   }
 
   return "HIDDEN";

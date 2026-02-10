@@ -15,9 +15,18 @@ export interface Event {
   | 'basketball'
   | 'tennis'
   | 'darts'
-  | 'horse-racing';
+  | 'horse-racing'
+  | 'cricket';
 
-  kind: 'match' | 'session' | 'race' | 'round';
+  kind:
+  | 'match'
+  | 'session'
+  | 'race'
+  | 'round'
+  | 'first_class'
+  | 't20'
+  | 'one_day';
+
   description?: string;
   location: Location;
   venue?: string;

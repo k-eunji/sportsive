@@ -198,6 +198,34 @@ function ListHeaderFilter<T>({
   );
 }
 
+function formatScheduleTime(e: any): string {
+  const sport = (e.sport ?? "").toLowerCase().replace(/\s+/g, "-");
+
+  // 🐎 Horse racing → derive session from hour
+  if (sport === "horse-racing") {
+    const d = new Date(e.date ?? e.startDate);
+    const h = d.getHours();
+
+    if (h < 15) return "Afternoon";
+    if (h < 19) return "Evening";
+    return "Floodlit";
+  }
+
+  // 🎯 / 🎾 session but fixed start time
+  if (
+    e.kind === "session" &&
+    (sport === "darts" || sport === "tennis")
+  ) {
+    const t =
+      e.payload?.typicalStartTime ??
+      e.payload?.startTime;
+
+    if (t) return t;
+  }
+
+  return formatTime(e.date ?? e.startAtUtc ?? e.startDate);
+}
+
 /* =====================
    Page
 ===================== */
@@ -432,7 +460,7 @@ export default function SchedulesPage() {
       {rows.length > 0 && (
         <div className="ring-1 ring-border/50 overflow-x-auto">
           {/* TABLE HEADER */}
-          <div className="grid grid-cols-[110px_60px_160px_1fr_140px_140px] px-3 py-2 text-[11px] uppercase tracking-wide text-muted-foreground border-b">
+          <div className="grid grid-cols-[110px_120px_160px_1fr_140px_140px] px-3 py-2 text-[11px] uppercase tracking-wide text-muted-foreground border-b">
             <HeaderFilter
               label="Date"
               sortKey="date"
@@ -475,7 +503,7 @@ export default function SchedulesPage() {
             return (
               <div
                 key={e.id}
-                className="grid grid-cols-[110px_60px_160px_1fr_140px_140px] items-center px-3 py-2 text-xs font-mono border-b last:border-b-0"
+                className="grid grid grid-cols-[110px_120px_160px_1fr_140px_140px] items-center px-3 py-2 text-xs font-mono border-b last:border-b-0"
               >
                 {/* Date */}
                 <div>
@@ -484,7 +512,7 @@ export default function SchedulesPage() {
 
                 {/* Time */}
                 <div className="font-medium">
-                  {formatTime(e.date ?? e.startAtUtc ?? e.startDate)}
+                  {formatScheduleTime(e)}
                 </div>
 
                 {/* Competition */}

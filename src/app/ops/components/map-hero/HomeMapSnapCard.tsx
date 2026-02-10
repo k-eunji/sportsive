@@ -50,22 +50,19 @@ function isHorseRacing(e: any) {
   );
 }
 
-function formatHorseRacingTime(e: any) {
-  if (!isHorseRacing(e)) return null;
-  if (!e.startDate || !e.endDate) return null;
+function formatHorseRacingLabel(e: any): string | null {
+  const sport =
+    typeof e.sport === "string"
+      ? e.sport.replace(/\s+/g, "-").toLowerCase()
+      : "";
 
-  const start = new Date(e.startDate);
-  const end = new Date(e.endDate);
+  if (sport !== "horse-racing") return null;
 
-  const timeOpts: Intl.DateTimeFormatOptions = {
-    hour: "numeric",
-    minute: "2-digit",
-  };
-
-  return `${start.toLocaleTimeString(undefined, timeOpts)}–${end.toLocaleTimeString(
-    undefined,
-    timeOpts
-  )}`;
+  return (
+    e.sessionTime ??
+    e.payload?.sessionTime ??
+    null
+  );
 }
 
 /* ---------------- component ---------------- */
@@ -106,6 +103,8 @@ export default function HomeMapSnapCard({
     );
   }, [e]);
 
+  const horseLabel = formatHorseRacingLabel(e);
+
   return (
     <div
       className="
@@ -134,14 +133,11 @@ export default function HomeMapSnapCard({
               </p>
 
               {/* Time */}
-              {(matchTime || isHorseRacing(e)) && (
+              {(horseLabel || matchTime) && (
                 <p className="mt-0.5 text-xs text-muted-foreground">
-                  {isHorseRacing(e)
-                    ? formatHorseRacingTime(e)
-                    : matchTime}
+                  {horseLabel ?? matchTime}
                 </p>
               )}
-
               {/* Meta */}
               <div className="mt-1 text-xs text-muted-foreground">
                 {typeof distance === "number" && (

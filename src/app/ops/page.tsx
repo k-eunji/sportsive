@@ -10,7 +10,6 @@ import HomeMapSnapCard from "@/app/ops/components/map-hero/HomeMapSnapCard";
 import DatePresetBar from "@/app/ops/components/home/DatePresetBar";
 
 import { useUserLocation } from "@/app/ops/components/home/useUserLocation";
-import { extractRegions, extractCities } from "@/lib/eventAreas";
 import { track } from "@/lib/track";
 
 import type { HomeEventMapRef } from "@/app/ops/components/map-hero/HomeEventMap";

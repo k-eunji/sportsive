@@ -109,7 +109,8 @@ export interface SportTimingProfile {
     | "basketball"
     | "tennis"
     | "darts"
-    | "horse-racing";
+    | "horse-racing"
+    | "cricket";
 
   /**
    * 단일 경기 종목 기본값
@@ -167,3 +168,45 @@ export interface EventTimingModel {
 
   notes?: string;
 }
+
+export const CRICKET_TIMING_PROFILE: SportTimingProfile = {
+  sport: "cricket",
+
+  defaultSessions: [
+    {
+      sessionId: "day",
+      label: "Day Play",
+
+      typicalStartTime: "10:30",
+      typicalDurationMin: 480, // 8시간
+
+      timingPattern: {
+        inboundStartOffsetMin: -120,
+
+        inboundPeakOffsetMin: {
+          from: -60,
+          to: 30,
+        },
+
+        liveWindowOffsetMin: {
+          from: 0,
+          to: 420,
+        },
+
+        outboundPeakOffsetMin: {
+          from: 360,
+          to: 480,
+        },
+
+        postOutboundOffsetMin: 540,
+
+        confidence: "low",
+        rationale:
+          "First-class cricket spans a full day with gradual arrival, long stay, and staggered departure.",
+      },
+    },
+  ],
+
+  notes:
+    "First-class cricket is modeled as a day-long session rather than a fixed match due to extended duration and distributed crowd movement.",
+};

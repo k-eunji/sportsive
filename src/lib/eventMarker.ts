@@ -24,6 +24,8 @@ export function getEventMarker(
       return "R";
     case "basketball":
       return "B";
+    case "cricket":
+      return "C";      
     default:
       return null;
   }

@@ -184,6 +184,11 @@ export default function OperationalOverviewPanel({
 
   const hasAnyEvents = totalEvents > 0;
 
+  const isSteadyDay =
+    hasAnyEvents &&
+    (!hasMovement || peakValue < 1);
+
+
   const movementLevel =
     peakValue >= 3.5
       ? "high"
@@ -281,11 +286,10 @@ export default function OperationalOverviewPanel({
               <p className="text-sm text-muted-foreground italic">
                 No events scheduled for this day
               </p>
-            ) : !hasMovement || peakValue < 1 ? (
+            ) : isSteadyDay ? (
               <p className="text-sm text-muted-foreground">
-                No notable crowd movement expected under current event schedules
+                Steady attendance expected throughout the day, with no sharp crowd surges
               </p>
-
             ) : (
               <>
                 <p
@@ -303,7 +307,6 @@ export default function OperationalOverviewPanel({
                     : movementLevel === "medium"
                     ? "Moderate movement expected based on scheduled events"
                     : "Low movement expected based on scheduled events"}
-
                 </p>
 
                 {hasWindow && (
@@ -317,6 +320,7 @@ export default function OperationalOverviewPanel({
                 )}
               </>
             )}
+
           </div>
         )}
         {/* =====================

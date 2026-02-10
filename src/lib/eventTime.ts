@@ -1,10 +1,47 @@
 // src/lib/eventTime.ts
 
+import { resolveEventBehavior } from "@/lib/resolveEventBehavior";
+
 export type EventTimeState =
   | "LIVE"
   | "SOON"
   | "UPCOMING"
   | "ENDED";
+
+/* =========================
+   🏏 CRICKET (FIRST CLASS)
+========================= */
+function deriveCricketFirstClassWindow(e: any): {
+  start: Date;
+  end: Date;
+} | null {
+  if (e.sport !== "cricket") return null;
+  if (e.kind !== "first_class") return null;
+
+  const raw = e.date ?? e.startDate;
+  if (!raw) return null;
+
+  const base = new Date(raw);
+  if (isNaN(base.getTime())) return null;
+
+  const start = new Date(
+    base.getFullYear(),
+    base.getMonth(),
+    base.getDate(),
+    10,
+    30,
+    0,
+    0
+  );
+
+  const end = new Date(start);
+  end.setDate(end.getDate() + 1);   // ⬅️ 하루 span
+  end.setHours(18, 30, 0, 0);
+
+  return { start, end };
+}
+
+
 
 /* =========================
    기본 지속시간 (match용)
@@ -44,6 +81,8 @@ export function getSoonWindowMs(e: {
       return 4 * 60 * 60 * 1000;
     case "tennis":
       return 60 * 60 * 1000;
+    case "cricket":
+      return 3 * 60 * 60 * 1000;  
     default:
       return 2 * 60 * 60 * 1000;
   }
@@ -51,7 +90,6 @@ export function getSoonWindowMs(e: {
 
 /* =========================
    🟣 GENERIC SESSION WINDOW
-   (darts / tennis / tournaments)
 ========================= */
 function deriveSessionWindow(e: any): { start: Date; end: Date } | null {
   if (e.kind !== "session") return null;
@@ -62,7 +100,6 @@ function deriveSessionWindow(e: any): { start: Date; end: Date } | null {
 
   if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
 
-  // 날짜만 있으면 하루 전체
   if (e.startDate.length === 10) {
     start.setHours(0, 0, 0, 0);
   }
@@ -76,7 +113,7 @@ function deriveSessionWindow(e: any): { start: Date; end: Date } | null {
 /* =========================
    🐎 HORSE RACING SESSION
 ========================= */
-export function deriveHorseRacingSessionWindow(e: any): {
+function deriveHorseRacingSessionWindow(e: any): {
   start: Date;
   end: Date;
 } | null {
@@ -132,7 +169,24 @@ export function getEventTimeState(
   e: any,
   now: Date = new Date()
 ): EventTimeState {
-  // 1️⃣ 🐎 horse racing override (MUST come first)
+
+  const behavior = resolveEventBehavior(e);
+
+  // 🟤 DAY-SPAN EVENT (ex. first-class cricket)
+  if (behavior.timeModel === "day_span") {
+    const win = deriveCricketFirstClassWindow(e);
+    if (win) {
+      if (now >= win.start && now <= win.end) return "LIVE";
+      if (win.start > now) {
+        const diffMs = win.start.getTime() - now.getTime();
+        if (diffMs <= getSoonWindowMs(e)) return "SOON";
+        return "UPCOMING";
+      }
+      return "ENDED";
+    }
+  }
+
+  // 🐎 horse racing
   const horse = deriveHorseRacingSessionWindow(e);
   if (horse) {
     if (now >= horse.start && now <= horse.end) return "LIVE";
@@ -144,7 +198,7 @@ export function getEventTimeState(
     return "ENDED";
   }
 
-  // 2️⃣ generic session (darts / tournaments)
+  // 🟣 generic session
   const session = deriveSessionWindow(e);
   if (session) {
     if (now >= session.start && now <= session.end) return "LIVE";
@@ -156,7 +210,7 @@ export function getEventTimeState(
     return "ENDED";
   }
 
-  // 3️⃣ normal match
+  // ⚽ default fixed match
   const raw = e.date ?? e.utcDate ?? e.startDate;
   const start = new Date(raw);
   if (isNaN(start.getTime())) return "ENDED";

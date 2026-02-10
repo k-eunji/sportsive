@@ -232,7 +232,7 @@ export default function LandingPage() {
   return (
     <main>
       {/* HERO (Image-based) */}
-        <section className="relative w-full min-h-[calc(420px+64px)] pt-[20px] overflow-hidden">
+        <section className="relative w-full min-h-[calc(480px+64px)] pt-[20px] overflow-hidden">
           {/* Background image */}
           <div
             className="absolute inset-0 bg-cover bg-center"
