@@ -1,6 +1,62 @@
 // src/app/api/events/england/football/route.ts
+
 import { NextResponse } from "next/server";
 import { supabase } from "../../../../../lib/supabaseServer";
+
+const internationalMatches = [
+  {
+    id: "intl-2026-03-27-eng-uru",
+    kind: "match",
+    sport: "football",
+    competition: "International Match Friendlies",
+    status: "scheduled",
+    date: "2026-03-27 19:45",
+
+    homeTeam: "England",
+    awayTeam: "Uruguay",
+    homeTeamLogo:
+      "https://upload.wikimedia.org/wikipedia/en/b/be/England_national_football_team_crest.svg",
+    awayTeamLogo:
+      "https://upload.wikimedia.org/wikipedia/en/f/fe/Uruguay_national_football_team_crest.svg",
+
+    venue: "Wembley Stadium",
+    city: "London",
+    region: "England",
+    location: { lat: 51.556663281575105, lng: -0.27953205701577144 },
+
+    isPaid: true,
+    teams: ["England", "Uruguay"],
+    title: "England vs Uruguay",
+    homepageUrl:
+      "https://www.englandfootball.com/england/mens-senior-team/fixtures-results",
+  },
+  {
+    id: "intl-2026-03-31-eng-jpn",
+    kind: "match",
+    sport: "football",
+    competition: "International Match Friendlies",
+    status: "scheduled",
+    date: "2026-03-31 19:45",
+
+    homeTeam: "England",
+    awayTeam: "Japan",
+    homeTeamLogo:
+      "https://upload.wikimedia.org/wikipedia/en/b/be/England_national_football_team_crest.svg",
+    awayTeamLogo:
+      "https://upload.wikimedia.org/wikipedia/en/9/9e/Japan_national_football_team_crest.svg",
+
+    venue: "Wembley Stadium",
+    city: "London",
+    region: "England",
+    location: { lat: 51.556663281575105, lng: -0.27953205701577144 },
+
+    isPaid: true,
+    teams: ["England", "Japan"],
+    title: "England vs Japan",
+    homepageUrl:
+      "https://www.englandfootball.com/england/mens-senior-team/fixtures-results",
+  },
+];
 
 const cleanTeamName = (name?: string | null) =>
   (name ?? "").replace(/\b(FC|AFC|CF)\b/gi, "").trim();
@@ -45,7 +101,7 @@ export async function GET() {
 
     const formattedMatches = matches.map((m: any) => ({
       id: String(m.id),
-      kind: m.kind, 
+      kind: m.kind,
       date: m.date,
       status: m.status,
       competition: m.competition,
@@ -78,7 +134,14 @@ export async function GET() {
       )}`,
     }));
 
-    return NextResponse.json({ matches: formattedMatches });
+    const allMatches = [
+      ...formattedMatches,
+      ...internationalMatches,
+    ].sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+
+    return NextResponse.json({ matches: allMatches });
   } catch (err) {
     console.error("❌ events error:", err);
     return NextResponse.json({ matches: [] });
