@@ -53,9 +53,13 @@ export function EventCard({ card }: { card: EventCardModel }) {
     <Link
       href={`/event/${card.event.id}`}
       className="
+        group
         block
-        hover:bg-muted/40
         transition
+        hover:bg-muted/40
+        hover:shadow-sm
+        hover:scale-[1.01]
+        cursor-pointer
       "
     >
 
@@ -94,7 +98,7 @@ export function EventCard({ card }: { card: EventCardModel }) {
 
         {/* TEXT */}
         <div className="flex-1 min-w-0">
-          <div className="font-medium truncate">
+          <div className="font-medium truncate group-hover:underline">
             {card.title}
           </div>
 
@@ -122,6 +126,10 @@ export function EventCard({ card }: { card: EventCardModel }) {
             SOON
           </span>
         )}
+
+        <span className="ml-2 text-muted-foreground opacity-0 group-hover:opacity-100 transition">
+          →
+        </span>
       </div>
     </Link>
   );

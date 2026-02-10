@@ -27,9 +27,9 @@ export function useUserLocation(options?: { enabled?: boolean }) {
       },
       () => setDenied(true),
       {
-        enableHighAccuracy: true,
-        timeout: 15000,
-        maximumAge: 0,
+        enableHighAccuracy: false, // 🔥 초기 위치 빠르게
+        timeout: 5000,
+        maximumAge: 300000,   
       }
     );
 

@@ -67,6 +67,9 @@ export default function LandingPage() {
   const { pos } = useUserLocation({ enabled: hasLocation });
   const isReturn = localStorage.getItem("sportsive_has_visited") === "true";
 
+  const isLocationFiltering =
+    hasLocation && pos === null;
+
   /* =========================
      VISIT LOG
   ========================= */
@@ -263,7 +266,7 @@ export default function LandingPage() {
             </h1>
 
             <p className="text-lg md:text-xl font-medium max-w-xl text-white/90">
-              See what’s happening today and this weekend
+              See where sports events overlap — and when it matters operationally
             </p>
 
             <p className="text-sm text-white/70 max-w-xl">
@@ -320,7 +323,14 @@ export default function LandingPage() {
           )}
         </div>
 
-        <EventList events={visibleEvents} />
+        EventList {isLocationFiltering ? (
+          <div className="py-20 text-center text-sm text-muted-foreground">
+            Finding events near you…
+          </div>
+        ) : (
+          <EventList events={visibleEvents} />
+        )}
+
 
         <button
           onClick={() => setWeekCount((c) => c + 1)}

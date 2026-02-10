@@ -33,6 +33,7 @@ export type OperationalPanelProps = {
   showMovement?: boolean;
   scopeLabel: string; // ✅ 추가
   scopeType: "city" | "region" | "all";
+  viewMode: "event_operator" | "league" | "club"; 
   criticalWindow: {
     from: string;
     to: string;
@@ -80,6 +81,14 @@ function barColor(
   if (level === "high") return "bg-red-500";
   if (level === "medium") return "bg-amber-400";
   return "bg-green-400";
+}
+
+function getViewLabel(
+  viewMode: "event_operator" | "league" | "club"
+) {
+  if (viewMode === "league") return "League view";
+  if (viewMode === "club") return "Club view";
+  return "Event view";
 }
 
 function levelLabel(level: AttentionLevel) {
@@ -151,6 +160,7 @@ export default function OperationalOverviewPanel({
   activeDate,
   movementSummary, 
   showMovement,
+  viewMode, 
 }: OperationalPanelProps) {
 
   const eventPeak =
@@ -210,14 +220,13 @@ export default function OperationalOverviewPanel({
         </p>
 
         <p className="text-sm font-semibold leading-tight">
-          {scopeLabel}
+          {scopeLabel} · {getViewLabel(viewMode)} 
         </p>
 
-        <p className="text-xs text-muted-foreground">
-          {weekday} · {tail}
-        </p>
-      </div>
-
+          <p className="text-xs text-muted-foreground">
+            {weekday} · {tail}
+          </p>
+        </div>
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
         {/* =====================
             TODAY SUMMARY (NEW)
@@ -433,17 +442,11 @@ export default function OperationalOverviewPanel({
           </div>
 
           <ul className="mt-3 text-xs text-muted-foreground list-disc pl-4 space-y-1.5">
-            <li>Event clusters highlighted on map</li>
-            <li>Overlapping venues within scope</li>
+            <li>Event clusters within the current map view</li>
+            <li>Nearby venues with overlapping schedules</li>
             <li>Areas of higher event density</li>
 
           </ul>
-
-          <p className="mt-auto pt-2 text-[10px] italic text-muted-foreground leading-relaxed">
-            Spatial patterns are estimated using scheduled event locations
-            and historical crowd movement models.
-
-          </p>
         </div>
 
       </div>  

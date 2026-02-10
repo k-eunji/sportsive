@@ -567,6 +567,7 @@ export default function HomePage() {
       activeDate,   
       factors,
       movementSummary,
+      viewMode,
       showMovement: isEventView,
     }),
     [
@@ -579,6 +580,7 @@ export default function HomePage() {
       factors,
       movementSummary,
       isEventView,
+      viewMode,
     ]
   );
 
