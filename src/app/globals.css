@@ -223,3 +223,6 @@ html, body {
          bg-background/80
          ring-1 ring-border/40;
 }
+
+@import "react-day-picker/dist/style.css";
+

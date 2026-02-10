@@ -66,13 +66,16 @@ export async function GET(req: Request) {
     const merged = dedupeById(mergedRaw);
 
     /* =========================
-       3️⃣ AREA INDEX (지도 구조)
+      3️⃣ AREA INDEX (지도 구조)
     ========================= */
     if (window === "180d") {
       const areas = buildAreaIndex(merged);
-      return NextResponse.json({ areas });
+      return NextResponse.json({
+        events: merged,   // ⭐ 이 줄 추가
+        areas,
+      });
     }
-
+      
     /* =========================
        4️⃣ TIME WINDOW FILTER
     ========================= */
