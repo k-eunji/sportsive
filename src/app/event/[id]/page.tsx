@@ -13,7 +13,7 @@ import {
 } from "@/lib/events/nearby";
 import { getEventTimeState } from "@/lib/eventTime";
 import EventPageTracker from "@/app/components/tracking/EventPageTracker";
-
+import TicketButton from "@/app/components/TicketButton";
 
 /* =========================
    TYPES
@@ -240,22 +240,13 @@ export default async function EventDetailPage(props: {
             </a>
 
             {ticketHref && (
-              <a
+              <TicketButton
                 href={ticketHref}
-                target="_blank"
-                rel="noreferrer"
-                onClick={() => {
-                  track("ticket_click_intent", {
-                    event_id: id,
-                    sport: event.sport,
-                    city: event.city,
-                    source: "event_page",
-                  });
-                }}
-                className="inline-flex items-center justify-center rounded-2xl border py-3 text-sm font-semibold"
-              >
-                {e.isPaid ? "Buy official tickets" : "View official event info"}
-              </a>
+                eventId={String(id)}
+                sport={event.sport}
+                city={event.city}
+                isPaid={e.isPaid}
+              />
             )}
           </div>
         </section>
