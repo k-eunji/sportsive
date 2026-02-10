@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import Link from "next/link";
 import type { Event } from "@/types";
+import { track } from "@/lib/track";
 
 import { buildEventDetailVM } from "@/lib/eventDetailVM";
 import {
@@ -243,6 +244,14 @@ export default async function EventDetailPage(props: {
                 href={ticketHref}
                 target="_blank"
                 rel="noreferrer"
+                onClick={() => {
+                  track("ticket_click_intent", {
+                    event_id: id,
+                    sport: event.sport,
+                    city: event.city,
+                    source: "event_page",
+                  });
+                }}
                 className="inline-flex items-center justify-center rounded-2xl border py-3 text-sm font-semibold"
               >
                 {e.isPaid ? "Buy official tickets" : "View official event info"}
