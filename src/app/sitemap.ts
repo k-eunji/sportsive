@@ -3,7 +3,7 @@
 import type { MetadataRoute } from "next";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = "https://sportsive.vercel.app";
+  const baseUrl = "https://venuescope.io";
 
   return [
     {
@@ -38,6 +38,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
       url: `${baseUrl}/ireland/dublin/live-sports-today`,
       lastModified: new Date(),
     },
+
+    // Weekend
     {
       url: `${baseUrl}/uk/sports-this-weekend`,
       lastModified: new Date(),
@@ -46,6 +48,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
       url: `${baseUrl}/uk/london/sports-this-weekend`,
       lastModified: new Date(),
     },
-
   ];
 }
