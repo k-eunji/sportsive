@@ -1,0 +1,15 @@
+{
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "sportsive.vercel.app"
+        }
+      ],
+      "destination": "https://venuescope.io/$1",
+      "permanent": true
+    }
+  ]
+}
