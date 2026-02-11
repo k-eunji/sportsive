@@ -15,7 +15,7 @@ export function resolveEventBehavior(e: Event): EventBehavior {
       };
     }
 
-    if (e.kind === "t20") {
+    if (e.kind === "t20" || e.kind === "one_day") {
       return {
         timeModel: "fixed",
         showExactTime: true,
@@ -24,6 +24,7 @@ export function resolveEventBehavior(e: Event): EventBehavior {
       };
     }
   }
+
 
   // 🎾 / 🎯 SESSION SPORTS
   if (e.kind === "session") {

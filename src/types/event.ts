@@ -10,22 +10,22 @@ export interface Event {
   startDate?: string; // "2026-06-29"
   endDate?: string;  
   sport:
-  | 'football'
-  | 'rugby'
-  | 'basketball'
-  | 'tennis'
-  | 'darts'
-  | 'horse-racing'
-  | 'cricket';
+    | 'football'
+    | 'rugby'
+    | 'basketball'
+    | 'tennis'
+    | 'darts'
+    | 'horse-racing'
+    | 'cricket';
 
   kind:
-  | 'match'
-  | 'session'
-  | 'race'
-  | 'round'
-  | 'first_class'
-  | 't20'
-  | 'one_day';
+    | 'match'
+    | 'session'
+    | 'race'
+    | 'round'
+    | 'first_class'
+    | 't20'
+    | 'one_day';
 
   description?: string;
   location: Location;

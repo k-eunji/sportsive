@@ -1,21 +1,24 @@
 ///src/app/ireland/live-sports-today/page.tsx
 
 export const metadata = {
-  title: "Live Sports in Ireland Today | Sportsive",
+  title: "Live Sports in Ireland Today | VenueScope",
   description:
-    "Find live sports matches happening across Ireland today. Football, rugby and more — shown by location and time.",
+    "Professional sports fixtures taking place across Ireland today, organised by city and start time.",
+  alternates: {
+    canonical: "https://venuescope.io/ireland/live-sports-today",
+  },
 };
 
 export default function IrelandLiveSportsTodayPage() {
   return (
     <main className="max-w-3xl mx-auto px-6 py-16 space-y-6">
       <h1 className="text-3xl font-bold">
-        Live sports happening across Ireland today
+        Live sports across Ireland today
       </h1>
 
       <p className="text-muted-foreground">
-        Discover sports matches happening today across Ireland,
-        including football, rugby and other live events.
+        Overview of professional sports events taking place across Ireland today,
+        including fixtures by city and venue.
       </p>
 
       <ul className="list-disc pl-6 text-muted-foreground">
@@ -26,41 +29,19 @@ export default function IrelandLiveSportsTodayPage() {
         </li>
       </ul>
 
-      <a href="/app" className="underline underline-offset-4">
-        Open the live sports map
+      <a href="/ops" className="underline underline-offset-4">
+        Open interactive schedule view →
       </a>
 
-            {/* FAQ SECTION (SEO) */}
-      <section className="pt-12 space-y-4">
+      <section className="pt-12">
         <h2 className="text-xl font-semibold">
-          Frequently asked questions
+          Platform context
         </h2>
-
-        <div className="space-y-4 text-muted-foreground">
-          <div>
-            <h3 className="font-medium text-foreground">
-              What sports are happening in Ireland today?
-            </h3>
-            <p>
-              Football, rugby, tennis and other live sports events are
-              taking place across London today at stadiums, arenas
-              and local venues.
-            </p>
-          </div>
-
-          <div>
-            <h3 className="font-medium text-foreground">
-              Where can I find live sports near me in Ireland?
-            </h3>
-            <p>
-              Sportsive helps you discover live sports events by
-              location and time, so you can quickly check what’s
-              happening nearby without following teams or leagues.
-            </p>
-          </div>
-        </div>
+        <p className="text-muted-foreground">
+          VenueScope maps sports scheduling across multiple leagues to provide
+          operational visibility into timing and geographic overlap.
+        </p>
       </section>
-
     </main>
   );
 }

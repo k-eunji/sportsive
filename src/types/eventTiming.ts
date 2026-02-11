@@ -172,13 +172,40 @@ export interface EventTimingModel {
 export const CRICKET_TIMING_PROFILE: SportTimingProfile = {
   sport: "cricket",
 
+  /* 🔥 T20 / ODI 기본 match 모델 */
+  matchTiming: {
+    inboundStartOffsetMin: -90,
+
+    inboundPeakOffsetMin: {
+      from: -45,
+      to: 15,
+    },
+
+    liveWindowOffsetMin: {
+      from: 0,
+      to: 210,   // T20 기준
+    },
+
+    outboundPeakOffsetMin: {
+      from: 180,
+      to: 240,
+    },
+
+    postOutboundOffsetMin: 270,
+
+    confidence: "high",
+    rationale:
+      "Limited-overs cricket (T20) behaves like a fixed-duration stadium event with concentrated arrival and departure peaks.",
+  },
+
+  /* 🔵 First-class 전용 세션 */
   defaultSessions: [
     {
       sessionId: "day",
       label: "Day Play",
 
       typicalStartTime: "10:30",
-      typicalDurationMin: 480, // 8시간
+      typicalDurationMin: 480,
 
       timingPattern: {
         inboundStartOffsetMin: -120,
@@ -200,7 +227,7 @@ export const CRICKET_TIMING_PROFILE: SportTimingProfile = {
 
         postOutboundOffsetMin: 540,
 
-        confidence: "low",
+        confidence: "medium",
         rationale:
           "First-class cricket spans a full day with gradual arrival, long stay, and staggered departure.",
       },
@@ -208,5 +235,5 @@ export const CRICKET_TIMING_PROFILE: SportTimingProfile = {
   ],
 
   notes:
-    "First-class cricket is modeled as a day-long session rather than a fixed match due to extended duration and distributed crowd movement.",
+    "Cricket includes both fixed-duration limited-overs matches and extended day-span first-class play.",
 };

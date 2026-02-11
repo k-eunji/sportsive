@@ -49,6 +49,7 @@ function deriveCricketFirstClassWindow(e: any): {
 export function getDefaultDurationMs(e: {
   durationMs?: number;
   sport?: string;
+  kind?: string;
 }): number {
   if (e.durationMs) return e.durationMs;
 
@@ -56,14 +57,28 @@ export function getDefaultDurationMs(e: {
     case "football":
     case "rugby":
       return 2.5 * 60 * 60 * 1000;
+
     case "basketball":
       return 2 * 60 * 60 * 1000;
+
     case "tennis":
       return 3 * 60 * 60 * 1000;
+
     case "horse-racing":
       return 6 * 60 * 60 * 1000;
+
     case "darts":
       return 4 * 60 * 60 * 1000;
+
+    case "cricket":
+      if (e.kind === "t20") {
+        return 3.5 * 60 * 60 * 1000;
+      }
+      if (e.kind === "one_day") {
+        return 8 * 60 * 60 * 1000;
+      }
+      return 7 * 60 * 60 * 1000;
+
     default:
       return 2 * 60 * 60 * 1000;
   }

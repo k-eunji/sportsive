@@ -3,6 +3,35 @@
 import { NextResponse } from "next/server";
 import { supabase } from "../../../../../lib/supabaseServer";
 
+const englandNationalMatches = [
+  {
+    id: "eng-t20-sco-20260214",
+    sport: "cricket",
+    kind: "t20",
+    date: "2026-02-10T09:30:00",
+    status: "scheduled",
+    competition: "ICC Men's T20 World Cup",
+
+    homeTeamId: "england-men",
+    awayTeamId: "scotland-men",
+
+    homeTeam: "England Men",
+    awayTeam: "Scotland Men",
+    homeTeamLogo: null,
+    awayTeamLogo: null,
+
+    venue: "Eden Gardens",
+    city: "Kolkata",
+    region: "India",
+    homepageUrl: "https://www.ecb.co.uk/england/men/fixtures?_gl=1*19amex2*_up*MQ..*_ga*MTAxNjEwODc3OS4xNzcwODAyOTM1*_ga_E3D3L0MGDX*czE3NzA4MTk0NjQkbzIkZzAkdDE3NzA4MTk0NjQkajYwJGwwJGgw*_ga_RB2BVD5EKH*czE3NzA4MTk0NjQkbzIkZzAkdDE3NzA4MTk0NjQkajYwJGwwJGgw",
+    isPaid: true,
+
+    location: { lat: 51.556663281575105, lng: -0.27953205701577144 },
+
+    title: "England Men vs Scotland Men",
+  },
+];
+
 // 농구는 클린 ID 필요 없음 → 표시용 최소 정리만
 const displayTeamName = (name?: string | null) =>
   (name ?? "").trim();
@@ -89,8 +118,10 @@ export async function GET() {
         title: `${homeName} vs ${awayName}`,
       };
     });
+    
+    const mergedEvents = [...events, ...englandNationalMatches];
 
-    return NextResponse.json({ events });
+    return NextResponse.json({ events: mergedEvents });
   } catch (err) {
     console.error("❌ cricket events error:", err);
     return NextResponse.json({ events: [] });

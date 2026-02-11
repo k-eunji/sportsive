@@ -11,6 +11,8 @@ const BLOCKED_CLIENT_IDS = new Set([
   "04eb6a07-6b9b-45ae-96bd-dd38dfd73058",
   "d6e6c5d9-1bd2-42ca-9fbd-33ce800e22ae",
   "695f06f3-5ea4-47d5-aa56-5a3a6fa4da49",
+  "52fd7db7-0a7f-4cf3-8bf4-56b6ce2c4122",
+  "70f78632-006c-4c8e-bc21-16c3b9ca22b9",
 ]);
 
 export async function POST(req: NextRequest) {

@@ -262,15 +262,15 @@ export default function LandingPage() {
 
             {/* Hero copy */}
             <h1 className="text-4xl md:text-5xl font-bold leading-tight max-w-2xl">
-              Sports events, by time and location
+              Operational visibility across UK and Ireland sports events
             </h1>
 
             <p className="text-lg md:text-xl font-medium max-w-xl text-white/90">
-              See where sports events overlap — and when it matters operationally
+              Detect schedule overlap and spatial concentration before it impacts operations.
             </p>
 
             <p className="text-sm text-white/70 max-w-xl">
-              Understand when and where events overlap.
+              Built for league, club and event operators.
             </p>
 
 
@@ -288,7 +288,7 @@ export default function LandingPage() {
                   transition
                 "
               >
-                View operational outlook →
+                Explore operational dashboard →
               </a>
             </div>
           </div>
