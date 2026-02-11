@@ -1,8 +1,8 @@
 
 {
-  "name": "Sportsive",
-  "short_name": "Sportsive",
-  "description": "Check what sports are happening near you — right now.",
+  "name": "VenueScope",
+  "short_name": "VS",
+  "description": "Map-based operations and scheduling intelligence for sports leagues and event organisers.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

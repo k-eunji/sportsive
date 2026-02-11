@@ -19,8 +19,8 @@ const inter = Inter({
    METADATA (SEO + GSC)
 ========================= */
 export const metadata: Metadata = {
-  title: "Sportsive",
-  description: "Discover sports you can actually attend near you",
+  title: "VenueScope",
+  description: "Map-based operations and scheduling intelligence for sports leagues and event organisers.",
   manifest: "/manifest.json",
 
   // ✅ Google Search Console verification
@@ -29,11 +29,12 @@ export const metadata: Metadata = {
   },
 
   openGraph: {
-    title: "Sportsive",
-    description: "See what sports are happening near you, right now.",
-    siteName: "Sportsive",
+    title: "VenueScope",
+    description: "Sports event operations and venue intelligence platform.",
+    siteName: "VenueScope",
     type: "website",
   },
+
 };
 
 /* =========================
