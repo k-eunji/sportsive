@@ -61,35 +61,34 @@ export const SPORT_IMPACT_PRESETS: Record<string, ImpactProfile> = {
     confidence: "high",
   },
 
-    cricket_first_class: {
-      type: "session",
-      phases: [
-        // 시작 전 강한 유입
-        { offset: -60, duration: 60, weight: 0.9 },
-        // 점심/티 브레이크 완만한 재유입 (선택)
-        { offset: 120, duration: 30, weight: 0.3 },
-      ],
-      confidence: "medium",
-    },
+  cricket_first_class: {
+    type: "session",
+    phases: [
+      // 시작 전 강한 유입
+      { offset: -60, duration: 60, weight: 0.9 },
+      // 점심/티 브레이크 완만한 재유입 (선택)
+      { offset: 120, duration: 30, weight: 0.3 },
+    ],
+    confidence: "medium",
+  },
 
-    cricket_t20: {
-      type: "fixed",
-      phases: [
-        { offset: -90, duration: 60, weight: 1.0 },
-        { offset: 100, duration: 60, weight: 0.9 },
-      ],
-      confidence: "high",
-    },
+  cricket_t20: {
+    type: "fixed",
+    phases: [
+      { offset: -90, duration: 60, weight: 1.0 },
+      { offset: 100, duration: 60, weight: 0.9 },
+    ],
+    confidence: "high",
+  },
 
-    cricket_one_day: {
-      type: "session",
-      phases: [
-        { offset: -90, duration: 60, weight: 0.8 },
-        { offset: 300, duration: 60, weight: 0.4 },
-      ],
-      confidence: "medium",
-    },
-
+  cricket_one_day: {
+    type: "fixed",
+    phases: [
+      { offset: -90, duration: 60, weight: 0.8 },
+      { offset: 480, duration: 60, weight: 0.6 },
+    ],
+    confidence: "medium",
+  },
 };
 
 
