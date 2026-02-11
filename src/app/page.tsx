@@ -261,18 +261,17 @@ export default function LandingPage() {
             </div>
 
             {/* Hero copy */}
-            <h1 className="text-4xl md:text-5xl font-bold leading-tight max-w-2xl">
-              Operational visibility across UK and Ireland sports events
+            <h1 className="text-4xl md:text-5xl font-bold leading-tight max-w-3xl">
+              Multiple events. Same city. Same time.
             </h1>
 
-            <p className="text-lg md:text-xl font-medium max-w-xl text-white/90">
-              Detect schedule overlap and spatial concentration before it impacts operations.
+            <p className="text-lg md:text-xl font-medium max-w-2xl text-white/90">
+              Identify schedule overlap and crowd concentration before matchday disruption.
             </p>
 
-            <p className="text-sm text-white/70 max-w-xl">
-              Built for league, club and event operators.
+            <p className="text-sm text-white/70">
+              For league, club and event operations teams.
             </p>
-
 
             {/* CTA */}
             <div className="pt-2">
@@ -288,7 +287,7 @@ export default function LandingPage() {
                   transition
                 "
               >
-                Explore operational dashboard →
+                Open operational dashboard →
               </a>
             </div>
           </div>
@@ -299,9 +298,8 @@ export default function LandingPage() {
       <section className="max-w-3xl mx-auto px-4 pb-4">
         <div className="rounded-2xl bg-muted/40 px-4 py-4 space-y-2">
           <div className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-            Today
+            Live operational snapshot
           </div>
-
           {todayEvents.length === 0 && (
             <div className="text-sm text-muted-foreground">
               Nothing happening
@@ -323,14 +321,13 @@ export default function LandingPage() {
           )}
         </div>
 
-        EventList {isLocationFiltering ? (
+        {isLocationFiltering ? (
           <div className="py-20 text-center text-sm text-muted-foreground">
             Finding events near you…
           </div>
         ) : (
           <EventList events={visibleEvents} />
         )}
-
 
         <button
           onClick={() => setWeekCount((c) => c + 1)}
