@@ -34,11 +34,27 @@ export function buildMoreThisWeekend(
   all: Event[],
   current: Event
 ): Event[] {
+  const now = new Date();
+
+  // 이번 주 토요일 계산
+  const today = new Date();
+  const day = today.getDay();
+  const diffToSaturday = (6 - day + 7) % 7;
+
+  const saturday = new Date(today);
+  saturday.setDate(today.getDate() + diffToSaturday);
+  saturday.setHours(0, 0, 0, 0);
+
+  const sunday = new Date(saturday);
+  sunday.setDate(saturday.getDate() + 1);
+  sunday.setHours(23, 59, 59, 999);
+
   return all.filter((e) => {
     if (String(e.id) === String(current.id)) return false;
     if (!e.city || e.city !== current.city) return false;
 
     const d = new Date(e.date);
-    return isWeekend(d);
+
+    return d >= now && d >= saturday && d <= sunday;
   });
 }

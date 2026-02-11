@@ -89,7 +89,12 @@ export function EventList({
   return (
     <div>
       {days.map((day) => {
-        const key = day.toISOString().slice(0, 10);
+        const key = [
+          day.getFullYear(),
+          String(day.getMonth() + 1).padStart(2, "0"),
+          String(day.getDate()).padStart(2, "0"),
+        ].join("-");
+
         const cards = grouped[key] ?? [];
 
         return (

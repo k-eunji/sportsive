@@ -23,6 +23,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     // 🇮🇪 Ireland – Today
     "/ireland/live-sports-today",
     "/ireland/dublin/live-sports-today",
+    "ireland/sports-this-weekend"
   ];
 
   return routes.map((path) => ({

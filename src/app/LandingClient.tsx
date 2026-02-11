@@ -34,6 +34,8 @@ import { extractRegions, extractCities } from "@/lib/eventAreas";
    DATE HELPERS
 ========================= */
 
+const MAX_WEEKS = 8; 
+
 function startOfDay(d: Date) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
@@ -332,16 +334,20 @@ export default function LandingClient({
           <EventList events={visibleEvents} />
         )}
 
-        <button
-          onClick={() => setWeekCount((c) => c + 1)}
-          className="
-            w-full py-6 text-sm font-semibold
-            text-muted-foreground hover:text-foreground
-            transition
-          "
-        >
-          Next 7 days →
-        </button>
+        {weekCount < MAX_WEEKS && (
+          <button
+            onClick={() =>
+              setWeekCount((c) => Math.min(c + 1, MAX_WEEKS))
+            }
+            className="
+              w-full py-6 text-sm font-semibold
+              text-muted-foreground hover:text-foreground
+              transition
+            "
+          >
+            Next 7 days →
+          </button>
+        )}  
       </section>
 
       {/* LOCATION SHEET */}
