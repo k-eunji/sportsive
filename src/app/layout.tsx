@@ -8,6 +8,7 @@ import "@/lib/firebase";
 import ClientShell from "./ClientShell";
 import GoogleMapsProvider from "@/components/GoogleMapsProvider";
 import { Analytics } from "@vercel/analytics/react";
+import VisitLogger from "@/app/components/tracking/VisitLogger";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -76,6 +77,7 @@ export default function RootLayout({
       <body className="text-foreground antialiased">
         <Providers>
           <GoogleMapsProvider>
+          <VisitLogger />
             <ClientShell>{children}</ClientShell>
           </GoogleMapsProvider>
         </Providers>
