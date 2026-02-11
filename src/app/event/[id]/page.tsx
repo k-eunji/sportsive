@@ -55,9 +55,10 @@ async function fetchEvent(id: string): Promise<{
       : "https";
 
   const res = await fetch(
-    `${protocol}://${host}/api/events?window=30d`,
+    `${protocol}://${host}/api/events?window=180d`,
     { cache: "no-store" }
   );
+
 
   if (!res.ok) return null;
 

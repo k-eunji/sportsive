@@ -186,9 +186,6 @@ export default function LandingClient({
     const end = addDays(start, weekCount * 7);
 
     return filteredEvents.filter((e: any) => {
-      // 🔥 과거 이벤트 숨기기
-      if (e.status === "completed") return false;
-
       const raw = e.date ?? e.utcDate ?? e.startDate;
       if (!raw) return false;
       const d = new Date(raw);
@@ -308,6 +305,23 @@ export default function LandingClient({
               )}
             </div>
           )}
+        </div>
+
+        {/* Sport markers explanation */}
+        <div className="mt-5 mb-3 text-xs text-muted-foreground space-y-1">
+          <div className="font-medium text-foreground/70">
+            Sport markers
+          </div>
+
+          <div className="flex flex-wrap gap-x-4 gap-y-1">
+            <span><strong>F</strong> Football</span>
+            <span><strong>R</strong> Rugby</span>
+            <span><strong>B</strong> Basketball</span>
+            <span><strong>C</strong> Cricket</span>
+            <span><strong>H</strong> Horse racing</span>
+            <span><strong>T</strong> Tennis</span>
+            <span><strong>D</strong> Darts</span>
+          </div>
         </div>
 
         {isLocationFiltering ? (

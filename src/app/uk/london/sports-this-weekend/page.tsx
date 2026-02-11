@@ -1,31 +1,76 @@
-// src/app/uk/sports-this-weekend/page.tsx
+// src/app/uk/london/sports-this-weekend/page.tsx
 
 import type { Metadata } from "next";
-import { EventList } from "@/app/components/EventList";
 import { getAllEvents } from "@/lib/events/getAllEvents";
+import { formatEventTimeShort } from "@/utils/date";
+import { EventList } from "@/app/components/EventList";
 
 export const metadata: Metadata = {
-  title: "Sports Fixtures in the UK This Weekend | VenueScope",
+  title: "Sports Fixtures in London This Weekend | VenueScope",
   description:
-    "Professional sports fixtures scheduled across the UK this weekend, organised by city, venue and start time.",
+    "Professional sports fixtures scheduled in London this weekend, organised by venue and start time.",
   alternates: {
-    canonical: "https://venuescope.io/uk/sports-this-weekend",
+    canonical: "https://venuescope.io/uk/london/sports-this-weekend",
   },
 };
 
+function SimpleEventList({ events }: { events: any[] }) {
+  if (events.length === 0) {
+    return <p className="text-muted-foreground">No fixtures this weekend.</p>;
+  }
+
+  return (
+    <div className="divide-y">
+      {events.map((e) => {
+        const raw = e.startDate ?? e.date ?? e.utcDate;
+        const date = new Date(raw);
+
+        const dateLabel = date.toLocaleDateString("en-GB", {
+          weekday: "short",
+          day: "2-digit",
+          month: "2-digit",
+        });
+
+        const timeLabel = raw
+          ? formatEventTimeShort(raw)
+          : "";
+
+        return (
+          <div
+            key={e.id}
+            className="py-3 flex justify-between items-center"
+          >
+            <div>
+              <div className="font-medium">
+                {e.homeTeam ?? e.title}
+                {e.awayTeam && ` vs ${e.awayTeam}`}
+              </div>
+
+              <div className="text-xs text-muted-foreground">
+                {dateLabel} {timeLabel && `· ${timeLabel}`}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function getWeekendDateKeys() {
   const now = new Date();
-  const day = now.getDay();
+  const day = now.getDay(); // 0=Sun, 6=Sat
 
   let saturday = new Date(now);
 
   if (day === 6) {
-    // Saturday
+    // 오늘이 토요일
+    // 그대로 오늘
   } else if (day === 0) {
-    // Sunday → yesterday Saturday
+    // 오늘이 일요일 → 어제 토요일
     saturday.setDate(now.getDate() - 1);
   } else {
-    // Mon–Fri → upcoming Saturday
+    // 월~금 → 다가오는 토요일
     saturday.setDate(now.getDate() + (6 - day));
   }
 
@@ -47,34 +92,26 @@ function formatUpdated() {
   });
 }
 
-export default async function UKWeekendPage() {
+export default async function LondonWeekendPage() {
   const { events } = await getAllEvents("7d");
 
   const { satKey, sunKey } = getWeekendDateKeys();
 
-  const UK_REGIONS = [
-    "england",
-    "scotland",
-    "wales",
-    "northern ireland",
-  ];
-
-  const weekendEvents = events.filter((e: any) => {
+  const weekendLondonEvents = events.filter((e: any) => {
     const eventKey = (e.startDate ?? e.date)?.slice(0, 10);
 
     return (
-      UK_REGIONS.includes(e.region?.toLowerCase()) &&
+      e.city?.toLowerCase() === "london" &&
       (eventKey === satKey || eventKey === sunKey)
     );
   });
-
 
   return (
     <main className="max-w-3xl mx-auto px-6 py-16 space-y-8">
 
       <header className="space-y-4">
         <h1 className="text-3xl font-bold">
-          Sports fixtures in the UK this weekend
+          Sports fixtures in London this weekend
         </h1>
 
         <p className="text-sm text-muted-foreground">
@@ -82,14 +119,14 @@ export default async function UKWeekendPage() {
         </p>
 
         <p className="text-muted-foreground">
-          Professional sports events scheduled across the United Kingdom
-          this weekend, organised by city, venue and scheduled start time.
+          Professional sports events scheduled across London this weekend,
+          including football, rugby and other major competitions.
         </p>
       </header>
 
       <section>
         <h2 className="text-xl font-semibold mb-4">
-          This weekend’s fixtures
+          This weekend’s fixtures in London
         </h2>
         {/* Sport markers explanation */}
         <div className="mt-5 mb-3 text-xs text-muted-foreground space-y-1">
@@ -108,7 +145,11 @@ export default async function UKWeekendPage() {
           </div>
         </div>
 
-        <EventList events={weekendEvents} startFromFirstEvent />
+        <EventList
+          events={weekendLondonEvents}
+          startFromFirstEvent
+        />
+
       </section>
 
       <section className="pt-8">
@@ -116,7 +157,7 @@ export default async function UKWeekendPage() {
           href="/uk/live-sports-today"
           className="underline underline-offset-4"
         >
-          View today’s UK fixtures →
+          View all UK fixtures →
         </a>
       </section>
 
@@ -125,9 +166,9 @@ export default async function UKWeekendPage() {
           About VenueScope
         </h2>
         <p className="text-muted-foreground">
-          VenueScope provides spatial and scheduling visibility across UK
-          professional sports, helping league and event operators monitor
-          overlap, peak windows and geographic concentration.
+          VenueScope maps sports scheduling across multiple leagues
+          to provide operational visibility into timing overlap and
+          venue concentration.
         </p>
       </section>
 

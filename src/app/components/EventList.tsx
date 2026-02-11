@@ -45,7 +45,13 @@ function formatDateHeader(dateKey: string) {
    MAIN
 ========================= */
 
-export function EventList({ events }: { events: Event[] }) {
+export function EventList({
+  events,
+  startFromFirstEvent = false,
+}: {
+  events: Event[];
+  startFromFirstEvent?: boolean;
+}){
   const grouped = groupEventsByDate(events);
 
   // 이벤트 자체가 하나도 없을 때 (아예 데이터 없음)
@@ -67,7 +73,10 @@ export function EventList({ events }: { events: Event[] }) {
     })
     .filter(Boolean) as Date[];
 
-  const start = startOfDay(new Date());
+  const start = startFromFirstEvent
+    ? startOfDay(dates[0])
+    : startOfDay(new Date());
+
   const lastEventDate = new Date(
     Math.max(...dates.map((d) => d.getTime()))
   );

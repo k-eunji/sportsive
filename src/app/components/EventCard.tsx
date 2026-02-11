@@ -10,6 +10,7 @@ import { getEventMarker } from "@/lib/eventMarker";
 
 export function EventCard({ card }: { card: EventCardModel }) {
   const state = getEventTimeState(card.event);
+  const isCompleted = state === "ENDED";
 
   const sportKey = normalizeSportKey(card.event.sport);
   const emoji = sportEmoji[sportKey];
@@ -17,6 +18,9 @@ export function EventCard({ card }: { card: EventCardModel }) {
     card.event.sport,
     card.event.kind
   );
+
+  
+
 
   /* =========================
      TIME LABEL
@@ -52,7 +56,7 @@ export function EventCard({ card }: { card: EventCardModel }) {
   return (
     <Link
       href={`/event/${card.event.id}`}
-      className="
+      className={`
         group
         block
         transition
@@ -60,21 +64,25 @@ export function EventCard({ card }: { card: EventCardModel }) {
         hover:shadow-sm
         hover:scale-[1.01]
         cursor-pointer
-      "
+        ${isCompleted ? "opacity-50 hover:scale-100 hover:shadow-none hover:bg-transparent" : ""}
+      `}
+
     >
 
       <div className="flex items-center gap-3 py-3 px-2">
         {/* VISUAL */}
         <div
           className={[
-            "relative w-12 h-12 rounded overflow-hidden flex items-center justify-center",
+            "relative w-12 h-12 rounded overflow-hidden flex items-center justify-center transition",
             state === "LIVE"
               ? "ring-2 ring-red-500"
               : state === "SOON"
               ? "ring-2 ring-amber-400"
               : "bg-muted/40",
+            isCompleted ? "grayscale opacity-60" : "",
           ].join(" ")}
         >
+
           {marker && (
             <span className="absolute top-0 left-0 text-[10px] font-bold bg-black text-white px-1 rounded-br">
               {marker}
@@ -97,7 +105,8 @@ export function EventCard({ card }: { card: EventCardModel }) {
         </div>
 
         {/* TEXT */}
-        <div className="flex-1 min-w-0">
+        <div className={`flex-1 min-w-0 ${isCompleted ? "text-muted-foreground" : ""}`}>
+
           <div className="font-medium truncate group-hover:underline">
             {card.title}
           </div>
@@ -124,6 +133,12 @@ export function EventCard({ card }: { card: EventCardModel }) {
         {state === "SOON" && (
           <span className="text-xs font-semibold text-amber-600">
             SOON
+          </span>
+        )}
+
+        {isCompleted && (
+          <span className="text-xs font-semibold text-muted-foreground">
+            FINISHED
           </span>
         )}
 

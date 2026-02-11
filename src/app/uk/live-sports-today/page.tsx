@@ -2,7 +2,7 @@
 
 import type { Metadata } from "next";
 import { EventList } from "@/app/components/EventList";
-import { getAllEvents } from "@/lib/events/getAllEvents";
+import { getAllEventsRaw } from "@/lib/events/getAllEventsRaw";
 
 export const metadata: Metadata = {
   title: "Live Sports in the UK Today | VenueScope",
@@ -24,8 +24,24 @@ function formatToday() {
 
 export default async function UKLiveSportsTodayPage() {
 
-  // 🔥 이미 today window 지원
-  const { events } = await getAllEvents("today");
+  const events = await getAllEventsRaw();
+
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const UK_REGIONS = [
+    "england",
+    "scotland",
+    "wales",
+    "northern ireland",
+  ];
+
+  const todayEvents = events.filter((e: any) => {
+    const eventKey = (e.startDate ?? e.date ?? e.utcDate)?.slice(0, 10);
+
+    return (
+      UK_REGIONS.includes(e.region?.toLowerCase()) &&
+      eventKey === todayKey
+    );
+  });
 
   return (
     <main className="max-w-3xl mx-auto px-6 py-16 space-y-8">
@@ -49,8 +65,24 @@ export default async function UKLiveSportsTodayPage() {
         <h2 className="text-xl font-semibold mb-4">
           Today’s fixtures
         </h2>
+        {/* Sport markers explanation */}
+        <div className="mt-5 mb-3 text-xs text-muted-foreground space-y-1">
+          <div className="font-medium text-foreground/70">
+            Sport markers
+          </div>
 
-        <EventList events={events} />
+          <div className="flex flex-wrap gap-x-4 gap-y-1">
+            <span><strong>F</strong> Football</span>
+            <span><strong>R</strong> Rugby</span>
+            <span><strong>B</strong> Basketball</span>
+            <span><strong>C</strong> Cricket</span>
+            <span><strong>H</strong> Horse racing</span>
+            <span><strong>T</strong> Tennis</span>
+            <span><strong>D</strong> Darts</span>
+          </div>
+        </div>
+
+        <EventList events={todayEvents} />
       </section>
 
       <section>
