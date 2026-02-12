@@ -255,17 +255,27 @@ const HomeEventMap = forwardRef<
       }
     );
 
+    let lastBoundsKey = "";
+
     mapRef.current.addListener("idle", () => {
       const b = mapRef.current!.getBounds();
       if (!b) return;
 
-      onBoundsChanged?.({
+      const next = {
         north: b.getNorthEast().lat(),
         east: b.getNorthEast().lng(),
         south: b.getSouthWest().lat(),
         west: b.getSouthWest().lng(),
-      });
+      };
+
+      const key = JSON.stringify(next);
+
+      if (key === lastBoundsKey) return; // 🔥 변화 없으면 무시
+
+      lastBoundsKey = key;
+      onBoundsChanged?.(next);
     });
+
   }, [isLoaded, mapStyleOverride, onBoundsChanged]);
 
   /* =====================

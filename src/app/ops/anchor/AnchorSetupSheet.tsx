@@ -52,11 +52,11 @@ export default function AnchorSetupSheet({
       <div className="flex items-center gap-2 p-4 border-b">
         <button
           onClick={handleClose}
-          className="text-sm font-semibold"
+          className="text-base font-semibold"
         >
           ← Back
         </button>
-        <span className="text-sm font-semibold">
+        <span className="text-base font-semibold">
           Search location
         </span>
       </div>
@@ -77,7 +77,7 @@ export default function AnchorSetupSheet({
             rounded-xl
             bg-muted/40
             px-4
-            text-sm
+            text-[16px]
             outline-none
           "
           autoFocus

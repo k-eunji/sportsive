@@ -177,7 +177,7 @@ function ListHeaderFilter<T>({
             checked={selected.size === options.length}
             onChange={toggleAll}
           />
-          (모두 선택)
+          (Select all)
         </label>
 
         {options.map(opt => (
@@ -378,7 +378,14 @@ export default function SchedulesPage() {
   ===================== */
 
   return (
-    <main className="w-full px-4 py-6 space-y-6">
+    <main className="
+      w-full
+      h-full
+      overflow-y-auto
+      px-4
+      py-6
+      space-y-6
+    ">
       {/* HEADER */}
       <header className="space-y-1">
         <h1 className="text-xl font-semibold">

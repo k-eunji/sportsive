@@ -104,7 +104,8 @@ export function EventList({
             </h3>
 
             {cards.length > 0 ? (
-              <div className="divide-y">
+              <div className="divide-y divide-border/50">
+
                 {cards.map((card) => (
                   <EventCard key={card.id} card={card} />
                 ))}

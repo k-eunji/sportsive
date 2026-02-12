@@ -39,6 +39,7 @@ import OperationalStatusHeader from
   "@/app/ops/components/home/OperationalStatusHeader";
 
 import { buildRangeImpact } from "@/lib/impact/buildRangeImpact";
+import MobileOpsView from "@/app/ops/components/mobile/MobileOpsView";
 
 /* =====================
    Types
@@ -157,7 +158,7 @@ export default function HomePage() {
   const [viewMode, setViewMode] =
     useState<ViewMode>("event_operator");
 
-  const [locationOpen, setLocationOpen] = useState(false);
+  const [mobileExpanded, setMobileExpanded] = useState(false);
   const [appliedBounds, setAppliedBounds] =
     useState<google.maps.LatLngBoundsLiteral | null>(null);
 
@@ -537,8 +538,13 @@ export default function HomePage() {
   const panelProps = useMemo<OperationalPanelProps>(
     () => ({
       scopeLabel,
-      scopeType: peakScope.type, // ✅ 이 줄 추가
+      scopeType: peakScope.type,
       dateLabel: peakDateLabel,
+
+      activeDate,
+      onDateChange: setActiveDate,
+      hasAnchor,
+      onOpenAnchor: () => setAnchorOpen(true),
 
       criticalWindow: peakBucket
         ? {
@@ -563,12 +569,13 @@ export default function HomePage() {
             ? "medium"
             : "low",
       })),
-      activeDate,   
+
       factors,
       movementSummary,
       viewMode,
       showMovement: isEventView,
     }),
+
     [
       scopeLabel,
       peakScope.type,        // 🔥 의존성에도 추가
@@ -588,7 +595,7 @@ export default function HomePage() {
   ===================== */
 
   return (
-    <main className="relative h-full overflow-hidden">
+    <main className="relative md:h-full">
       {/* 🔥 OPERATIONAL STATUS HEADER */}
       <OperationalStatusHeader
         peak={peakBucket}
@@ -599,12 +606,17 @@ export default function HomePage() {
         attentionHint={attentionHint}
       />
 
+      {/* MOBILE MESSAGE */}
+      <div className="md:hidden px-4 py-2 text-xs text-muted-foreground text-center">
+        Advanced operational insights are available on desktop.
+      </div>      
+
       {/* VIEW MODE TOGGLE */}
-      <div className="px-4 py-2 bg-background/80 backdrop-blur shadow-sm flex justify-end">
+      <div className="hidden md:flex px-4 py-2 bg-background/80 backdrop-blur shadow-sm justify-end">
         <div className="flex items-center gap-2 text-xs">
           <span className="text-muted-foreground">
             Viewing as
-          </span>
+          </span>  
 
           <select
             value={viewMode}
@@ -634,15 +646,29 @@ export default function HomePage() {
         </div>
       </div>
 
+      <div className="
+        flex
+        min-h-0
+        h-[calc(100svh-56px)]
+        md:h-[calc(100vh-56px-110px)]
+      ">
 
-      <div className="flex h-[calc(100vh-56px-110px)] min-h-0">
         {/* LEFT PANEL – desktop only */}
-        <div className="h-full shrink-0">
+        <div className="hidden md:block h-full shrink-0">
           <OperationalOverviewPanel {...panelProps} />
         </div>
 
         {/* MAP AREA */}
-        <div className="relative flex-1 min-h-0">
+        <div
+          className={`
+            relative
+            flex-1
+            min-h-0
+            ${mobileExpanded ? "pb-[500px]" : "pb-[160px]"}
+            md:pb-0
+          `}
+        >
+
           {/* gradient edge */}
           <div
             className="
@@ -684,28 +710,13 @@ export default function HomePage() {
               }}
             />
           )}
+
         </div>
       </div>
 
-      {/* Mobile */}
-      <OperationalStatusMobile
-        peak={peakBucket}
-        scope={peakScope}
-        dateLabel={peakDateLabel}
-      />
+      {/* Desktop only bottom controls */}
+      <div className="hidden md:flex fixed inset-x-0 bottom-4 z-50 justify-center pointer-events-none">
 
-      {/* Global bottom controls – PAGE BOTTOM CENTER */}
-      <div
-        className="
-          fixed
-          inset-x-0
-          bottom-4
-          z-50
-          flex
-          justify-center
-          pointer-events-none
-        "
-      >
         <div
           className="
             pointer-events-auto
@@ -736,6 +747,25 @@ export default function HomePage() {
         </div>
       </div>
 
+      {/* 🔥 Mobile bottom sheet (루트 레벨) */}
+      <div className="md:hidden">
+        <MobileOpsView
+          peakHour={peakBucket?.hour ?? null}
+          peakCount={peakBucket?.count ?? 0}
+          scopeLabel={scopeLabel}
+          dateLabel={peakDateLabel}
+          attentionLevel={attentionLevel}
+          hourlyImpact={timeBuckets.map(b => ({
+            hour: b.hour,
+            value: b.count,
+          }))}
+          activeDate={activeDate}
+          onDateChange={setActiveDate}
+          hasAnchor={hasAnchor}
+          onOpenAnchor={() => setAnchorOpen(true)}
+          onExpandChange={setMobileExpanded}
+        />
+      </div>
 
       {anchorOpen && (
         <AnchorSetupSheet

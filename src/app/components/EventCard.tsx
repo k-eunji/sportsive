@@ -60,20 +60,36 @@ export function EventCard({ card }: { card: EventCardModel }) {
         group
         block
         transition
-        hover:bg-muted/40
-        hover:shadow-sm
-        hover:scale-[1.01]
         cursor-pointer
-        ${isCompleted ? "opacity-50 hover:scale-100 hover:shadow-none hover:bg-transparent" : ""}
-      `}
 
+        /* 📱 MOBILE — 카드 스타일 */
+        rounded-xl
+        bg-card
+        shadow-sm
+        border border-border/50
+        active:scale-[0.98]
+        active:shadow-none
+
+        /* 🖥 DESKTOP — 기존 스타일 유지 */
+        md:rounded-none
+        md:bg-transparent
+        md:shadow-none
+        md:border-0
+        md:active:scale-100
+        md:hover:bg-muted/40
+        md:hover:shadow-sm
+        md:hover:scale-[1.01]
+
+        ${isCompleted ? "opacity-50 md:hover:scale-100 md:hover:shadow-none md:hover:bg-transparent" : ""}
+      `}
     >
 
-      <div className="flex items-center gap-3 py-3 px-2">
+      <div className="flex items-center gap-4 py-4 px-4 md:px-2">
+
         {/* VISUAL */}
         <div
           className={[
-            "relative w-12 h-12 rounded overflow-hidden flex items-center justify-center transition",
+            "relative w-10 h-10 rounded-md overflow-hidden flex items-center justify-center transition",
             state === "LIVE"
               ? "ring-2 ring-red-500"
               : state === "SOON"
@@ -106,45 +122,63 @@ export function EventCard({ card }: { card: EventCardModel }) {
 
         {/* TEXT */}
         <div className={`flex-1 min-w-0 ${isCompleted ? "text-muted-foreground" : ""}`}>
-
-          <div className="font-medium truncate group-hover:underline">
+  
+        {/* 1행: 타이틀 + 시간 */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="font-medium truncate">
             {card.title}
           </div>
 
-          {meta && (
-            <div className="text-sm font-medium text-muted-foreground truncate">
-              {meta}
-            </div>
-          )}
-
           {timeLabel && (
-            <div className="text-xs text-muted-foreground">
+            <div className="text-sm text-muted-foreground whitespace-nowrap">
               {timeLabel}
             </div>
           )}
         </div>
 
-        {/* STATE (보조 신호) */}
-        {state === "LIVE" && (
-          <span className="text-xs font-semibold text-red-600">
-            LIVE
-          </span>
-        )}
-        {state === "SOON" && (
-          <span className="text-xs font-semibold text-amber-600">
-            SOON
-          </span>
-        )}
+        {/* 2행: 메타 + 상태 */}
+        <div className="flex items-center justify-between gap-3 mt-1">
+          {meta && (
+            <div className="text-sm text-muted-foreground truncate">
+              {meta}
+            </div>
+          )}
 
-        {isCompleted && (
-          <span className="text-xs font-semibold text-muted-foreground">
-            FINISHED
-          </span>
-        )}
+          {state === "LIVE" && (
+            <span className="text-xs font-semibold text-red-600">
+              LIVE
+            </span>
+          )}
+          {state === "SOON" && (
+            <span className="text-xs font-semibold text-amber-600">
+              SOON
+            </span>
+          )}
+          {isCompleted && (
+            <span className="text-xs font-semibold text-muted-foreground">
+              FINISHED
+            </span>
+          )}
+        </div>
 
-        <span className="ml-2 text-muted-foreground opacity-0 group-hover:opacity-100 transition">
-          →
+      </div>
+      
+        <span className="
+          ml-3
+          text-muted-foreground
+
+          /* 모바일: 항상 보임 */
+          opacity-70
+
+          /* 데스크탑: hover 때만 강조 */
+          md:opacity-0
+          md:group-hover:opacity-100
+
+          transition
+        ">
+          ›
         </span>
+
       </div>
     </Link>
   );
