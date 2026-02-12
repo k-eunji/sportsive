@@ -1,4 +1,4 @@
-///src/app/ireland/sports-this-weekend/page.tsx
+//src/app/ireland/sports-this-weekend/page.tsx
 
 import type { Metadata } from "next";
 import { EventList } from "@/app/components/EventList";

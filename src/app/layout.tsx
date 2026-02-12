@@ -42,6 +42,8 @@ export const metadata: Metadata = {
    VIEWPORT
 ========================= */
 export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
   themeColor: "#2563eb",
 };
 
@@ -77,7 +79,7 @@ export default function RootLayout({
       <body className="text-foreground antialiased">
         <Providers>
           <GoogleMapsProvider>
-          <VisitLogger />
+            <VisitLogger />
             <ClientShell>{children}</ClientShell>
           </GoogleMapsProvider>
         </Providers>

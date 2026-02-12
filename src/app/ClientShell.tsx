@@ -27,12 +27,11 @@ export default function ClientShell({
 
       <main
         className={`
-          ${!isOps ? "min-h-screen" : ""}
+          min-h-screen
           ${!isOps ? HEADER_HEIGHT : ""}
           ${!isOps ? "flex flex-col px-4 pb-[calc(58px+env(safe-area-inset-bottom))]" : ""}
         `}
       >
-
         <div className={!isOps ? "flex-1" : ""}>
           {children}
         </div>
