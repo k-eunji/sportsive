@@ -1,10 +1,16 @@
-//src/app/components/DateNav.tsx
+// src/app/components/DateNav.tsx
 
 "use client";
 
 import Link from "next/link";
 
-export function DateNav({ date }: { date: string }) {
+export function DateNav({
+  date,
+  basePath,
+}: {
+  date: string;
+  basePath: string;
+}) {
   const d = new Date(date);
 
   const prev = new Date(d);
@@ -18,11 +24,11 @@ export function DateNav({ date }: { date: string }) {
 
   return (
     <div className="flex justify-between mt-8">
-      <Link href={`/uk/sports/${prevKey}`} className="underline">
+      <Link href={`${basePath}/${prevKey}`} className="underline">
         ← {prevKey}
       </Link>
 
-      <Link href={`/uk/sports/${nextKey}`} className="underline">
+      <Link href={`${basePath}/${nextKey}`} className="underline">
         {nextKey} →
       </Link>
     </div>

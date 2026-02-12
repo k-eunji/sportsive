@@ -48,9 +48,11 @@ function formatDateHeader(dateKey: string) {
 export function EventList({
   events,
   startFromFirstEvent = false,
+  fixedStartDate,
 }: {
   events: Event[];
   startFromFirstEvent?: boolean;
+  fixedStartDate?: string;   // 🔥 추가
 }){
   const grouped = groupEventsByDate(events);
 
@@ -73,9 +75,15 @@ export function EventList({
     })
     .filter(Boolean) as Date[];
 
-  const start = startFromFirstEvent
-    ? startOfDay(dates[0])
-    : startOfDay(new Date());
+  let start: Date;
+
+  if (fixedStartDate) {
+    start = startOfDay(new Date(fixedStartDate));
+  } else {
+    start = startFromFirstEvent
+      ? startOfDay(dates[0])
+      : startOfDay(new Date());
+  }
 
   const lastEventDate = new Date(
     Math.max(...dates.map((d) => d.getTime()))

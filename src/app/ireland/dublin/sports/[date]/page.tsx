@@ -57,7 +57,7 @@ export default async function Page({ params }: Props) {
     notFound();
   }
 
-  const events = await getAllEventsRaw();
+  const events = await getAllEventsRaw("180d");
 
   const dateEvents = events.filter((e: any) => {
     const eventKey = (e.startDate ?? e.date ?? e.utcDate)?.slice(0, 10);
@@ -105,7 +105,7 @@ export default async function Page({ params }: Props) {
           </div>
         </div>
 
-        <EventList events={dateEvents} />
+        <EventList events={dateEvents} fixedStartDate={date} />
       </section>
 
       {dateEvents.length > 0 && (
@@ -150,7 +150,10 @@ export default async function Page({ params }: Props) {
 
 
       {/* 날짜 네비게이션 */}
-      <DateNav date={date} />
+      <DateNav
+        date={date}
+        basePath="/ireland/dublin/sports"
+      />
 
       {/* 상위 허브 연결 */}
       <section className="pt-8">

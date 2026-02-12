@@ -55,7 +55,7 @@ export default async function Page({ params }: Props) {
     notFound();
   }
 
-  const events = await getAllEventsRaw();
+  const events = await getAllEventsRaw("180d");
 
   const dateEvents = events.filter((e: any) => {
     const eventKey =
@@ -105,7 +105,8 @@ export default async function Page({ params }: Props) {
           </div>
         </div>
 
-        <EventList events={dateEvents} />
+        <EventList events={dateEvents} fixedStartDate={date} />
+
       </section>
       {dateEvents.length > 0 && (
         <script
@@ -149,7 +150,10 @@ export default async function Page({ params }: Props) {
 
 
       {/* 날짜 네비게이션 */}
-      <DateNav date={date} />
+      <DateNav
+        date={date}
+        basePath="/uk/manchester/sports"
+      />
 
       {/* 상위 페이지 링크 */}
       <section className="pt-8">

@@ -30,7 +30,7 @@ function getTodayKey() {
 }
 
 export default async function UKLiveSportsTodayPage() {
-  const events = await getAllEventsRaw();
+  const events = await getAllEventsRaw("180d");
 
   const todayKey = getTodayKey();
 

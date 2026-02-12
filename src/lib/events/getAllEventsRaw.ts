@@ -3,8 +3,12 @@
 import { getAllEvents } from "./getAllEvents";
 
 export async function getAllEventsRaw(window: string = "7d") {
-  // 180d는 lifecycle 필터 안 걸림
   const { events } = await getAllEvents("180d");
+
+  if (window === "180d") {
+    // ✅ 180일 전체 그대로 반환 (날짜 페이지용)
+    return events;
+  }
 
   const now = new Date();
   const windowEnd = new Date(now);

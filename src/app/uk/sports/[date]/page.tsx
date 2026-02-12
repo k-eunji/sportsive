@@ -62,7 +62,7 @@ export default async function UKSportsByDatePage({ params }: Props) {
     notFound();
   }
 
-  const events = await getAllEventsRaw();
+  const events = await getAllEventsRaw("180d");
 
   const dateEvents = events.filter((e: any) => {
     const eventKey =
@@ -113,7 +113,7 @@ export default async function UKSportsByDatePage({ params }: Props) {
           </div>
         </div>
 
-        <EventList events={dateEvents} />
+        <EventList events={dateEvents} fixedStartDate={date} />
       </section>
       {dateEvents.length > 0 && (
         <script
@@ -155,8 +155,10 @@ export default async function UKSportsByDatePage({ params }: Props) {
         />
       )}
 
-
-      <DateNav date={date} />
+      <DateNav
+        date={date}
+        basePath="/uk/sports"
+      />
 
       <section className="pt-8">
         <Link href="/uk/live-sports-today">

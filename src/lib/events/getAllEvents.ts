@@ -16,9 +16,15 @@ import { isEventActiveInWindow } from "@/lib/events/lifecycle";
 ========================= */
 function dedupeById(events: any[]) {
   return Array.from(
-    new Map(events.map((e) => [e.id, e])).values()
+    new Map(
+      events.map((e) => [
+        `${e.sport ?? "unknown"}-${e.id}`,  // 🔥 sport 포함
+        e,
+      ])
+    ).values()
   );
 }
+
 
 export async function getAllEvents(window: string = "7d") {
   const [

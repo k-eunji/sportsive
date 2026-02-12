@@ -58,7 +58,7 @@ export default async function IrelandSportsByDatePage(
     notFound();
   }
 
-  const events = await getAllEventsRaw();
+  const events = await getAllEventsRaw("180d");
 
   const dateEvents = events.filter((e: any) => {
     const eventKey = (e.startDate ?? e.date ?? e.utcDate)?.slice(0, 10);
@@ -107,7 +107,7 @@ export default async function IrelandSportsByDatePage(
           </div>
         </div>
 
-        <EventList events={dateEvents} />
+        <EventList events={dateEvents} fixedStartDate={date} />
       </section>
       {dateEvents.length > 0 && (
         <script
@@ -151,7 +151,10 @@ export default async function IrelandSportsByDatePage(
 
 
       {/* 날짜 네비게이션 */}
-      <DateNav date={date} />
+      <DateNav
+        date={date}
+        basePath="/ireland/sports"
+      />
 
       {/* 상위 허브 연결 */}
       <section className="pt-8">

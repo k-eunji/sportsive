@@ -23,7 +23,7 @@ function formatToday() {
 }
 
 export default async function Page() {
-  const events = await getAllEventsRaw();
+  const events = await getAllEventsRaw("180d");
 
   const todayKey = new Date().toLocaleDateString("en-CA");
 
