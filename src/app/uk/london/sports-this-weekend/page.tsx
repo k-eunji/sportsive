@@ -2,7 +2,6 @@
 
 import type { Metadata } from "next";
 import { getAllEvents } from "@/lib/events/getAllEvents";
-import { formatEventTimeShort } from "@/utils/date";
 import { EventList } from "@/app/components/EventList";
 
 export const metadata: Metadata = {
@@ -14,91 +13,39 @@ export const metadata: Metadata = {
   },
 };
 
-function SimpleEventList({ events }: { events: any[] }) {
-  if (events.length === 0) {
-    return <p className="text-muted-foreground">No fixtures this weekend.</p>;
-  }
-
-  return (
-    <div className="divide-y">
-      {events.map((e) => {
-        const raw = e.startDate ?? e.date ?? e.utcDate;
-        const date = new Date(raw);
-
-        const dateLabel = date.toLocaleDateString("en-GB", {
-          weekday: "short",
-          day: "2-digit",
-          month: "2-digit",
-        });
-
-        const timeLabel = raw
-          ? formatEventTimeShort(raw)
-          : "";
-
-        return (
-          <div
-            key={e.id}
-            className="py-3 flex justify-between items-center"
-          >
-            <div>
-              <div className="font-medium">
-                {e.homeTeam ?? e.title}
-                {e.awayTeam && ` vs ${e.awayTeam}`}
-              </div>
-
-              <div className="text-xs text-muted-foreground">
-                {dateLabel} {timeLabel && `· ${timeLabel}`}
-              </div>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
 function getWeekendDateKeys() {
   const now = new Date();
-  const day = now.getDay(); // 0=Sun, 6=Sat
 
-  let saturday = new Date(now);
+  const saturday = new Date(
+    now.toLocaleString("en-US", { timeZone: "Europe/London" })
+  );
 
-  if (day === 6) {
-    // 오늘이 토요일
-    // 그대로 오늘
-  } else if (day === 0) {
-    // 오늘이 일요일 → 어제 토요일
-    saturday.setDate(now.getDate() - 1);
-  } else {
-    // 월~금 → 다가오는 토요일
-    saturday.setDate(now.getDate() + (6 - day));
+  const day = saturday.getDay();
+
+  if (day !== 6) {
+    saturday.setDate(saturday.getDate() + ((6 - day + 7) % 7));
   }
 
   const sunday = new Date(saturday);
   sunday.setDate(saturday.getDate() + 1);
 
-  return {
-    satKey: saturday.toISOString().slice(0, 10),
-    sunKey: sunday.toISOString().slice(0, 10),
-  };
-}
-
-function formatUpdated() {
-  return new Date().toLocaleDateString("en-GB", {
-    weekday: "long",
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
+  const satKey = saturday.toLocaleDateString("en-CA", {
+    timeZone: "Europe/London",
   });
+
+  const sunKey = sunday.toLocaleDateString("en-CA", {
+    timeZone: "Europe/London",
+  });
+
+  return { satKey, sunKey, saturday, sunday };
 }
 
 export default async function LondonWeekendPage() {
   const { events } = await getAllEvents("7d");
-
-  const { satKey, sunKey } = getWeekendDateKeys();
+  const { satKey, sunKey, saturday, sunday } = getWeekendDateKeys();
 
   const weekendLondonEvents = events.filter((e: any) => {
-    const eventKey = (e.startDate ?? e.date)?.slice(0, 10);
+    const eventKey = (e.startDate ?? e.date ?? e.utcDate)?.slice(0, 10);
 
     return (
       e.city?.toLowerCase() === "london" &&
@@ -111,16 +58,17 @@ export default async function LondonWeekendPage() {
 
       <header className="space-y-4">
         <h1 className="text-3xl font-bold">
-          Sports fixtures in London this weekend
+          Sports Fixtures in London This Weekend
         </h1>
 
-        <p className="text-sm text-muted-foreground">
-          Updated: {formatUpdated()}
+        <p className="text-muted-foreground">
+          {saturday.toLocaleDateString("en-GB")} – {sunday.toLocaleDateString("en-GB")}
         </p>
 
         <p className="text-muted-foreground">
-          Professional sports events scheduled across London this weekend,
-          including football, rugby and other major competitions.
+          There are {weekendLondonEvents.length} professional sporting events
+          taking place in London this weekend.
+          Fixtures are distributed across major stadium and arena venues.
         </p>
       </header>
 
@@ -128,6 +76,7 @@ export default async function LondonWeekendPage() {
         <h2 className="text-xl font-semibold mb-4">
           This weekend’s fixtures in London
         </h2>
+
         {/* Sport markers explanation */}
         <div className="mt-5 mb-3 text-xs text-muted-foreground space-y-1">
           <div className="font-medium text-foreground/70">
@@ -144,12 +93,11 @@ export default async function LondonWeekendPage() {
             <span><strong>D</strong> Darts</span>
           </div>
         </div>
-
+        
         <EventList
           events={weekendLondonEvents}
           startFromFirstEvent
         />
-
       </section>
 
       <section className="pt-8">
@@ -159,17 +107,6 @@ export default async function LondonWeekendPage() {
         >
           View all UK fixtures →
         </a>
-      </section>
-
-      <section className="pt-12">
-        <h2 className="text-xl font-semibold">
-          About VenueScope
-        </h2>
-        <p className="text-muted-foreground">
-          VenueScope maps sports scheduling across multiple leagues
-          to provide operational visibility into timing overlap and
-          venue concentration.
-        </p>
       </section>
 
     </main>

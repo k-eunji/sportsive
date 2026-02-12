@@ -5,8 +5,17 @@ import type { MetadataRoute } from "next";
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = "https://venuescope.io";
   const now = new Date();
+  const urls: MetadataRoute.Sitemap = [];
 
-  const routes = [
+  function formatDate(date: Date) {
+    return date.toISOString().slice(0, 10);
+  }
+
+  // =========================
+  // 1️⃣ 정적 페이지
+  // =========================
+
+  const staticRoutes = [
     "/",
 
     // 🇬🇧 UK – Today
@@ -23,11 +32,47 @@ export default function sitemap(): MetadataRoute.Sitemap {
     // 🇮🇪 Ireland – Today
     "/ireland/live-sports-today",
     "/ireland/dublin/live-sports-today",
-    "ireland/sports-this-weekend"
+
+    // 🇮🇪 Ireland – Weekend
+    "/ireland/sports-this-weekend",
   ];
 
-  return routes.map((path) => ({
-    url: `${baseUrl}${path}`,
-    lastModified: now,
-  }));
+  staticRoutes.forEach((path) => {
+    urls.push({
+      url: `${baseUrl}${path}`,
+      lastModified: now,
+    });
+  });
+
+  // =========================
+  // 2️⃣ 날짜 페이지 생성 범위
+  // =========================
+
+  const pastDays = 90;
+  const futureDays = 14;
+
+  for (let i = -pastDays; i <= futureDays; i++) {
+    const date = new Date();
+    date.setDate(now.getDate() + i);
+
+    const dateStr = formatDate(date);
+
+    // 🇬🇧 UK
+    urls.push(
+      { url: `${baseUrl}/uk/sports/${dateStr}`, lastModified: now },
+      { url: `${baseUrl}/uk/football/${dateStr}`, lastModified: now },
+      { url: `${baseUrl}/uk/london/sports/${dateStr}`, lastModified: now },
+      { url: `${baseUrl}/uk/manchester/sports/${dateStr}`, lastModified: now },
+      { url: `${baseUrl}/uk/birmingham/sports/${dateStr}`, lastModified: now }
+    );
+
+    // 🇮🇪 Ireland
+    urls.push(
+      { url: `${baseUrl}/ireland/sports/${dateStr}`, lastModified: now },
+      { url: `${baseUrl}/ireland/football/${dateStr}`, lastModified: now },
+      { url: `${baseUrl}/ireland/dublin/sports/${dateStr}`, lastModified: now }
+    );
+  }
+
+  return urls;
 }

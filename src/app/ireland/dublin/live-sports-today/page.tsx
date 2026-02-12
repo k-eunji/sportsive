@@ -25,18 +25,23 @@ function formatToday() {
 export default async function Page() {
   const events = await getAllEventsRaw();
 
-  // 🔥 Dublin 필터
-  const dublinEvents = events.filter(
-    (e: any) =>
-      e.city?.toLowerCase() === "dublin"
-  );
+  const todayKey = new Date().toLocaleDateString("en-CA");
+
+  const dublinTodayEvents = events.filter((e: any) => {
+    const eventKey = (e.startDate ?? e.date ?? e.utcDate)?.slice(0, 10);
+
+    return (
+      e.city?.toLowerCase() === "dublin" &&
+      eventKey === todayKey
+    );
+  });
 
   return (
     <main className="max-w-3xl mx-auto px-6 py-16 space-y-8">
 
       <header className="space-y-4">
-        <h1 className="text-3xl font-bold">
-          Live sports in Dublin today
+        <h1>
+          Sports in Dublin Today — {formatToday()}
         </h1>
 
         <p className="text-sm text-muted-foreground">
@@ -53,6 +58,13 @@ export default async function Page() {
         <h2 className="text-xl font-semibold mb-4">
           Today’s fixtures in Dublin
         </h2>
+
+        <p className="text-muted-foreground mb-4">
+          There are {dublinTodayEvents.length} professional sporting events
+          taking place in Dublin today. Fixtures include football,
+          rugby, horse racing and other major competitions.
+        </p>
+
         {/* Sport markers explanation */}
         <div className="mt-5 mb-3 text-xs text-muted-foreground space-y-1">
           <div className="font-medium text-foreground/70">
@@ -70,7 +82,7 @@ export default async function Page() {
           </div>
         </div>
 
-        <EventList events={dublinEvents} />
+        <EventList events={dublinTodayEvents} />
       </section>
 
       <section className="pt-8">

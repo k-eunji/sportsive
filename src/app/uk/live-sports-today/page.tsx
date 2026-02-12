@@ -19,14 +19,21 @@ function formatToday() {
     day: "2-digit",
     month: "long",
     year: "numeric",
+    timeZone: "Europe/London",
+  });
+}
+
+function getTodayKey() {
+  return new Date().toLocaleDateString("en-CA", {
+    timeZone: "Europe/London",
   });
 }
 
 export default async function UKLiveSportsTodayPage() {
-
   const events = await getAllEventsRaw();
 
-  const todayKey = new Date().toISOString().slice(0, 10);
+  const todayKey = getTodayKey();
+
   const UK_REGIONS = [
     "england",
     "scotland",
@@ -48,7 +55,7 @@ export default async function UKLiveSportsTodayPage() {
 
       <header className="space-y-4">
         <h1 className="text-3xl font-bold">
-          Live sports across the UK today
+          Sports in the UK Today — {formatToday()}
         </h1>
 
         <p className="text-sm text-muted-foreground">
@@ -63,8 +70,16 @@ export default async function UKLiveSportsTodayPage() {
 
       <section>
         <h2 className="text-xl font-semibold mb-4">
-          Today’s fixtures
+          Today’s fixtures across the UK
         </h2>
+
+        <p className="text-muted-foreground mb-4">
+          There are {todayEvents.length} professional sporting events
+          taking place across England, Scotland, Wales and Northern Ireland today.
+          Fixtures include football, rugby, cricket, horse racing and other
+          major competitions. Activity is typically concentrated in the
+          afternoon and evening peak windows.
+        </p>
         {/* Sport markers explanation */}
         <div className="mt-5 mb-3 text-xs text-muted-foreground space-y-1">
           <div className="font-medium text-foreground/70">
