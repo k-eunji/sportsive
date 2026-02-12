@@ -608,8 +608,8 @@ export default function HomePage() {
 
       {/* MOBILE MESSAGE */}
       <div className="md:hidden px-4 py-2 text-xs text-muted-foreground text-center">
-        Advanced operational insights are available on desktop.
-      </div>      
+        For full operational insights, view on a larger screen.
+      </div>
 
       {/* VIEW MODE TOGGLE */}
       <div className="hidden md:flex px-4 py-2 bg-background/80 backdrop-blur shadow-sm justify-end">

@@ -27,7 +27,7 @@ export default function OpsLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
       {/* ================= DESKTOP LAYOUT ================= */}
-      <div className="hidden md:block min-h-screen bg-background">
+      <div className="hidden lg:block min-h-screen bg-background">
 
         <header className="sticky top-0 z-50 bg-background/80 backdrop-blur shadow-sm">
           <nav className="mx-auto max-w-7xl px-4 h-14 flex items-center gap-6">
@@ -58,7 +58,7 @@ export default function OpsLayout({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* ================= MOBILE LAYOUT ================= */}
-      <div className="md:hidden h-[100svh] overflow-hidden bg-background flex flex-col">
+      <div className="lg:hidden h-[100svh] overflow-hidden bg-background flex flex-col">
 
         <div className="relative flex-1 overflow-hidden">
           {children}
