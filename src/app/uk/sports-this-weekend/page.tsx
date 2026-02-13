@@ -92,6 +92,24 @@ export default async function UKWeekendPage() {
         </p>
       </header>
 
+      <section className="border rounded-xl p-6 bg-muted/30">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          Operational insight
+        </h2>
+
+        <p className="mt-2 text-sm text-muted-foreground">
+          Need a congestion overview for planning, staffing or transport coordination?
+        </p>
+
+        <a
+          href="/uk/fixture-congestion/this-weekend"
+          className="inline-block mt-3 text-sm font-medium underline underline-offset-4"
+        >
+          View UK weekend congestion analysis →
+        </a>
+      </section>
+
+
       <section>
         <h2 className="text-xl font-semibold mb-4">
           This weekend’s fixtures
@@ -117,7 +135,13 @@ export default async function UKWeekendPage() {
         <EventList events={weekendEvents} startFromFirstEvent />
       </section>
 
-      <section className="pt-8">
+      <section className="pt-6 border-t space-y-4 text-sm">
+        <a
+          href="/uk/sports-next-weekend"
+          className="block underline underline-offset-4"
+        >
+          View next weekend’s fixtures →
+        </a>
         <a
           href="/uk/live-sports-today"
           className="underline underline-offset-4"

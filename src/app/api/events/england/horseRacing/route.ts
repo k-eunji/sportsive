@@ -57,7 +57,7 @@ export async function GET() {
       const { startHour, durationHours } = mapSessionToWindow(s.time);
 
       const start = new Date(
-        `${s.date}T${String(startHour).padStart(2, "0")}:00:00Z`
+        `${s.date}T${String(startHour).padStart(2, "0")}:00:00`
       );
 
       const end = new Date(

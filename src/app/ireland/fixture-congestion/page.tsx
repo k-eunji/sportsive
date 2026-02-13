@@ -1,4 +1,4 @@
-// src/app/uk/fixture-congestion/page.tsx
+// src/app/ireland/fixture-congestion/page.tsx
 
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -6,11 +6,12 @@ import { getAllEventsRaw } from "@/lib/events/getAllEventsRaw";
 
 export const metadata: Metadata = {
   title:
-    "UK Fixture Congestion Today | National Kickoff Overlap Report",
+    "Ireland Fixture Congestion — Live Match Overlap & Scheduling Analysis",
   description:
-    "Live national fixture congestion report across the United Kingdom, highlighting peak kickoff overlap, regional distribution and operational scheduling density.",
+    "Live fixture congestion analysis across Ireland, highlighting peak kickoff overlap windows, concurrent professional fixtures and operational scheduling pressure.",
   alternates: {
-    canonical: "https://venuescope.io/uk/fixture-congestion",
+    canonical:
+      "https://venuescope.io/ireland/fixture-congestion",
   },
 };
 
@@ -20,7 +21,7 @@ function formatDisplayDate(date: Date) {
     day: "2-digit",
     month: "long",
     year: "numeric",
-    timeZone: "Europe/London",
+    timeZone: "Europe/Dublin",
   });
 }
 
@@ -31,45 +32,37 @@ export default async function Page() {
   const todayKey = today.toISOString().slice(0, 10);
   const displayDate = formatDisplayDate(today);
 
-  const UK_REGIONS = [
-    "england",
-    "scotland",
-    "wales",
-    "northern ireland",
-  ];
+  /* ===================== FILTER ===================== */
 
-  const ukEvents = events.filter((e: any) => {
+  const irelandEvents = events.filter((e: any) => {
     const eventKey =
       (e.startDate ?? e.date ?? e.utcDate)?.slice(0, 10);
 
     return (
-      UK_REGIONS.includes(e.region?.toLowerCase()) &&
+      e.region?.toLowerCase() === "ireland" &&
       eventKey === todayKey
     );
   });
 
-  /* =========================
-     HOURLY ANALYSIS
-  ========================= */
+  /* ===================== HOURLY ===================== */
 
   const hourMap = new Map<number, number>();
 
-  ukEvents.forEach((e: any) => {
+  irelandEvents.forEach((e: any) => {
     const raw = e.startDate ?? e.date ?? e.utcDate;
     if (!raw) return;
 
     const d = new Date(raw);
     if (isNaN(d.getTime())) return;
 
-    const hour = Number(
-      d.toLocaleString("en-GB", {
-        hour: "2-digit",
-        hour12: false,
-        timeZone: "Europe/London",
-      })
-    );
+    const hourString = d.toLocaleString("en-GB", {
+      hour: "2-digit",
+      hour12: false,
+      timeZone: "Europe/Dublin",
+    });
 
-    hourMap.set(hour, (hourMap.get(hour) ?? 0) + 1);
+    const h = Number(hourString);
+    hourMap.set(h, (hourMap.get(h) ?? 0) + 1);
   });
 
   const sortedHours = [...hourMap.entries()].sort(
@@ -79,8 +72,8 @@ export default async function Page() {
   const peak = sortedHours[0];
 
   const peakRatio =
-    peak && ukEvents.length > 0
-      ? Math.round((peak[1] / ukEvents.length) * 100)
+    peak && irelandEvents.length > 0
+      ? Math.round((peak[1] / irelandEvents.length) * 100)
       : 0;
 
   const congestionLevel =
@@ -90,15 +83,30 @@ export default async function Page() {
       ? "Moderate"
       : "Low";
 
+  /* ===================== COMPETITION ===================== */
+
+  const competitionMap = new Map<string, number>();
+
+  irelandEvents.forEach((e: any) => {
+    const key = e.competition ?? e.sport ?? "Other";
+    competitionMap.set(key, (competitionMap.get(key) ?? 0) + 1);
+  });
+
+  const topCompetitions = [...competitionMap.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
+
+  /* ===================== STRUCTURED DATA ===================== */
+
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "Dataset",
-    name: "UK Fixture Congestion — Today",
+    name: "Ireland Fixture Congestion — Today",
     description:
-      "Live national fixture congestion report across the United Kingdom, including peak kickoff overlap and regional distribution.",
+      "Live national fixture congestion report across Ireland, including peak kickoff overlap and competition distribution.",
     spatialCoverage: {
       "@type": "Place",
-      name: "United Kingdom",
+      name: "Ireland",
     },
     temporalCoverage: todayKey,
   };
@@ -110,43 +118,15 @@ export default async function Page() {
       {
         "@type": "ListItem",
         position: 1,
-        name: "UK Fixture Congestion",
-        item: "https://venuescope.io/uk/fixture-congestion",
+        name: "Ireland Fixture Congestion",
+        item: "https://venuescope.io/ireland/fixture-congestion",
       },
     ],
   };
 
-
-  /* =========================
-     REGIONAL DISTRIBUTION
-  ========================= */
-
-  const regionMap = new Map<string, number>();
-
-  ukEvents.forEach((e: any) => {
-    const region = e.region ?? "Other";
-    regionMap.set(region, (regionMap.get(region) ?? 0) + 1);
-  });
-
-  const regionBreakdown = [...regionMap.entries()].sort(
-    (a, b) => b[1] - a[1]
-  );
-
-  /* =========================
-     RECENT DATES
-  ========================= */
-
-  const recentDates = Array.from({ length: 3 }, (_, i) => {
-    const d = new Date(today);
-    d.setDate(today.getDate() - (i + 1));
-    return {
-      key: d.toISOString().slice(0, 10),
-      label: formatDisplayDate(d),
-    };
-  });
-
   return (
     <main className="max-w-3xl mx-auto px-6 py-10 space-y-10">
+
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -166,12 +146,12 @@ export default async function Page() {
       <header className="space-y-6 border-b border-border/30">
 
         <h1 className="text-4xl font-bold leading-tight">
-          UK Fixture Congestion Report — {displayDate}
+          Ireland Fixture Congestion Report — {displayDate}
         </h1>
 
         <p className="text-muted-foreground leading-relaxed">
-          A total of {ukEvents.length} professional fixtures are
-          scheduled across the United Kingdom today.
+          A total of {irelandEvents.length} professional fixtures are
+          scheduled across Ireland today.
         </p>
 
       </header>
@@ -187,7 +167,7 @@ export default async function Page() {
               Total fixtures
             </p>
             <p className="text-3xl font-semibold">
-              {ukEvents.length}
+              {irelandEvents.length}
             </p>
           </div>
 
@@ -246,18 +226,19 @@ export default async function Page() {
 
       </section>
 
-      {/* ================= REGIONAL ================= */}
+      {/* ================= COMPETITION ================= */}
 
       <section className="space-y-6">
 
         <h2 className="text-2xl font-semibold">
-          Regional distribution
+          Competition contribution
         </h2>
 
         <ul className="list-disc pl-6 space-y-2 text-muted-foreground">
-          {regionBreakdown.map(([region, count]) => (
-            <li key={region}>
-              {region} — {count} fixture{count !== 1 ? "s" : ""}
+          {topCompetitions.map(([name, count]) => (
+            <li key={name}>
+              {name} — {count} fixture
+              {count !== 1 ? "s" : ""}
             </li>
           ))}
         </ul>
@@ -281,32 +262,16 @@ export default async function Page() {
 
       </section>
 
-      {/* ================= ARCHIVE ================= */}
-
-      <section className="space-y-6">
-
-        <h2 className="text-2xl font-semibold">
-          Recent congestion reports
-        </h2>
-
-        <ul className="list-disc pl-6 space-y-2">
-          {recentDates.map((d) => (
-            <li key={d.key}>
-              <Link
-                href={`/uk/fixture-congestion/${d.key}`}
-                className="underline underline-offset-4"
-              >
-                UK Fixture Congestion — {d.label}
-              </Link>
-            </li>
-          ))}
-        </ul>
-
-      </section>
-
       {/* ================= CTA ================= */}
 
-      <section className="space-y-6">
+      <section className="space-y-6 border-t">
+
+        <Link
+          href="/ireland/sports"
+          className="underline underline-offset-4"
+        >
+          View Ireland fixtures by date →
+        </Link>
 
         <Link
           href="/ops"
@@ -319,5 +284,4 @@ export default async function Page() {
 
     </main>
   );
-
 }

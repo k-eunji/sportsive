@@ -1,17 +1,10 @@
-// src/app/uk/fixture-congestion/[date]/page.tsx
+// src/app/ireland/fixture-congestion/[date]/page.tsx
 
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getAllEventsRaw } from "@/lib/events/getAllEventsRaw";
 import { isWithinAllowedRange } from "@/utils/dateRangeGuard";
 import Link from "next/link";
-
-const UK_REGIONS = [
-  "england",
-  "scotland",
-  "wales",
-  "northern ireland",
-];
 
 type Props = {
   params: Promise<{ date: string }>;
@@ -28,13 +21,14 @@ function formatDisplayDate(dateStr: string) {
     day: "2-digit",
     month: "long",
     year: "numeric",
-    timeZone: "Europe/London",
+    timeZone: "Europe/Dublin",
   });
 }
 
 export async function generateMetadata(
   { params }: Props
 ): Promise<Metadata> {
+
   const { date } = await params;
 
   if (!isValidDate(date) || !isWithinAllowedRange(date)) {
@@ -44,15 +38,18 @@ export async function generateMetadata(
   const displayDate = formatDisplayDate(date);
 
   return {
-    title: `UK Fixture Congestion — ${displayDate} | National Overlap Analysis`,
-    description: `National fixture congestion analysis for ${displayDate}, including peak kickoff overlap, regional distribution and operational scheduling density across the United Kingdom.`,
+    title: `Ireland Fixture Congestion — ${displayDate}`,
+    description:
+      `National fixture congestion analysis for ${displayDate}, including peak kickoff overlap and competition distribution across Ireland.`,
     alternates: {
-      canonical: `https://venuescope.io/uk/fixture-congestion/${date}`,
+      canonical:
+        `https://venuescope.io/ireland/fixture-congestion/${date}`,
     },
   };
 }
 
 export default async function Page({ params }: Props) {
+
   const { date } = await params;
 
   if (!isValidDate(date) || !isWithinAllowedRange(date)) {
@@ -60,46 +57,45 @@ export default async function Page({ params }: Props) {
   }
 
   const events = await getAllEventsRaw("180d");
+  const displayDate = formatDisplayDate(date);
 
   const todayKey = new Date().toISOString().slice(0, 10);
+
   const isPast = date < todayKey;
   const isToday = date === todayKey;
   const isFuture = date > todayKey;
 
-  const displayDate = formatDisplayDate(date);
+  /* ===================== FILTER ===================== */
 
-  const ukEvents = events.filter((e: any) => {
+  const irelandEvents = events.filter((e: any) => {
     const eventKey =
       (e.startDate ?? e.date ?? e.utcDate)?.slice(0, 10);
 
     return (
-      UK_REGIONS.includes(e.region?.toLowerCase()) &&
+      e.region?.toLowerCase() === "ireland" &&
       eventKey === date
     );
   });
 
-  /* =========================
-     HOURLY ANALYSIS
-  ========================= */
+  /* ===================== HOURLY ===================== */
 
   const hourMap = new Map<number, number>();
 
-  ukEvents.forEach((e: any) => {
+  irelandEvents.forEach((e: any) => {
     const raw = e.startDate ?? e.date ?? e.utcDate;
     if (!raw) return;
 
     const d = new Date(raw);
     if (isNaN(d.getTime())) return;
 
-    const hour = Number(
-      d.toLocaleString("en-GB", {
-        hour: "2-digit",
-        hour12: false,
-        timeZone: "Europe/London",
-      })
-    );
+    const hourString = d.toLocaleString("en-GB", {
+      hour: "2-digit",
+      hour12: false,
+      timeZone: "Europe/Dublin",
+    });
 
-    hourMap.set(hour, (hourMap.get(hour) ?? 0) + 1);
+    const h = Number(hourString);
+    hourMap.set(h, (hourMap.get(h) ?? 0) + 1);
   });
 
   const sortedHours = [...hourMap.entries()].sort(
@@ -109,8 +105,8 @@ export default async function Page({ params }: Props) {
   const peak = sortedHours[0];
 
   const peakRatio =
-    peak && ukEvents.length > 0
-      ? Math.round((peak[1] / ukEvents.length) * 100)
+    peak && irelandEvents.length > 0
+      ? Math.round((peak[1] / irelandEvents.length) * 100)
       : 0;
 
   const congestionLevel =
@@ -120,29 +116,17 @@ export default async function Page({ params }: Props) {
       ? "Moderate"
       : "Low";
 
-  /* =========================
-     REGIONAL DISTRIBUTION
-  ========================= */
-
-  const regionMap = new Map<string, number>();
-
-  ukEvents.forEach((e: any) => {
-    const region = e.region ?? "Other";
-    regionMap.set(region, (regionMap.get(region) ?? 0) + 1);
-  });
-
-  const regionBreakdown = [...regionMap.entries()].sort(
-    (a, b) => b[1] - a[1]
-  );
+  /* ===================== STRUCTURED DATA ===================== */
 
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "Dataset",
-    name: `UK Fixture Congestion — ${displayDate}`,
-    description: `National fixture congestion analysis for ${displayDate}, including peak kickoff overlap and regional distribution across the United Kingdom.`,
+    name: `Ireland Fixture Congestion — ${displayDate}`,
+    description:
+      `National fixture congestion analysis for ${displayDate} across Ireland.`,
     spatialCoverage: {
       "@type": "Place",
-      name: "United Kingdom",
+      name: "Ireland",
     },
     temporalCoverage: date,
   };
@@ -154,8 +138,8 @@ export default async function Page({ params }: Props) {
       {
         "@type": "ListItem",
         position: 1,
-        name: "UK Fixture Congestion",
-        item: "https://venuescope.io/uk/fixture-congestion",
+        name: "Ireland Fixture Congestion",
+        item: "https://venuescope.io/ireland/fixture-congestion",
       },
       {
         "@type": "ListItem",
@@ -165,22 +149,22 @@ export default async function Page({ params }: Props) {
     ],
   };
 
-  /* =========================
-     RELATED DATES
-  ========================= */
+  /* ===================== RELATED DATES ===================== */
 
   const currentDate = new Date(date);
-  const previous = new Date(currentDate);
-  previous.setDate(currentDate.getDate() - 1);
+
+  const prev = new Date(currentDate);
+  prev.setDate(currentDate.getDate() - 1);
 
   const next = new Date(currentDate);
   next.setDate(currentDate.getDate() + 1);
 
-  const previousDate = previous.toISOString().slice(0, 10);
+  const prevDate = prev.toISOString().slice(0, 10);
   const nextDate = next.toISOString().slice(0, 10);
 
   return (
     <main className="max-w-3xl mx-auto px-6 py-10 space-y-10">
+
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -200,23 +184,21 @@ export default async function Page({ params }: Props) {
       <header className="space-y-6">
 
         <h1 className="text-4xl font-bold leading-tight">
-          UK Fixture Congestion Report — {displayDate}
+          Ireland Fixture Congestion Report — {displayDate}
         </h1>
 
         <p className="text-muted-foreground leading-relaxed">
           {isPast &&
-            `A total of ${ukEvents.length} professional fixtures were held across the United Kingdom on this date.`}
-
+            `A total of ${irelandEvents.length} professional fixtures were held across Ireland on this date.`}
           {isToday &&
-            `A total of ${ukEvents.length} professional fixtures are scheduled across the United Kingdom today.`}
-
+            `A total of ${irelandEvents.length} professional fixtures are scheduled across Ireland today.`}
           {isFuture &&
-            `A total of ${ukEvents.length} professional fixtures are scheduled across the United Kingdom on this date.`}
+            `A total of ${irelandEvents.length} professional fixtures are scheduled across Ireland on this date.`}
         </p>
 
       </header>
 
-      {/* ================= KPI BLOCK ================= */}
+      {/* ================= KPI ================= */}
 
       <section className="border rounded-xl p-8 space-y-6">
 
@@ -227,7 +209,7 @@ export default async function Page({ params }: Props) {
               Total fixtures
             </p>
             <p className="text-3xl font-semibold">
-              {ukEvents.length}
+              {irelandEvents.length}
             </p>
           </div>
 
@@ -258,7 +240,7 @@ export default async function Page({ params }: Props) {
 
       </section>
 
-      {/* ================= KICKOFF ANALYSIS ================= */}
+      {/* ================= OVERLAP ================= */}
 
       <section className="space-y-6">
 
@@ -271,8 +253,8 @@ export default async function Page({ params }: Props) {
             {isPast
               ? `The highest recorded overlap occurred at ${peak[0]}:00 with ${peak[1]} concurrent fixtures nationwide.`
               : `The primary overlap window occurs at ${peak[0]}:00 with ${peak[1]} concurrent fixtures nationwide.`}
-
-            {" "}Approximately {peakRatio}% of all fixtures are concentrated within this period.
+            {" "}
+            Approximately {peakRatio}% of all fixtures are concentrated within this period.
           </p>
         )}
 
@@ -287,55 +269,19 @@ export default async function Page({ params }: Props) {
 
       </section>
 
-      {/* ================= REGIONAL DISTRIBUTION ================= */}
+      {/* ================= NAVIGATION ================= */}
 
-      <section className="space-y-6">
-
-        <h2 className="text-2xl font-semibold">
-          Regional distribution
-        </h2>
-
-        <ul className="list-disc pl-6 space-y-2 text-muted-foreground">
-          {regionBreakdown.map(([region, count]) => (
-            <li key={region}>
-              {region} — {count} fixture{count !== 1 ? "s" : ""}
-            </li>
-          ))}
-        </ul>
-
-      </section>
-
-      {/* ================= OPERATIONAL INTERPRETATION ================= */}
-
-      <section className="space-y-6">
-
-        <h2 className="text-2xl font-semibold">
-          Operational interpretation
-        </h2>
-
-        <p className="text-muted-foreground leading-relaxed">
-          National-level fixture congestion can influence referee allocation,
-          broadcast slot coordination, transport demand modelling,
-          policing coverage and stadium staffing distribution.
-          Overlap windows increase concurrent operational pressure
-          across competitions.
-        </p>
-
-      </section>
-
-      {/* ================= DATE NAVIGATION ================= */}
-
-      <section className="space-y-6 border-t flex justify-between text-sm">
+      <section className="pt-8 border-t flex justify-between text-sm">
 
         <Link
-          href={`/uk/fixture-congestion/${previousDate}`}
+          href={`/ireland/fixture-congestion/${prevDate}`}
           className="underline"
         >
           ← Previous day
         </Link>
 
         <Link
-          href={`/uk/fixture-congestion/${nextDate}`}
+          href={`/ireland/fixture-congestion/${nextDate}`}
           className="underline"
         >
           Next day →
@@ -343,22 +289,20 @@ export default async function Page({ params }: Props) {
 
       </section>
 
-      {/* ================= OVERVIEW LINK ================= */}
-
       <section className="space-y-6">
 
         <Link
-          href="/uk/fixture-congestion"
+          href="/ireland/fixture-congestion"
           className="underline underline-offset-4"
         >
-          View live UK congestion overview →
+          View live Ireland congestion overview →
         </Link>
 
       </section>
 
       {/* ================= CTA ================= */}
 
-      <section>
+      <section className="space-y-6">
 
         <Link
           href="/ops"
@@ -371,5 +315,4 @@ export default async function Page({ params }: Props) {
 
     </main>
   );
-
 }

@@ -72,6 +72,25 @@ export default async function LondonWeekendPage() {
         </p>
       </header>
 
+      <section className="border rounded-xl p-6 bg-muted/30">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          Planning & operations
+        </h2>
+
+        <p className="mt-2 text-sm text-muted-foreground">
+          Managing staffing, transport or venue operations this weekend?
+          View congestion levels and peak overlap windows across London.
+        </p>
+
+        <a
+          href="/uk/london/fixture-congestion/this-weekend"
+          className="inline-block mt-3 text-sm font-medium underline underline-offset-4"
+        >
+          View London congestion analysis →
+        </a>
+      </section>
+
+
       <section>
         <h2 className="text-xl font-semibold mb-4">
           This weekend’s fixtures in London
