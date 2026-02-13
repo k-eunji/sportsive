@@ -4,6 +4,7 @@
 
 import { useEffect, useMemo, useState, useRef } from "react";
 import type { Event } from "@/types";
+import Link from "next/link";
 
 import HomeMapStage from "@/app/ops/components/home/HomeMapStage";
 import HomeMapSnapCard from "@/app/ops/components/map-hero/HomeMapSnapCard";
@@ -610,6 +611,13 @@ export default function HomePage() {
       <div className="md:hidden px-4 py-2 text-xs text-muted-foreground text-center">
         For full operational insights, view on a larger screen.
       </div>
+
+      <Link
+        href="/"
+        className="text-xs text-muted-foreground hover:underline"
+      >
+        ← Fan view
+      </Link>
 
       {/* VIEW MODE TOGGLE */}
       <div className="hidden md:flex px-4 py-2 bg-background/80 backdrop-blur shadow-sm justify-end">
