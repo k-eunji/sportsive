@@ -9,6 +9,7 @@ import ClientShell from "./ClientShell";
 import GoogleMapsProvider from "@/components/GoogleMapsProvider";
 import { Analytics } from "@vercel/analytics/react";
 import VisitLogger from "@/app/components/tracking/VisitLogger";
+import GA from "@/app/components/GA";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -89,22 +90,7 @@ export default function RootLayout({
         ========================= */}
 
         {/* Google Analytics (GA4) */}
-        <script
-          async
-          src="https://www.googletagmanager.com/gtag/js?id=G-1WRHN39RC6"
-        />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              gtag('js', new Date());
-              gtag('config', 'G-1WRHN39RC6', {
-                debug_mode: true,
-              });
-            `,
-          }}
-        />
+        <GA />
 
         {/* Vercel Analytics */}
         <Analytics />
