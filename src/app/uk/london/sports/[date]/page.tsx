@@ -8,6 +8,13 @@ import { isWithinAllowedRange } from "@/utils/dateRangeGuard";
 import { DateNav } from "@/app/components/DateNav";
 import Link from "next/link";
 
+const UK_REGIONS = [
+  "england",
+  "scotland",
+  "wales",
+  "northern ireland",
+];
+
 type Props = {
   params: Promise<{ date: string }>;
 };
@@ -49,6 +56,7 @@ export async function generateMetadata(
 }
 
 export default async function Page({ params }: Props) {
+
   const { date } = await params;
 
   if (!isValidDate(date) || !isWithinAllowedRange(date)) {
@@ -56,6 +64,8 @@ export default async function Page({ params }: Props) {
   }
 
   const events = await getAllEventsRaw("180d");
+
+  /* ================= London events ================= */
 
   const dateEvents = events.filter((e: any) => {
     const eventKey =
@@ -67,10 +77,29 @@ export default async function Page({ params }: Props) {
     );
   });
 
+  /* ================= UK total sports ================= */
+
+  const ukEvents = events.filter((e: any) => {
+    const eventKey =
+      (e.startDate ?? e.date ?? e.utcDate)?.slice(0, 10);
+
+    return (
+      UK_REGIONS.includes(e.region?.toLowerCase()) &&
+      eventKey === date
+    );
+  });
+
+  const londonShare =
+    ukEvents.length > 0
+      ? Math.round((dateEvents.length / ukEvents.length) * 100)
+      : 0;
+
   const displayDate = formatDisplayDate(date);
 
   return (
     <main className="max-w-3xl mx-auto px-6 py-16 space-y-8">
+
+      {/* ================= HEADER ================= */}
 
       <header className="space-y-4">
         <h1 className="text-3xl font-bold">
@@ -83,6 +112,8 @@ export default async function Page({ params }: Props) {
           Fixtures include football, rugby, cricket and horse racing.
         </p>
       </header>
+
+      {/* ================= LIST ================= */}
 
       <section>
         <h2 className="text-xl font-semibold mb-4">
@@ -105,10 +136,61 @@ export default async function Page({ params }: Props) {
           </div>
         </div>
 
-        <EventList events={dateEvents} fixedStartDate={date} />
-        
+        <EventList
+          events={dateEvents}
+          fixedStartDate={date}
+        />
       </section>
-      
+
+      {/* ================= 🔥 NATIONAL SHARE ANALYSIS ================= */}
+
+      <section className="border rounded-xl p-6 space-y-4">
+
+        <h2 className="text-lg font-semibold">
+          London share of UK sports
+        </h2>
+
+        <div className="grid grid-cols-3 gap-6 text-center">
+
+          <div>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">
+              UK total fixtures
+            </p>
+            <p className="text-2xl font-semibold">
+              {ukEvents.length}
+            </p>
+          </div>
+
+          <div>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">
+              London fixtures
+            </p>
+            <p className="text-2xl font-semibold">
+              {dateEvents.length}
+            </p>
+          </div>
+
+          <div>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">
+              London share
+            </p>
+            <p className="text-2xl font-semibold">
+              {londonShare}%
+            </p>
+          </div>
+
+        </div>
+
+        <p className="text-sm text-muted-foreground">
+          On {displayDate}, London accounts for{" "}
+          <strong>{londonShare}%</strong> of all professional
+          sporting fixtures taking place across the United Kingdom.
+        </p>
+
+      </section>
+
+      {/* ================= STRUCTURED DATA ================= */}
+
       {dateEvents.length > 0 && (
         <script
           type="application/ld+json"
@@ -149,13 +231,15 @@ export default async function Page({ params }: Props) {
         />
       )}
 
-      {/* 날짜 네비게이션 */}
+      {/* ================= DATE NAV ================= */}
+
       <DateNav
         date={date}
         basePath="/uk/london/sports"
       />
 
-      {/* 상위 UK 날짜 페이지 */}
+      {/* ================= INTERNAL LINKS ================= */}
+
       <section className="pt-8">
         <Link
           href={`/uk/sports/${date}`}
@@ -165,7 +249,6 @@ export default async function Page({ params }: Props) {
         </Link>
       </section>
 
-      {/* 클러스터 내부 링크 */}
       <section className="mt-6 space-y-2 text-sm">
         <Link
           href={`/uk/london/football/${date}`}
