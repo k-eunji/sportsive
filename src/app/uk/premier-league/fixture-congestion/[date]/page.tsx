@@ -1,10 +1,19 @@
-//src/app/uk/premier-league/fixture-congestion/[date]/page.tsx
+// src/app/uk/premier-league/fixture-congestion/[date]/page.tsx
 
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getAllEventsRaw } from "@/lib/events/getAllEventsRaw";
 import { isWithinAllowedRange } from "@/utils/dateRangeGuard";
+import { DateNav } from "@/app/components/DateNav";
+import { EventList } from "@/app/components/EventList";
 import Link from "next/link";
+
+const UK_REGIONS = [
+  "england",
+  "scotland",
+  "wales",
+  "northern ireland",
+];
 
 type Props = {
   params: Promise<{ date: string }>;
@@ -15,8 +24,7 @@ function isValidDate(date: string) {
 }
 
 function formatDisplayDate(dateStr: string) {
-  const date = new Date(dateStr);
-  return date.toLocaleDateString("en-GB", {
+  return new Date(dateStr).toLocaleDateString("en-GB", {
     weekday: "long",
     day: "2-digit",
     month: "long",
@@ -25,18 +33,7 @@ function formatDisplayDate(dateStr: string) {
   });
 }
 
-function formatTime(raw: string) {
-  return new Date(raw).toLocaleTimeString("en-GB", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-    timeZone: "Europe/London",
-  });
-}
-
-export async function generateMetadata(
-  { params }: Props
-): Promise<Metadata> {
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { date } = await params;
 
   if (!isValidDate(date) || !isWithinAllowedRange(date)) {
@@ -46,8 +43,8 @@ export async function generateMetadata(
   const displayDate = formatDisplayDate(date);
 
   return {
-    title: `Premier League Fixture Congestion — ${displayDate}`,
-    description: `Premier League fixture congestion analysis for ${displayDate}, including kickoff overlap and scheduling density.`,
+    title: `Premier League Fixtures — ${displayDate}`,
+    description: `Complete Premier League fixture list for ${displayDate}, including national share analysis.`,
     alternates: {
       canonical: `https://venuescope.io/uk/premier-league/fixture-congestion/${date}`,
     },
@@ -63,203 +60,151 @@ export default async function Page({ params }: Props) {
 
   const events = await getAllEventsRaw("180d");
 
+  /* ================= Premier League Events ================= */
+
   const leagueEvents = events
     .filter((e: any) => {
-      const rawDate = e.startDate ?? e.date ?? e.utcDate;
-      if (!rawDate) return false;
+      const raw = e.startDate ?? e.date ?? e.utcDate;
+      if (!raw) return false;
 
-      const eventKey = rawDate.slice(0, 10);
       const competition = (e.competition ?? "").toLowerCase();
 
       return (
         competition.includes("premier") &&
         competition.includes("league") &&
-        eventKey === date
+        raw.slice(0, 10) === date
       );
     })
-    .sort((a: any, b: any) => {
-      const aDate = new Date(a.startDate ?? a.date ?? a.utcDate).getTime();
-      const bDate = new Date(b.startDate ?? b.date ?? b.utcDate).getTime();
-      return aDate - bDate;
-    });
-
-  /* ======================
-     Hourly Analysis
-  ====================== */
-
-  const hourMap = new Map<number, number>();
-
-  leagueEvents.forEach((e: any) => {
-    const raw = e.startDate ?? e.date ?? e.utcDate;
-    if (!raw) return;
-
-    const hour = Number(
-      new Date(raw).toLocaleString("en-GB", {
-        hour: "2-digit",
-        hour12: false,
-        timeZone: "Europe/London",
-      })
+    .sort(
+      (a: any, b: any) =>
+        new Date(a.startDate ?? a.date ?? a.utcDate).getTime() -
+        new Date(b.startDate ?? b.date ?? b.utcDate).getTime()
     );
 
-    hourMap.set(hour, (hourMap.get(hour) ?? 0) + 1);
+  /* ================= UK Football Total ================= */
+
+  const ukFootballEvents = events.filter((e: any) => {
+    const raw = e.startDate ?? e.date ?? e.utcDate;
+    if (!raw) return false;
+
+    return (
+      e.sport?.toLowerCase() === "football" &&
+      UK_REGIONS.includes(e.region?.toLowerCase()) &&
+      raw.slice(0, 10) === date
+    );
   });
 
-  const sortedHours = [...hourMap.entries()].sort(
-    (a, b) => b[1] - a[1]
-  );
-
-  const peak = sortedHours[0];
-
-  const peakRatio =
-    peak && leagueEvents.length > 0
-      ? Math.round((peak[1] / leagueEvents.length) * 100)
+  const premierShare =
+    ukFootballEvents.length > 0
+      ? Math.round(
+          (leagueEvents.length / ukFootballEvents.length) * 100
+        )
       : 0;
 
   const displayDate = formatDisplayDate(date);
 
-  const previous = new Date(date);
-  previous.setDate(previous.getDate() - 1);
-
-  const next = new Date(date);
-  next.setDate(next.getDate() + 1);
-
-  const previousDate = previous.toISOString().slice(0, 10);
-  const nextDate = next.toISOString().slice(0, 10);
-
-  const todayKey = new Date().toISOString().slice(0, 10);
-  const isPast = date < todayKey;
-  const isToday = date === todayKey;
-  const isFuture = date > todayKey;
-
   return (
-    <main className="max-w-3xl mx-auto px-6 py-10 space-y-10">
+    <main className="max-w-3xl mx-auto px-6 py-14 space-y-12">
 
       {/* ================= HEADER ================= */}
 
-      <header className="space-y-6">
-        <h1 className="text-4xl font-bold leading-tight">
-          Premier League Fixture Congestion — {displayDate}
+      <header className="space-y-4">
+        <h1 className="text-4xl font-bold">
+          Premier League Fixtures — {displayDate}
         </h1>
 
-        {leagueEvents.length === 0 ? (
-          <p className="text-muted-foreground">
-            {isPast && "No Premier League fixtures were held on this date."}
-            {isToday && "No Premier League fixtures are scheduled today."}
-            {isFuture && "No Premier League fixtures are scheduled on this date."}
-          </p>
-        ) : (
-          <p className="text-muted-foreground">
-            {isPast &&
-              `${leagueEvents.length} Premier League fixture${
-                leagueEvents.length !== 1 ? "s" : ""
-              } were held on this date.`}
-
-            {isToday &&
-              `${leagueEvents.length} Premier League fixture${
-                leagueEvents.length !== 1 ? "s" : ""
-              } are scheduled today.`}
-
-            {isFuture &&
-              `${leagueEvents.length} Premier League fixture${
-                leagueEvents.length !== 1 ? "s" : ""
-              } are scheduled on this date.`}
-          </p>
-        )}
-
+        <p className="text-muted-foreground">
+          {leagueEvents.length} Premier League match
+          {leagueEvents.length !== 1 ? "es" : ""} scheduled.
+        </p>
       </header>
 
-      {/* ================= PEAK ================= */}
-
-      {leagueEvents.length > 1 && peak && (
-        <section className="space-y-4">
-          <h2 className="text-xl font-semibold">
-            Kickoff overlap analysis
-          </h2>
-
-          <p className="text-muted-foreground">
-            {isPast
-              ? `The highest recorded overlap occurred at ${peak[0]}:00`
-              : `The primary overlap window occurs at ${peak[0]}:00`}
-            {" "}({peakRatio}% of fixtures)
-          </p>
-
-        </section>
-      )}
-
-      {/* ================= FULL FIXTURE LIST ================= */}
-
-      {leagueEvents.length > 0 && (
-        <section className="space-y-4">
-          <h2 className="text-xl font-semibold">
-            Full fixture list
-          </h2>
-
-          <ul className="space-y-3 text-muted-foreground">
-            {leagueEvents.map((e: any) => {
-              const raw = e.startDate ?? e.date ?? e.utcDate;
-
-              return (
-                <li
-                  key={e.id}
-                  className="flex justify-between border-b pb-2"
-                >
-                  <span>
-                    {e.homeTeam ?? e.home ?? "Home"} vs{" "}
-                    {e.awayTeam ?? e.away ?? "Away"}
-                  </span>
-
-                  {raw && (
-                    <span className="text-sm">
-                      {formatTime(raw)}
-                    </span>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      )}
-
-      {/* ================= NAVIGATION ================= */}
-
-      <section className="flex justify-between border-t pt-6 text-sm">
-        <Link
-          href={`/uk/premier-league/fixture-congestion/${previousDate}`}
-          className="underline"
-        >
-          ← Previous day
-        </Link>
-
-        <Link
-          href={`/uk/premier-league/fixture-congestion/${nextDate}`}
-          className="underline"
-        >
-          Next day →
-        </Link>
-      </section>
+      {/* ================= FIXTURE LIST ================= */}
 
       <section>
-        <Link
-          href="/uk/premier-league/fixture-congestion"
-          className="underline underline-offset-4"
-        >
-          View live Premier League congestion overview →
-        </Link>
+        <EventList
+          events={leagueEvents}
+          fixedStartDate={date}
+        />
       </section>
 
-      {/* ================= CTA ================= */}
+      {/* ================= NATIONAL SHARE INSIGHT ================= */}
 
-      <section className="space-y-6">
+      <section className="border rounded-xl p-6 space-y-4">
 
-        <Link
-          href="/ops"
-          className="inline-block px-5 py-3 rounded-md bg-black text-white text-sm font-medium"
-        >
-          Open Operations Dashboard →
-        </Link>
+        <h2 className="text-lg font-semibold">
+          National competition share
+        </h2>
+
+        <div className="grid grid-cols-3 gap-6 text-center">
+
+          <div>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">
+              UK football fixtures
+            </p>
+            <p className="text-2xl font-semibold">
+              {ukFootballEvents.length}
+            </p>
+          </div>
+
+          <div>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">
+              Premier League fixtures
+            </p>
+            <p className="text-2xl font-semibold">
+              {leagueEvents.length}
+            </p>
+          </div>
+
+          <div>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">
+              Premier League share
+            </p>
+            <p className="text-2xl font-semibold">
+              {premierShare}%
+            </p>
+          </div>
+
+        </div>
+
+        <p className="text-sm text-muted-foreground">
+          On {displayDate}, Premier League fixtures account for{" "}
+          <strong>{premierShare}%</strong> of all professional football
+          matches scheduled across the United Kingdom.
+        </p>
 
       </section>
-      
+
+      {/* ================= INTERNAL LINKS ================= */}
+
+      <section className="border rounded-xl p-6 space-y-4">
+        <h2 className="text-lg font-semibold">
+          Explore more fixtures on {displayDate}
+        </h2>
+
+        <div className="grid sm:grid-cols-2 gap-3 text-sm">
+          <Link href={`/uk/football/${date}`} className="underline">
+            All UK football fixtures →
+          </Link>
+
+          <Link href={`/uk/london/football/${date}`} className="underline">
+            London football fixtures →
+          </Link>
+
+          <Link href={`/uk/sports/${date}`} className="underline">
+            All UK sports fixtures →
+          </Link>
+
+          <Link href={`/uk/fixture-congestion/${date}`} className="underline">
+            National congestion report →
+          </Link>
+        </div>
+      </section>
+
+      <DateNav
+        date={date}
+        basePath="/uk/premier-league/fixture-congestion"
+      />
 
     </main>
   );
