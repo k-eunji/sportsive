@@ -100,17 +100,26 @@ export default async function Page() {
 
   /* ================= STRUCTURED DATA ================= */
 
-  const structuredData = {
+  const articleData = {
     "@context": "https://schema.org",
-    "@type": "Dataset",
-    name: "UK Horse Racing Fixture Congestion",
+    "@type": "Article",
+    headline: `UK Horse Racing Fixture Congestion — ${displayDate}`,
     description:
-      "Live UK horse racing meeting congestion and overlap analysis.",
-    spatialCoverage: {
-      "@type": "Place",
-      name: "United Kingdom",
+      "Live UK horse racing congestion report highlighting concurrent race meetings, peak overlap windows and national scheduling density.",
+    author: {
+      "@type": "Organization",
+      name: "VenueScope",
     },
-    temporalCoverage: todayKey,
+    publisher: {
+      "@type": "Organization",
+      name: "VenueScope",
+    },
+    datePublished: todayKey,
+    dateModified: todayKey,
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": "https://venuescope.io/uk/horse-racing/fixture-congestion",
+    },
   };
 
   const breadcrumbData = {
@@ -138,7 +147,7 @@ export default async function Page() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(structuredData),
+          __html: JSON.stringify(articleData),
         }}
       />
 

@@ -15,7 +15,7 @@ const internationalMatches = [
     homeTeam: "England",
     awayTeam: "Uruguay",
     homeTeamLogo:
-      "https://upload.wikimedia.org/wikipedia/en/b/be/England_national_football_team_crest.svg",
+      "https://bhbsdxxgigzafbroziwi.supabase.co/storage/v1/object/public/logos/Flag_of_England.png",
     awayTeamLogo:
       "https://upload.wikimedia.org/wikipedia/en/f/fe/Uruguay_national_football_team_crest.svg",
 
@@ -41,7 +41,7 @@ const internationalMatches = [
     homeTeam: "England",
     awayTeam: "Japan",
     homeTeamLogo:
-      "https://upload.wikimedia.org/wikipedia/en/b/be/England_national_football_team_crest.svg",
+      "https://bhbsdxxgigzafbroziwi.supabase.co/storage/v1/object/public/logos/Flag_of_England.png",
     awayTeamLogo:
       "https://upload.wikimedia.org/wikipedia/en/9/9e/Japan_national_football_team_crest.svg",
 
@@ -56,6 +56,59 @@ const internationalMatches = [
     homepageUrl:
       "https://www.englandfootball.com/england/mens-senior-team/fixtures-results",
   },
+    {
+    id: "fifa-2027q-2026-03-07-eng-isl",
+    kind: "match",
+    sport: "football",
+    competition: "FIFA 2027 World Cup European",
+    status: "scheduled",
+    date: "2026-03-07 12:30",
+
+    homeTeam: "England W",
+    awayTeam: "Iceland W",
+    homeTeamLogo:
+      "https://bhbsdxxgigzafbroziwi.supabase.co/storage/v1/object/public/logos/Flag_of_England.png",
+    awayTeamLogo:
+      "https://upload.wikimedia.org/wikipedia/commons/c/ce/Flag_of_Iceland.svg",
+
+    venue: "The City Ground",
+    city: "Nottingham",
+    region: "England",
+    location: { lat: 52.9401050106301, lng: -1.1329043865910777},
+
+    isPaid: true,
+    teams: ["England", "Iceland"],
+    title: "England vs Iceland",
+    homepageUrl:
+      "https://www.englandfootball.com/england/womens-senior-team/fixtures-results",
+  },
+  {
+    id: "fifa-2027q-2026-04-14-eng-esp",
+    kind: "match",
+    sport: "football",
+    competition: "FIFA 2027 World Cup European",
+    status: "scheduled",
+    date: "2026-04-14 19:00",
+
+    homeTeam: "England W",
+    awayTeam: "Spain W",
+    homeTeamLogo:
+      "https://bhbsdxxgigzafbroziwi.supabase.co/storage/v1/object/public/logos/Flag_of_England.png",
+    awayTeamLogo:
+      "https://upload.wikimedia.org/wikipedia/en/3/32/Spain_national_football_team_crest.svg",
+
+    venue: "Wembley Stadium",
+    city: "London",
+    region: "England",
+    location: { lat: 51.556663281575105, lng: -0.27953205701577144 },
+
+    isPaid: true,
+    teams: ["England", "Spain"],
+    title: "England vs Spain",
+    homepageUrl:
+      "https://www.englandfootball.com/england/womens-senior-team/fixtures-results",
+  },
+
 ];
 
 const cleanTeamName = (name?: string | null) =>

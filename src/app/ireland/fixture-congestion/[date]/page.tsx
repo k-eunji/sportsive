@@ -118,17 +118,30 @@ export default async function Page({ params }: Props) {
 
   /* ===================== STRUCTURED DATA ===================== */
 
-  const structuredData = {
+  const articleData = {
     "@context": "https://schema.org",
-    "@type": "Dataset",
-    name: `Ireland Fixture Congestion — ${displayDate}`,
+    "@type": "Article",
+    headline: `Ireland Fixture Congestion Report — ${displayDate}`,
     description:
-      `National fixture congestion analysis for ${displayDate} across Ireland.`,
-    spatialCoverage: {
-      "@type": "Place",
-      name: "Ireland",
+      `National fixture congestion analysis for ${displayDate}, including peak kickoff overlap and competition distribution across Ireland.`,
+    author: {
+      "@type": "Organization",
+      name: "VenueScope",
     },
-    temporalCoverage: date,
+    publisher: {
+      "@type": "Organization",
+      name: "VenueScope",
+      logo: {
+        "@type": "ImageObject",
+        url: "https://venuescope.io/logo.png",
+      },
+    },
+    datePublished: date,
+    dateModified: date,
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": `https://venuescope.io/ireland/fixture-congestion/${date}`,
+    },
   };
 
   const breadcrumbData = {
@@ -168,7 +181,7 @@ export default async function Page({ params }: Props) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(structuredData),
+          __html: JSON.stringify(articleData),
         }}
       />
 

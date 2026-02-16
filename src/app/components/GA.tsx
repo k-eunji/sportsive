@@ -5,14 +5,11 @@
 import Script from "next/script";
 
 export default function GA() {
-  const hostname =
-    typeof window !== "undefined" ? window.location.hostname : "";
 
-  const isProduction =
-    hostname === "venuescope.io" ||
-    hostname === "www.venuescope.io";
-
-  if (!isProduction) return null;
+  // ✅ 여기에 넣으세요
+  if (process.env.NODE_ENV !== "production") {
+    return null;
+  }
 
   return (
     <>

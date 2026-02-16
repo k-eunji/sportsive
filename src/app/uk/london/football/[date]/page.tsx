@@ -40,12 +40,13 @@ export async function generateMetadata(
   const displayDate = formatDisplayDate(date);
 
   return {
-    title: `Football Fixtures in London — ${displayDate} | VenueScope`,
-    description: `Professional football matches taking place in London on ${displayDate}, organised by venue and start time.`,
+    title: `Football Fixtures in London on ${displayDate} | Kickoff Times & Tickets`,
+    description: `Full list of football matches in London on ${displayDate}. View kickoff times, venues and ticket information for Premier League and EFL fixtures.`,
     alternates: {
       canonical: `https://venuescope.io/uk/london/football/${date}`,
     },
   };
+
 }
 
 export default async function Page({ params }: Props) {
@@ -68,6 +69,23 @@ export default async function Page({ params }: Props) {
     );
   });
 
+  const ukFootballEvents = events.filter((e: any) => {
+  const eventKey =
+    (e.startDate ?? e.date ?? e.utcDate)?.slice(0, 10);
+
+  return (
+    e.sport?.toLowerCase() === "football" &&
+    eventKey === date
+  );
+});
+
+  const londonShare =
+    ukFootballEvents.length > 0
+      ? Math.round(
+          (footballEvents.length / ukFootballEvents.length) * 100
+        )
+      : 0;
+
   const displayDate = formatDisplayDate(date);
 
   return (
@@ -82,16 +100,62 @@ export default async function Page({ params }: Props) {
           There are {footballEvents.length} professional football matches
           taking place in London on {displayDate}.
         </p>
+
+        <p className="text-sm text-muted-foreground">
+          This page lists all confirmed professional football fixtures scheduled in London on {displayDate}, including Premier League, EFL and domestic cup competitions.
+        </p>
       </header>
 
       <section>
         <h2 className="text-xl font-semibold mb-4">
-          Football matches on {displayDate}
+          London football kickoff times — {displayDate}
         </h2>
 
         <EventList events={footballEvents} fixedStartDate={date} />
+      </section>  
 
+      <section className="border rounded-xl p-6 space-y-4 mt-8">
+        <h2 className="text-xl font-semibold">
+          London vs UK fixture share
+        </h2>
+
+        <div className="grid grid-cols-3 gap-6 text-center">
+          <div>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">
+              UK football fixtures
+            </p>
+            <p className="text-2xl font-semibold">
+              {ukFootballEvents.length}
+            </p>
+          </div>
+
+          <div>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">
+              London football fixtures
+            </p>
+            <p className="text-2xl font-semibold">
+              {footballEvents.length}
+            </p>
+          </div>
+
+          <div>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">
+              London football share
+            </p>
+            <p className="text-2xl font-semibold">
+              {londonShare}%
+            </p>
+          </div>
+        </div>
+
+        <Link
+          href={`/uk/football/${date}`}
+          className="underline text-sm block text-center"
+        >
+          View all UK football fixtures →
+        </Link>
       </section>
+
       {footballEvents.length > 0 && (
         <script
           type="application/ld+json"
@@ -157,7 +221,12 @@ export default async function Page({ params }: Props) {
         >
           All UK football fixtures on {displayDate}
         </Link>
-
+        <Link
+          href={`/uk/london/fixture-congestion/${date}`}
+          className="underline block"
+        >
+          All London sports fixtures on {displayDate}
+        </Link>
         <Link
           href={`/uk/live-sports-today`}
           className="underline block"

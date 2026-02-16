@@ -106,17 +106,32 @@ export default async function Page({ params }: Props) {
   });
 
   /* ===================== STRUCTURED DATA ===================== */
-
   const structuredData = {
     "@context": "https://schema.org",
-    "@type": "Dataset",
-    name: `Birmingham Fixture Congestion — ${displayDate}`,
-    spatialCoverage: {
-      "@type": "Place",
-      name: "Birmingham, United Kingdom",
+    "@type": "Article",
+    headline: `Birmingham Fixture Congestion Report — ${displayDate}`,
+    description: `Fixture congestion analysis across Birmingham for ${displayDate}, including kickoff overlap and scheduling density.`,
+    author: {
+      "@type": "Organization",
+      name: "VenueScope",
     },
-    temporalCoverage: date,
+    publisher: {
+      "@type": "Organization",
+      name: "VenueScope",
+      logo: {
+        "@type": "ImageObject",
+        url: "https://venuescope.io/logo.png"
+      } 
+    },
+
+    datePublished: date,
+    dateModified: date,
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": `https://venuescope.io/uk/birmingham/fixture-congestion/${date}`,
+    },
   };
+
 
   const breadcrumbData = {
     "@context": "https://schema.org",
@@ -138,7 +153,9 @@ export default async function Page({ params }: Props) {
         "@type": "ListItem",
         position: 3,
         name: displayDate,
-      },
+        item: `https://venuescope.io/uk/birmingham/fixture-congestion/${date}`,
+      }
+
     ],
   };
 

@@ -90,17 +90,26 @@ export default async function Page() {
 
   /* ===================== STRUCTURED DATA ===================== */
 
-  const structuredData = {
+  const articleData = {
     "@context": "https://schema.org",
-    "@type": "Dataset",
-    name: "London Fixture Congestion",
+    "@type": "Article",
+    headline: `London Fixture Congestion Report — ${displayDate}`,
     description:
-      "Live fixture congestion and kickoff overlap analysis across London.",
-    spatialCoverage: {
-      "@type": "Place",
-      name: "London, United Kingdom",
+      "Live fixture congestion analysis across London, highlighting peak kickoff overlap windows and scheduling concentration patterns.",
+    author: {
+      "@type": "Organization",
+      name: "VenueScope",
     },
-    temporalCoverage: todayKey,
+    publisher: {
+      "@type": "Organization",
+      name: "VenueScope",
+    },
+    datePublished: todayKey,
+    dateModified: todayKey,
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": "https://venuescope.io/uk/london/fixture-congestion",
+    },
   };
 
   const breadcrumbData = {
@@ -128,7 +137,7 @@ export default async function Page() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(structuredData),
+          __html: JSON.stringify(articleData),
         }}
       />
 

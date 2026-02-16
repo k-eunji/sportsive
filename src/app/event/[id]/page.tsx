@@ -78,10 +78,12 @@ async function fetchEvent(id: string): Promise<{
    PAGE
 ========================= */
 
-export default async function EventDetailPage(props: {
+export default async function EventDetailPage({
+  params,
+}: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = await props.params;
+  const { id } = await params;   // 🔥 반드시 await
 
   const result = await fetchEvent(id);
   if (!result) return notFound();
