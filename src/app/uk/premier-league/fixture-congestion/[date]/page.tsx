@@ -43,10 +43,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const displayDate = formatDisplayDate(date);
 
   return {
-    title: `Premier League Fixtures — ${displayDate}`,
-    description: `Complete Premier League fixture list for ${displayDate}, including national share analysis.`,
+    title: `Premier League Matches on ${displayDate} – Full Fixture List`,
+    description: `Premier League matches scheduled on ${displayDate}. Kickoff times, stadium details and national fixture share across UK football.`,
     alternates: {
       canonical: `https://venuescope.io/uk/premier-league/fixture-congestion/${date}`,
+    },
+    openGraph: {
+      title: `Premier League Matches on ${displayDate}`,
+      description: `Kickoff times and full Premier League fixture list on ${displayDate}, including UK fixture share comparison.`,
+      type: "website",
     },
   };
 }
@@ -110,13 +115,19 @@ export default async function Page({ params }: Props) {
 
       <header className="space-y-4">
         <h1 className="text-4xl font-bold">
-          Premier League Fixtures — {displayDate}
+          Premier League Matches on {displayDate}
         </h1>
 
         <p className="text-muted-foreground">
           {leagueEvents.length} Premier League match
-          {leagueEvents.length !== 1 ? "es" : ""} scheduled.
+          {leagueEvents.length !== 1 ? "es" : ""} 
+          {leagueEvents.length === 1 ? " is" : " are"} scheduled on {displayDate}.
         </p>
+
+        <p className="text-sm text-muted-foreground">
+          View all confirmed Premier League matches scheduled on {displayDate}, including kickoff times and comparison with total UK fixtures.
+        </p>
+
       </header>
 
       {/* ================= FIXTURE LIST ================= */}
@@ -126,6 +137,24 @@ export default async function Page({ params }: Props) {
           events={leagueEvents}
           fixedStartDate={date}
         />
+      </section>
+
+      <section className="mt-10 space-y-4">
+        <h2 className="text-xl font-semibold">
+          FAQs – Premier League on {displayDate}
+        </h2>
+
+        <div className="space-y-3 text-sm">
+          <p>
+            <strong>How many Premier League matches are scheduled?</strong><br />
+            There are {leagueEvents.length} matches confirmed.
+          </p>
+
+          <p>
+            <strong>What time do Premier League matches kick off?</strong><br />
+            Kickoff times vary and are listed above.
+          </p>
+        </div>
       </section>
 
       {/* ================= NATIONAL SHARE INSIGHT ================= */}

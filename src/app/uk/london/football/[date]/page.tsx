@@ -38,13 +38,32 @@ export async function generateMetadata(
   }
 
   const displayDate = formatDisplayDate(date);
+  const events = await getAllEventsRaw("180d");
+  
+  const footballEvents = events.filter((e: any) => {
+    const eventKey =
+      (e.startDate ?? e.date ?? e.utcDate)?.slice(0, 10);
+
+    return (
+      e.sport?.toLowerCase() === "football" &&
+      e.city?.toLowerCase() === "london" &&
+      eventKey === date
+    );
+  });
+
 
   return {
-    title: `Football Fixtures in London on ${displayDate} | Kickoff Times & Tickets`,
-    description: `Full list of football matches in London on ${displayDate}. View kickoff times, venues and ticket information for Premier League and EFL fixtures.`,
+    title: `London Football Matches on ${displayDate} – Kickoff Times & Stadiums`,
+    description: `${footballEvents.length} football matches scheduled in London on ${displayDate}. Kickoff times, stadium details and full fixture list across Premier League and EFL.`,
     alternates: {
       canonical: `https://venuescope.io/uk/london/football/${date}`,
     },
+    openGraph: {
+      title: `London Football Matches on ${displayDate}`,
+      description: `Kickoff times and stadium details for football matches in London on ${displayDate}.`,
+      type: "website",
+    },
+
   };
 
 }
@@ -93,17 +112,19 @@ export default async function Page({ params }: Props) {
 
       <header className="space-y-4">
         <h1 className="text-3xl font-bold">
-          Football Fixtures in London — {displayDate}
+          London Football Matches on {displayDate}
         </h1>
 
         <p className="text-muted-foreground">
-          There are {footballEvents.length} professional football matches
-          taking place in London on {displayDate}.
+          {footballEvents.length} professional football match
+          {footballEvents.length !== 1 ? "es" : ""} 
+          {footballEvents.length === 1 ? " is" : " are"} scheduled in London on {displayDate}.
         </p>
 
         <p className="text-sm text-muted-foreground">
-          This page lists all confirmed professional football fixtures scheduled in London on {displayDate}, including Premier League, EFL and domestic cup competitions.
+          This includes Premier League and EFL fixtures scheduled across multiple London stadiums, with kickoff times and venue details listed below.
         </p>
+
       </header>
 
       <section>
@@ -113,6 +134,35 @@ export default async function Page({ params }: Props) {
 
         <EventList events={footballEvents} fixedStartDate={date} />
       </section>  
+
+      <section className="mt-10 space-y-4">
+        <h2 className="text-xl font-semibold">
+          FAQs – London football on {displayDate}
+        </h2>
+
+        <div className="space-y-3 text-sm">
+          <p>
+            <strong>How many football matches are in London on {displayDate}?</strong><br />
+            There are {footballEvents.length} professional matches scheduled.
+          </p>
+
+          <p>
+            <strong>What time do London football matches kick off?</strong><br />
+            Kickoff times vary by fixture and are listed above.
+          </p>
+
+          <p>
+            <strong>Which stadiums are hosting matches?</strong><br />
+            Each fixture includes venue information for the hosting stadium.
+          </p>
+
+          <p>
+            <strong>Are there overlapping matches in London?</strong><br />
+            Some fixtures may kick off at similar times depending on the matchday schedule.
+          </p>
+        </div>
+      </section>
+
 
       <section className="border rounded-xl p-6 space-y-4 mt-8">
         <h2 className="text-xl font-semibold">
