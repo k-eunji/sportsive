@@ -68,10 +68,12 @@ export default function LandingClient({
 
   // area index (for LocationSheet)
   const [areaIndex, setAreaIndex] = useState<any[]>([]);
+  const [locationMode, setLocationMode] = useState<"on" | "off">("off");
 
   // location
-  const { hasLocation } = useLocationMode();
-  const { pos } = useUserLocation({ enabled: hasLocation });
+  const { pos } = useUserLocation();
+  const hasLocation = !!pos;
+
   const [isReturn, setIsReturn] = useState(false);
 
     useEffect(() => {
@@ -111,30 +113,32 @@ export default function LandingClient({
   ========================= */
   const filteredEvents = useMemo(() => {
     return events.filter((e: any) => {
-      // 📍 위치 ON
+
+      // 🔵 위치 공유자
       if (hasLocation && pos) {
-        if (!e.location) return false;
-        try {
-          if (haversineKm(pos, e.location) > 50) return false;
-        } catch {
-          return false;
+        if (locationMode === "on") {
+          if (!e.location) return false;
+          try {
+            if (haversineKm(pos, e.location) > 50) return false;
+          } catch {
+            return false;
+          }
         }
       }
 
-      // 👀 위치 OFF + observer city
+      // 🟢 위치 공유 안 한 사람
       if (!hasLocation && observerCity) {
         if (e.city !== observerCity) return false;
       }
 
-      // 💰 가격 필터
+      // 💰 가격
       if (priceFilter === "free" && e.isPaid) return false;
       if (priceFilter === "paid" && !e.isPaid) return false;
 
       return true;
     });
-  }, [events, hasLocation, pos, observerCity, priceFilter]);
+  }, [events, hasLocation, pos, locationMode, observerCity, priceFilter]);
 
-  
   const todayEvents = useMemo(() => {
     const now = new Date();
     const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -221,6 +225,59 @@ export default function LandingClient({
     [areaIndex, observerRegion]
   );
 
+  useEffect(() => {
+    if (!hasLocation || !pos || areaIndex.length === 0) return;
+
+    // areaIndex에서 모든 도시 가져오기
+    const allCities = areaIndex.flatMap(r => r.cities ?? []);
+
+    let closestCity: string | null = null;
+    let minDistance = Infinity;
+
+    for (const city of allCities) {
+      if (!city.location) continue;
+
+      const d = haversineKm(pos, city.location);
+      if (d < minDistance) {
+        minDistance = d;
+        closestCity = city.name;
+      }
+    }
+
+    if (closestCity) {
+      setObserverCity(closestCity);
+    }
+  }, [hasLocation, pos, areaIndex]);
+
+
+  useEffect(() => {
+    async function loadAreas() {
+      const res = await fetch("/api/events?window=180d");
+      const data = await res.json();
+
+      if (data.areas) {
+        setAreaIndex(data.areas);
+      }
+    }
+
+    loadAreas();
+  }, []);
+
+  useEffect(() => {
+    async function loadAreas() {
+      const res = await fetch("/api/events?window=180d");
+      const data = await res.json();
+
+      if (data.areas) {
+        setAreaIndex(data.areas);
+      }
+    }
+
+    loadAreas();
+  }, []);
+
+
+
   /* =========================
      RENDER
   ========================= */
@@ -241,6 +298,32 @@ export default function LandingClient({
                 observerCity={observerCity}
                 onOpenLocationSheet={() => setLocationOpen(true)}
               />
+              {hasLocation && (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setLocationMode("off")}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold ${
+                      locationMode === "off"
+                        ? "bg-black text-white"
+                        : "bg-muted/60"
+                    }`}
+                  >
+                    OFF
+                  </button>
+
+                  <button
+                    onClick={() => setLocationMode("on")}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold ${
+                      locationMode === "on"
+                        ? "bg-black text-white"
+                        : "bg-muted/60"
+                    }`}
+                  >
+                    ON
+                  </button>
+                </div>
+              )}
+
 
               <PriceIntentBar
                 value={priceFilter}

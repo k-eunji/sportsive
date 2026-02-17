@@ -96,7 +96,8 @@ export default function LocationSheet({
         </div>
 
         {/* CITY – search first */}
-        {observerRegion && (
+        <div className="space-y-3">
+
           <div className="space-y-3">
             <input
               type="search"
@@ -139,7 +140,7 @@ export default function LocationSheet({
               )}
             </div>
           </div>
-        )}
+         </div>      
       </div>
     </div>
   );

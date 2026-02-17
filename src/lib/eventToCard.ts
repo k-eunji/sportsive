@@ -40,7 +40,7 @@ export function eventToCard(e: Event): EventCardModel {
   let subtitle: string | undefined;
 
   if (e.homeTeam && e.awayTeam) {
-    subtitle = `vs ${e.awayTeam}`;
+    subtitle = e.awayTeam;
   }
 
   return {

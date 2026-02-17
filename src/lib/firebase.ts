@@ -90,10 +90,12 @@ export const onSnapshot = (ref: any, ...rest: any[]) => {
 };
 
 // ===============================
-// 🔥 Firebase Analytics (Client only)
+// 🔥 Firebase Analytics (PRODUCTION ONLY)
 // ===============================
+
 export const analytics =
-  typeof window !== "undefined"
+  typeof window !== "undefined" &&
+  process.env.NEXT_PUBLIC_ENV === "production" &&
+  window.location.hostname === "venuescope.io"
     ? isSupported().then((yes) => (yes ? getAnalytics(app) : null))
     : null;
-

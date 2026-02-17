@@ -45,10 +45,9 @@ export function EventCard({ card }: { card: EventCardModel }) {
   /* =========================
      META (도시 우선)
   ========================= */
-
   const meta = [
     card.event.city,
-    card.subtitle,
+    timeLabel,
   ]
     .filter(Boolean)
     .join(" · ");
@@ -63,7 +62,7 @@ export function EventCard({ card }: { card: EventCardModel }) {
         cursor-pointer
 
         /* 📱 MOBILE — 카드 스타일 */
-        rounded-xl
+        rounded-none
         bg-card
         shadow-sm
         border border-border/50
@@ -124,14 +123,17 @@ export function EventCard({ card }: { card: EventCardModel }) {
         <div className={`flex-1 min-w-0 ${isCompleted ? "text-muted-foreground" : ""}`}>
   
         {/* 1행: 타이틀 + 시간 */}
-        <div className="flex items-center justify-between gap-3">
-          <div className="font-medium truncate">
+        <div className="space-y-1">
+          <div className="truncate font-semibold">
             {card.title}
           </div>
 
-          {timeLabel && (
-            <div className="text-sm text-muted-foreground whitespace-nowrap">
-              {timeLabel}
+          {card.subtitle && (
+            <div className="truncate flex items-center gap-2 text-muted-foreground">
+              <span className="text-xs">vs</span>
+              <span className="truncate font-medium">
+                {card.subtitle}
+              </span>
             </div>
           )}
         </div>
