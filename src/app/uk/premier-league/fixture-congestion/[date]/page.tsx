@@ -111,6 +111,35 @@ export default async function Page({ params }: Props) {
   return (
     <main className="max-w-3xl mx-auto px-6 py-14 space-y-12">
 
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": `How many Premier League matches are scheduled on ${displayDate}?`,
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": `There are ${leagueEvents.length} Premier League matches scheduled on ${displayDate}.`
+                }
+              },
+              {
+                "@type": "Question",
+                "name": `What time do Premier League matches kick off?`,
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": `Kickoff times vary by fixture and are listed above.`
+                }
+              }
+            ]
+          })
+        }}
+      />
+
+
       {/* ================= HEADER ================= */}
 
       <header className="space-y-4">

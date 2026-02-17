@@ -110,6 +110,34 @@ export default async function Page({ params }: Props) {
   return (
     <main className="max-w-3xl mx-auto px-6 py-16 space-y-8">
 
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": `How many football matches are in London on ${displayDate}?`,
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": `There are ${footballEvents.length} professional matches scheduled in London on ${displayDate}.`
+                }
+              },
+              {
+                "@type": "Question",
+                "name": `Are there overlapping matches in London?`,
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": `Some fixtures may kick off at similar times depending on the matchday schedule.`
+                }
+              }
+            ]
+          })
+        }}
+      />
+
       <header className="space-y-4">
         <h1 className="text-3xl font-bold">
           London Football Matches on {displayDate}
@@ -126,6 +154,11 @@ export default async function Page({ params }: Props) {
         </p>
 
       </header>
+
+      <Link href={`/uk/london/fixture-congestion/${date}`} className="underline">
+        View congestion analysis for London →
+      </Link>
+
 
       <section>
         <h2 className="text-xl font-semibold mb-4">
