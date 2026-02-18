@@ -276,8 +276,6 @@ export default function LandingClient({
     loadAreas();
   }, []);
 
-
-
   /* =========================
      RENDER
   ========================= */

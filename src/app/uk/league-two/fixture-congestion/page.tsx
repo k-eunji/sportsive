@@ -1,4 +1,4 @@
-//src/app/uk/league-two/fixture-congestion/page.tsx
+// src/app/uk/league-two/fixture-congestion/page.tsx
 
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -6,9 +6,9 @@ import { getAllEventsRaw } from "@/lib/events/getAllEventsRaw";
 
 export const metadata: Metadata = {
   title:
-    "League Two Fixture Congestion Today | Kickoff Overlap Analysis",
+    "League Two Fixture Congestion & Matchday Overview",
   description:
-    "Live EFL League Two fixture congestion report, highlighting peak kickoff overlap windows and scheduling density.",
+    "League Two fixture congestion overview including kickoff overlap analysis, scheduling density and date-based archive access.",
   alternates: {
     canonical:
       "https://venuescope.io/uk/league-two/fixture-congestion",
@@ -55,11 +55,11 @@ export default async function Page() {
         eventKey === todayKey
       );
     })
-    .sort((a: any, b: any) => {
-      const aDate = new Date(a.startDate ?? a.date ?? a.utcDate).getTime();
-      const bDate = new Date(b.startDate ?? b.date ?? b.utcDate).getTime();
-      return aDate - bDate;
-    });
+    .sort(
+      (a: any, b: any) =>
+        new Date(a.startDate ?? a.date ?? a.utcDate).getTime() -
+        new Date(b.startDate ?? b.date ?? b.utcDate).getTime()
+    );
 
   const hourMap = new Map<number, number>();
 
@@ -89,33 +89,50 @@ export default async function Page() {
       ? Math.round((peak[1] / leagueEvents.length) * 100)
       : 0;
 
-  const congestionLevel =
-    peak && peak[1] >= 6
-      ? "High"
-      : peak && peak[1] >= 3
-      ? "Moderate"
-      : "Low";
+  /* ======================
+    All League Two Dates
+  ====================== */
+
+  const leagueTwoDates = Array.from(
+    new Set(
+      events
+        .filter((e: any) => {
+          const raw = e.startDate ?? e.date ?? e.utcDate;
+          if (!raw) return false;
+
+          const competition = (e.competition ?? "").toLowerCase();
+
+          return (
+            competition.includes("league two") ||
+            competition.includes("efl league 2")
+          );
+        })
+        .map((e: any) =>
+          (e.startDate ?? e.date ?? e.utcDate).slice(0, 10)
+        )
+    )
+  )
+    .filter((date) => date >= todayKey) // 미래만 보고 싶으면 유지
+    .sort((a, b) => a.localeCompare(b))
+    .slice(0, 10); // 최대 10개
+
 
   return (
-    <main className="max-w-3xl mx-auto px-6 py-10 space-y-10">
+    <main className="max-w-3xl mx-auto px-6 py-14 space-y-10">
 
-      <header className="space-y-6 border-b border-border/30">
+      {/* HEADER */}
+      <header className="space-y-4 border-b border-border/30">
         <h1 className="text-4xl font-bold leading-tight">
-          League Two Fixture Congestion — {displayDate}
+          League Two Fixture Overview — {displayDate}
         </h1>
 
-        {leagueEvents.length === 0 ? (
-          <p className="text-muted-foreground">
-            No League Two fixtures are scheduled today.
-          </p>
-        ) : (
-          <p className="text-muted-foreground">
-            {leagueEvents.length} League Two fixture
-            {leagueEvents.length !== 1 ? "s" : ""} are scheduled today.
-          </p>
-        )}
+        <p className="text-muted-foreground">
+          {leagueEvents.length} League Two fixture
+          {leagueEvents.length !== 1 ? "s" : ""} scheduled today.
+        </p>
       </header>
 
+      {/* KPI */}
       <section className="border rounded-xl p-8 space-y-6">
 
         <div className="grid grid-cols-3 gap-6">
@@ -147,16 +164,26 @@ export default async function Page() {
           </div>
         </div>
 
-        <p className="text-sm text-muted-foreground">
-          Overall congestion level: <strong>{congestionLevel}</strong>
-        </p>
-
       </section>
 
+      {/* SEO TEXT */}
+      <section className="space-y-4 text-sm text-muted-foreground">
+        <p>
+          This page provides an overview of League Two fixture congestion,
+          highlighting kickoff overlap and matchday scheduling density
+          across English football.
+        </p>
+
+        <p>
+          Explore upcoming and recent matchdays using the date links below.
+        </p>
+      </section>
+
+      {/* TODAY LIST */}
       {leagueEvents.length > 0 && (
         <section className="space-y-4">
           <h2 className="text-xl font-semibold">
-            Today’s fixture list
+            Today’s League Two fixtures
           </h2>
 
           <ul className="space-y-3 text-muted-foreground">
@@ -166,8 +193,7 @@ export default async function Page() {
               return (
                 <li key={e.id} className="flex justify-between border-b pb-2">
                   <span>
-                    {e.homeTeam ?? e.home ?? "Home"} vs{" "}
-                    {e.awayTeam ?? e.away ?? "Away"}
+                    {e.homeTeam ?? "Home"} vs {e.awayTeam ?? "Away"}
                   </span>
                   {raw && (
                     <span className="text-sm">
@@ -181,18 +207,40 @@ export default async function Page() {
         </section>
       )}
 
-      <section>
-        <Link
-          href="/uk/league-two/fixture-congestion"
-          className="underline underline-offset-4"
-        >
-          View League Two congestion archive →
+      {/* DATE HUB */}
+      <section className="space-y-4 border rounded-xl p-6">
+        <h2 className="text-lg font-semibold">
+          Browse League Two fixtures by date
+        </h2>
+
+        <div className="grid sm:grid-cols-2 gap-2 text-sm">
+          {leagueTwoDates.map((date) => (
+            <Link
+              key={date}
+              href={`/uk/league-two/fixture-congestion/${date}`}
+              className="underline"
+            >
+              League Two fixtures – {formatDisplayDate(new Date(date))}
+
+            </Link>
+          ))}
+        </div>
+
+      </section>
+
+      {/* INTERNAL CLUSTER */}
+      <section className="space-y-2 text-sm">
+        <Link href="/uk/premier-league/fixture-congestion" className="underline block">
+          Premier League congestion overview →
+        </Link>
+
+        <Link href="/uk/league-one/fixture-congestion" className="underline block">
+          League One congestion overview →
         </Link>
       </section>
 
-      {/* ================= CTA ================= */}
-
-      <section className="space-y-6">
+      {/* CTA */}
+      <section>
         <Link
           href="/ops"
           className="inline-block px-5 py-3 rounded-md bg-black text-white text-sm font-medium"

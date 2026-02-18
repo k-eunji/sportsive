@@ -11,16 +11,26 @@ const UK_REGIONS = [
   "northern ireland",
 ];
 
-export const metadata: Metadata = {
-  title:
-    "Premier League Fixture Congestion Today | Kickoff Overlap Analysis",
-  description:
-    "Live Premier League fixture congestion report, highlighting peak kickoff overlap windows and scheduling density across England.",
-  alternates: {
-    canonical:
-      "https://venuescope.io/uk/premier-league/fixture-congestion",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const today = new Date();
+
+  const displayDate = today.toLocaleDateString("en-GB", {
+    weekday: "long",
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    timeZone: "Europe/London",
+  });
+
+  return {
+    title: `Premier League Fixtures – ${displayDate} | UK Match Share & Kickoff Analysis`,
+    description: `Full Premier League fixture list on ${displayDate} including kickoff times, stadiums and UK-wide match share analysis.`,
+    alternates: {
+      canonical:
+        "https://venuescope.io/uk/premier-league/fixture-congestion",
+    },
+  };
+}
 
 function formatDisplayDate(date: Date) {
   return date.toLocaleDateString("en-GB", {
@@ -96,13 +106,49 @@ export default async function Page() {
 
       <header className="space-y-6 border-b border-border/30">
         <h1 className="text-4xl font-bold leading-tight">
-          Premier League Fixture Congestion — {displayDate}
+          Premier League Fixture — {displayDate}
         </h1>
 
         <p className="text-muted-foreground leading-relaxed">
           A total of {leagueEvents.length} Premier League fixtures are scheduled today.
         </p>
       </header>
+
+      {/* ================= FIXTURE LIST ================= */}
+
+      {leagueEvents.length > 0 && (
+        <section className="space-y-6">
+          <h2 className="text-2xl font-semibold">
+            Premier League kickoff times — {displayDate}
+          </h2>
+
+          <ul className="space-y-3 text-muted-foreground">
+            {leagueEvents.map((e: any) => {
+              const raw = e.startDate ?? e.date ?? e.utcDate;
+
+              return (
+                <li key={e.id} className="flex justify-between border-b pb-2">
+                  <span>
+                    {e.homeTeam ?? "Home"} vs {e.awayTeam ?? "Away"}
+                  </span>
+
+                  {raw && (
+                    <span className="text-sm">
+                      {new Date(raw).toLocaleTimeString("en-GB", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hour12: false,
+                        timeZone: "Europe/London",
+                      })}
+                    </span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
+
 
       <section className="border rounded-xl p-8 space-y-6">
         <div className="grid grid-cols-3 gap-6">

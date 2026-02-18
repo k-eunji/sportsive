@@ -6,9 +6,9 @@ import { getAllEventsRaw } from "@/lib/events/getAllEventsRaw";
 
 export const metadata: Metadata = {
   title:
-    "League One Fixture Congestion Today | Kickoff Overlap Analysis",
+    "League One Fixture Congestion & Matchday Overview",
   description:
-    "Live EFL League One fixture congestion report, highlighting peak kickoff overlap windows and scheduling density.",
+    "League One fixture congestion overview including kickoff overlap analysis, matchday density and date-based archive access.",
   alternates: {
     canonical:
       "https://venuescope.io/uk/league-one/fixture-congestion",
@@ -65,6 +65,32 @@ export default async function Page() {
      Hourly Analysis
   ====================== */
 
+  /* ======================
+    All League One Dates
+  ====================== */
+
+  const leagueOneDates = Array.from(
+    new Set(
+      events
+        .filter((e: any) => {
+          const raw = e.startDate ?? e.date ?? e.utcDate;
+          if (!raw) return false;
+
+          const competition = (e.competition ?? "").toLowerCase();
+
+          return (
+            competition.includes("league one") ||
+            competition.includes("efl league 1")
+          );
+        })
+        .map((e: any) =>
+          (e.startDate ?? e.date ?? e.utcDate).slice(0, 10)
+        )
+    )
+  )
+    .sort((a, b) => b.localeCompare(a)) // 최신순
+    .slice(0, 10);
+
   const hourMap = new Map<number, number>();
 
   leagueEvents.forEach((e: any) => {
@@ -107,7 +133,7 @@ export default async function Page() {
 
       <header className="space-y-6 border-b border-border/30">
         <h1 className="text-4xl font-bold leading-tight">
-          League One Fixture Congestion — {displayDate}
+          League One Fixture — {displayDate}
         </h1>
 
         {leagueEvents.length === 0 ? (
@@ -162,6 +188,19 @@ export default async function Page() {
 
       </section>
 
+      <section className="space-y-4 text-sm text-muted-foreground">
+        <p>
+          This page provides an overview of League One fixture congestion,
+          highlighting kickoff overlap and matchday scheduling density
+          across England.
+        </p>
+
+        <p>
+          Use the date links below to explore historical and upcoming
+          League One fixtures in detail.
+        </p>
+      </section>
+
       {/* ================= FIXTURE LIST ================= */}
 
       {leagueEvents.length > 0 && (
@@ -193,17 +232,30 @@ export default async function Page() {
         </section>
       )}
 
-      {/* ================= NAVIGATION ================= */}
+      {/* ================= RECENT DATES ================= */}
 
-      <section>
-        <Link
-          href="/uk/league-one/fixture-congestion"
-          className="underline underline-offset-4"
-        >
-          View League One congestion archive →
-        </Link>
+      <section className="space-y-4 border rounded-xl p-6">
+        <h2 className="text-lg font-semibold">
+          Browse League One fixtures by date
+        </h2>
+
+        <div className="grid sm:grid-cols-2 gap-2 text-sm">
+          {leagueOneDates.map((date) => (
+            <Link
+              key={date}
+              href={`/uk/league-one/fixture-congestion/${date}`}
+              className="underline"
+            >
+              League One fixtures – {formatDisplayDate(new Date(date))}
+
+            </Link>
+          ))}
+        </div>
+
       </section>
 
+
+      {/* ================= NAVIGATION ================= */}
       <section>
         <Link
           href="/ops"
@@ -212,6 +264,17 @@ export default async function Page() {
           Open Operations Dashboard →
         </Link>
       </section>
+
+      <section className="space-y-2 text-sm">
+        <Link href="/uk/premier-league/fixture-congestion" className="underline block">
+          Premier League congestion overview →
+        </Link>
+
+        <Link href="/uk/league-two/fixture-congestion" className="underline block">
+          League Two congestion overview →
+        </Link>
+      </section>
+
 
     </main>
   );

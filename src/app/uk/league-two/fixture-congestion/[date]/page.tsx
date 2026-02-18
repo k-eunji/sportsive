@@ -1,9 +1,10 @@
-//src/app/uk/league-two/fixture-congestion/[date]/page.tsx
+// src/app/uk/league-two/fixture-congestion/[date]/page.tsx
 
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getAllEventsRaw } from "@/lib/events/getAllEventsRaw";
 import { isWithinAllowedRange } from "@/utils/dateRangeGuard";
+import { DateNav } from "@/app/components/DateNav";
 import Link from "next/link";
 
 type Props = {
@@ -15,8 +16,7 @@ function isValidDate(date: string) {
 }
 
 function formatDisplayDate(dateStr: string) {
-  const date = new Date(dateStr);
-  return date.toLocaleDateString("en-GB", {
+  return new Date(dateStr).toLocaleDateString("en-GB", {
     weekday: "long",
     day: "2-digit",
     month: "long",
@@ -46,8 +46,8 @@ export async function generateMetadata(
   const displayDate = formatDisplayDate(date);
 
   return {
-    title: `League Two Fixture Congestion — ${displayDate}`,
-    description: `EFL League Two fixture congestion analysis for ${displayDate}, including kickoff overlap and scheduling density.`,
+    title: `League Two Fixtures on ${displayDate} – Kickoff Times & Overlap Analysis`,
+    description: `Full EFL League Two fixture list on ${displayDate}, including kickoff times and match congestion analysis.`,
     alternates: {
       canonical: `https://venuescope.io/uk/league-two/fixture-congestion/${date}`,
     },
@@ -65,28 +65,24 @@ export default async function Page({ params }: Props) {
 
   const leagueEvents = events
     .filter((e: any) => {
-      const rawDate = e.startDate ?? e.date ?? e.utcDate;
-      if (!rawDate) return false;
+      const raw = e.startDate ?? e.date ?? e.utcDate;
+      if (!raw) return false;
 
-      const eventKey = rawDate.slice(0, 10);
       const competition = (e.competition ?? "").toLowerCase();
 
       return (
         (competition.includes("league two") ||
           competition.includes("efl league 2")) &&
-        eventKey === date
+        raw.slice(0, 10) === date
       );
     })
-    .sort((a: any, b: any) => {
-      const aDate = new Date(a.startDate ?? a.date ?? a.utcDate).getTime();
-      const bDate = new Date(b.startDate ?? b.date ?? b.utcDate).getTime();
-      return aDate - bDate;
-    });
+    .sort(
+      (a: any, b: any) =>
+        new Date(a.startDate ?? a.date ?? a.utcDate).getTime() -
+        new Date(b.startDate ?? b.date ?? b.utcDate).getTime()
+    );
 
-  const todayKey = new Date().toISOString().slice(0, 10);
-  const isPast = date < todayKey;
-  const isToday = date === todayKey;
-  const isFuture = date > todayKey;
+  const displayDate = formatDisplayDate(date);
 
   const hourMap = new Map<number, number>();
 
@@ -115,69 +111,38 @@ export default async function Page({ params }: Props) {
       ? Math.round((peak[1] / leagueEvents.length) * 100)
       : 0;
 
-  const displayDate = formatDisplayDate(date);
-
-  const previous = new Date(date);
-  previous.setDate(previous.getDate() - 1);
-
-  const next = new Date(date);
-  next.setDate(next.getDate() + 1);
-
-  const previousDate = previous.toISOString().slice(0, 10);
-  const nextDate = next.toISOString().slice(0, 10);
-
   return (
-    <main className="max-w-3xl mx-auto px-6 py-10 space-y-10">
+    <main className="max-w-3xl mx-auto px-6 py-16 space-y-10">
 
-      <header className="space-y-6">
-        <h1 className="text-4xl font-bold leading-tight">
-          League Two Fixture Congestion — {displayDate}
+      {/* HEADER */}
+      <header className="space-y-4">
+        <h1 className="text-4xl font-bold">
+          League Two Fixtures on {displayDate}
         </h1>
 
-        {leagueEvents.length === 0 ? (
-          <p className="text-muted-foreground">
-            {isPast && "No League Two fixtures were held on this date."}
-            {isToday && "No League Two fixtures are scheduled today."}
-            {isFuture && "No League Two fixtures are scheduled on this date."}
-          </p>
-        ) : (
-          <p className="text-muted-foreground">
-            {isPast &&
-              `${leagueEvents.length} League Two fixture${
-                leagueEvents.length !== 1 ? "s" : ""
-              } were held on this date.`}
-            {isToday &&
-              `${leagueEvents.length} League Two fixture${
-                leagueEvents.length !== 1 ? "s" : ""
-              } are scheduled today.`}
-            {isFuture &&
-              `${leagueEvents.length} League Two fixture${
-                leagueEvents.length !== 1 ? "s" : ""
-              } are scheduled on this date.`}
-          </p>
-        )}
+        <p className="text-muted-foreground">
+          {leagueEvents.length} League Two fixture
+          {leagueEvents.length !== 1 ? "s" : ""} scheduled on {displayDate}.
+        </p>
+
+        <Link
+          href={`/uk/football/${date}`}
+          className="underline text-sm"
+        >
+          View all UK football fixtures →
+        </Link>
       </header>
 
-      {leagueEvents.length > 1 && peak && (
-        <section className="space-y-4">
-          <h2 className="text-xl font-semibold">
-            Kickoff overlap analysis
-          </h2>
-
-          <p className="text-muted-foreground">
-            {isPast
-              ? `The highest recorded overlap occurred at ${peak[0]}:00`
-              : `The primary overlap window occurs at ${peak[0]}:00`}
-            {" "}({peakRatio}% of fixtures)
-          </p>
-        </section>
-      )}
-
+      {/* FIXTURE LIST */}
       {leagueEvents.length > 0 && (
         <section className="space-y-4">
           <h2 className="text-xl font-semibold">
-            Full fixture list
+            League Two kickoff times — {displayDate}
           </h2>
+
+          <p className="text-sm text-muted-foreground">
+            Below is the complete League Two fixture list including confirmed kickoff times.
+          </p>
 
           <ul className="space-y-3 text-muted-foreground">
             {leagueEvents.map((e: any) => {
@@ -186,9 +151,9 @@ export default async function Page({ params }: Props) {
               return (
                 <li key={e.id} className="flex justify-between border-b pb-2">
                   <span>
-                    {e.homeTeam ?? e.home ?? "Home"} vs{" "}
-                    {e.awayTeam ?? e.away ?? "Away"}
+                    {e.homeTeam ?? "Home"} vs {e.awayTeam ?? "Away"}
                   </span>
+
                   {raw && (
                     <span className="text-sm">
                       {formatTime(raw)}
@@ -201,39 +166,92 @@ export default async function Page({ params }: Props) {
         </section>
       )}
 
-      <section className="flex justify-between border-t pt-6 text-sm">
-        <Link
-          href={`/uk/league-two/fixture-congestion/${previousDate}`}
-          className="underline"
-        >
-          ← Previous day
-        </Link>
+      {/* OVERLAP ANALYSIS */}
+      {leagueEvents.length > 1 && peak && (
+        <section className="space-y-4">
+          <h2 className="text-xl font-semibold">
+            Kickoff overlap analysis
+          </h2>
 
-        <Link
-          href={`/uk/league-two/fixture-congestion/${nextDate}`}
-          className="underline"
-        >
-          Next day →
-        </Link>
+          <p className="text-muted-foreground">
+            The busiest kickoff window occurs at {peak[0]}:00,
+            representing {peakRatio}% of fixtures.
+          </p>
+        </section>
+      )}
+
+      {/* FAQ */}
+      <section className="space-y-4">
+        <h2 className="text-xl font-semibold">
+          FAQs – League Two on {displayDate}
+        </h2>
+
+        <div className="space-y-3 text-sm">
+          <p>
+            <strong>How many fixtures are scheduled?</strong><br />
+            There are {leagueEvents.length} confirmed League Two matches.
+          </p>
+
+          <p>
+            <strong>Do matches kick off at the same time?</strong><br />
+            Some fixtures may begin simultaneously depending on matchday scheduling.
+          </p>
+
+          <p>
+            <strong>Where are the matches played?</strong><br />
+            Fixtures take place across multiple stadiums in England.
+          </p>
+        </div>
       </section>
 
-      <section>
+      {/* SportsEvent Structured Data */}
+      {leagueEvents.length > 0 && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(
+              leagueEvents.map((event: any) => ({
+                "@context": "https://schema.org",
+                "@type": "SportsEvent",
+                name: `${event.homeTeam} vs ${event.awayTeam}`,
+                startDate: event.startDate ?? event.date ?? event.utcDate,
+                eventStatus: "https://schema.org/EventScheduled",
+                eventAttendanceMode:
+                  "https://schema.org/OfflineEventAttendanceMode",
+                location: {
+                  "@type": "Place",
+                  name: event.venue ?? "Football Stadium",
+                },
+                organizer: {
+                  "@type": "Organization",
+                  name: "VenueScope",
+                  url: "https://venuescope.io",
+                },
+              }))
+            ),
+          }}
+        />
+      )}
+
+      <DateNav
+        date={date}
+        basePath="/uk/league-two/fixture-congestion"
+      />
+
+      {/* BOTTOM LINKS */}
+      <section className="mt-6 space-y-2 text-sm">
         <Link
-          href="/uk/league-two/fixture-congestion"
-          className="underline underline-offset-4"
+          href={`/uk/league-two/fixture-congestion`}
+          className="underline block"
         >
-          View live League Two congestion overview →
+          Live League Two congestion overview
         </Link>
-      </section>
 
-      {/* ================= CTA ================= */}
-
-      <section className="space-y-6">
         <Link
-          href="/ops"
-          className="inline-block px-5 py-3 rounded-md bg-black text-white text-sm font-medium"
+          href={`/uk/premier-league/fixture-congestion/${date}`}
+          className="underline block"
         >
-          Open Operations Dashboard →
+          Premier League fixtures on {displayDate}
         </Link>
       </section>
 
