@@ -1,4 +1,4 @@
-///src/app/api/log/event-page-view/route.ts
+// src/app/api/log/event-page-view/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabaseServer";
@@ -16,28 +16,62 @@ const BLOCKED_CLIENT_IDS = new Set([
 ]);
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
+  try {
+    const body = await req.json();
 
-  const { eventId, clientId, sport, city } = body;
+    const { eventId, clientId, sport, city } = body;
 
-  if (!eventId || !clientId) {
+    if (!eventId || !clientId) {
+      return NextResponse.json(
+        { error: "Bad request" },
+        { status: 400 }
+      );
+    }
+
+    // ✅ IP 추출 (Vercel 대응)
+    const forwardedFor = req.headers.get("x-forwarded-for");
+    const ip =
+      forwardedFor?.split(",")[0]?.trim() ??
+      req.headers.get("x-real-ip") ??
+      "unknown";
+
+    // ✅ User-Agent 추출
+    const user_agent =
+      req.headers.get("user-agent") ?? "unknown";
+
+    // ⛔️ 차단된 client → 조용히 무시
+    if (BLOCKED_CLIENT_IDS.has(clientId)) {
+      return NextResponse.json({ ok: true, skipped: "blocked_client" });
+    }
+
+    const { error } = await supabase
+      .from("event_page_views")
+      .insert({
+        event_id: eventId,
+        client_id: clientId,
+        sport,
+        city,
+
+        // 👇 추가
+        ip_address: ip,
+        user_agent,
+        viewed_at: new Date().toISOString(), // 시간도 기록 추천
+      });
+
+    if (error) {
+      console.error("event_page_views insert error", error);
+      return NextResponse.json(
+        { error: "DB error" },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    console.error("event_page_view log error", e);
     return NextResponse.json(
       { error: "Bad request" },
       { status: 400 }
     );
   }
-
-  // ⛔️ 차단된 client → 조용히 무시 (DB 기록 없음)
-  if (BLOCKED_CLIENT_IDS.has(clientId)) {
-    return NextResponse.json({ ok: true });
-  }
-
-  await supabase.from("event_page_views").insert({
-    event_id: eventId,
-    client_id: clientId,
-    sport,
-    city,
-  });
-
-  return NextResponse.json({ ok: true });
 }

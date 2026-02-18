@@ -22,7 +22,6 @@ const englandNationalMatches = [
 
     venue: "Eden Gardens",
     city: "Kolkata",
-    region: "India",
     homepageUrl: "https://www.ecb.co.uk/england/men/fixtures?_gl=1*19amex2*_up*MQ..*_ga*MTAxNjEwODc3OS4xNzcwODAyOTM1*_ga_E3D3L0MGDX*czE3NzA4MTk0NjQkbzIkZzAkdDE3NzA4MTk0NjQkajYwJGwwJGgw*_ga_RB2BVD5EKH*czE3NzA4MTk0NjQkbzIkZzAkdDE3NzA4MTk0NjQkajYwJGwwJGgw",
     isPaid: true,
 

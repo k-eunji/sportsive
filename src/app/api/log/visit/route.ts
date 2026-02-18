@@ -23,12 +23,26 @@ export async function POST(req: NextRequest) {
       client_id,
       is_within_first_24h,
       entry_reason,
-      document_visibility, // 👈 추가
+      document_visibility,
     } = body;
+
+    // ✅ IP 추출 (Vercel 환경 대응)
+    const forwardedFor = req.headers.get("x-forwarded-for");
+    const ip =
+      forwardedFor?.split(",")[0]?.trim() ??
+      req.headers.get("x-real-ip") ??
+      "unknown";
+
+    // ✅ User-Agent 추출
+    const user_agent =
+      req.headers.get("user-agent") ?? "unknown";
 
     // ✅ 특정 client_id는 기록 안 함
     if (client_id && BLOCKED_CLIENT_IDS.has(client_id)) {
-      return NextResponse.json({ ok: true, skipped: "blocked_client" });
+      return NextResponse.json({
+        ok: true,
+        skipped: "blocked_client",
+      });
     }
 
     // ✅ payload 검증
@@ -50,8 +64,12 @@ export async function POST(req: NextRequest) {
         client_id,
         is_within_first_24h,
         entry_reason,
-        document_visibility: document_visibility ?? null, // 👈 추가
+        document_visibility: document_visibility ?? null,
         visited_at: new Date().toISOString(),
+
+        // 👇 새로 추가된 필드
+        ip_address: ip,
+        user_agent,
       });
 
     if (error) {
