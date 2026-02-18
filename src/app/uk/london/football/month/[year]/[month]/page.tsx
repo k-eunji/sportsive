@@ -1,32 +1,22 @@
-//src/app/uk/london/football/month/[year]/[month]/page.tsx
+// src/app/uk/london/football/[date]/page.tsx
 
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import Link from "next/link";
+import { EventList } from "@/app/components/EventList";
 import { getAllEventsRaw } from "@/lib/events/getAllEventsRaw";
-
-import DailyVolumeChart from "@/app/components/DailyVolumeChart";
-import WeekendSplitChart from "@/app/components/WeekendSplitChart";
-import SportDistributionChart from "@/app/components/SportDistributionChart";
+import { isWithinAllowedRange } from "@/utils/dateRangeGuard";
+import { DateNav } from "@/app/components/DateNav";
+import Link from "next/link";
 
 type Props = {
-  params: Promise<{ year: string; month: string }>;
+  params: Promise<{ date: string }>;
 };
 
-function isValidYearMonth(year: string, month: string) {
-  return /^\d{4}$/.test(year) && /^(0[1-9]|1[0-2])$/.test(month);
+function isValidDate(date: string) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(date);
 }
 
-function formatMonthDisplay(year: string, month: string) {
-  const date = new Date(Number(year), Number(month) - 1);
-  return date.toLocaleDateString("en-GB", {
-    month: "long",
-    year: "numeric",
-    timeZone: "Europe/London",
-  });
-}
-
-function formatFullDate(dateStr: string) {
+function formatDisplayDate(dateStr: string) {
   const date = new Date(dateStr);
   return date.toLocaleDateString("en-GB", {
     weekday: "long",
@@ -37,339 +27,383 @@ function formatFullDate(dateStr: string) {
   });
 }
 
-function getMonthRange(year: string, month: string) {
-  const baseDate = new Date(Number(year), Number(month) - 1);
+export async function generateMetadata(
+  { params }: Props
+): Promise<Metadata> {
 
-  const months = [];
+  const { date } = await params;
 
-  for (let i = -2; i <= 2; i++) {
-    const d = new Date(baseDate);
-    d.setMonth(d.getMonth() + i);
-
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, "0");
-
-    months.push({ year: y, month: m });
+  if (!isValidDate(date) || !isWithinAllowedRange(date)) {
+    return {};
   }
 
-  return months;
-}
-
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { year, month } = await params;
-  if (!isValidYearMonth(year, month)) return {};
-
-  const displayMonth = formatMonthDisplay(year, month);
-
-  return {
-    title: `London Football Fixtures – ${displayMonth} (Full Match List & Stats)`,
-    description: `Full list of London football fixtures in ${displayMonth}. View match volume, busiest days, league distribution and stadium usage across the capital.`,
-    alternates: {
-      canonical: `https://venuescope.io/uk/london/football/month/${year}/${month}`,
-    },
-  };
-}
-
-export default async function Page({ params }: Props) {
-  const { year, month } = await params;
-  if (!isValidYearMonth(year, month)) notFound();
-
-  const displayMonth = formatMonthDisplay(year, month);
-  const prefix = `${year}-${month}`;
-
-  const today = new Date();
-  const base = new Date(today.getFullYear(), today.getMonth(), 1);
-
-  const PAST_MONTHS = 6;
-  const FUTURE_MONTHS = 3;
-
-  const min = new Date(base);
-  min.setMonth(min.getMonth() - PAST_MONTHS);
-
-  const max = new Date(base);
-  max.setMonth(max.getMonth() + FUTURE_MONTHS);
-
-  const requested = new Date(Number(year), Number(month) - 1, 1);
-
-  if (requested < min || requested > max) {
-    notFound();
-  }
-
-  const monthRange = getMonthRange(year, month);
-
+  const displayDate = formatDisplayDate(date);
   const events = await getAllEventsRaw("180d");
 
-  const londonFootballEvents = events.filter((e: any) => {
-    const eventMonth = (e.startDate ?? e.date ?? e.utcDate)?.slice(0, 7);
+  const shortDate = new Date(date).toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    timeZone: "Europe/London",
+  });
+  
+  const footballEvents = events.filter((e: any) => {
+    const eventKey =
+      (e.startDate ?? e.date ?? e.utcDate)?.slice(0, 10);
+
     return (
       e.sport?.toLowerCase() === "football" &&
       e.city?.toLowerCase() === "london" &&
-      eventMonth === prefix
+      eventKey === date
     );
   });
 
-  const totalMatches = londonFootballEvents.length;
 
-  /* =========================
-     DATE GROUPING
-  ========================= */
+  return {
+    title: `Football Matches in London – ${shortDate} | Full Fixture List`,
+    description: `Full list of football matches in London on ${shortDate}. View kickoff times, stadium details and download the fixture schedule in CSV or calendar format.`,
+    alternates: {
+      canonical: `https://venuescope.io/uk/london/football/${date}`,
+    },
+    openGraph: {
+      title: `London Football Matches on ${displayDate}`,
+      description: `Kickoff times and stadium details for football matches in London on ${displayDate}.`,
+      type: "website",
+    },
 
-  const groupedByDate: Record<string, number> = {};
+  };
 
-  londonFootballEvents.forEach((event: any) => {
-    const fullDate =
-      (event.startDate ?? event.date ?? event.utcDate)?.slice(0, 10);
-    if (!fullDate) return;
-    groupedByDate[fullDate] = (groupedByDate[fullDate] || 0) + 1;
+}
+
+export default async function Page({ params }: Props) {
+  const { date } = await params;
+
+  if (!isValidDate(date) || !isWithinAllowedRange(date)) {
+    notFound();
+  }
+
+  const events = await getAllEventsRaw("180d");
+  const [year, month] = date.split("-");
+
+  const shortDate = new Date(date).toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    timeZone: "Europe/London",
+  });
+  
+
+  const footballEvents = events.filter((e: any) => {
+    const eventKey =
+      (e.startDate ?? e.date ?? e.utcDate)?.slice(0, 10);
+
+    return (
+      e.sport?.toLowerCase() === "football" &&
+      e.city?.toLowerCase() === "london" &&
+      eventKey === date
+    );
   });
 
-  const sortedEntries = Object.entries(groupedByDate).sort(([a], [b]) =>
-    a.localeCompare(b)
-  );
-
-  const busiestDay =
-    [...sortedEntries].sort((a, b) => b[1] - a[1])[0] || null;
-
-  const weekendMatches = sortedEntries
-    .filter(([date]) => {
-      const d = new Date(date);
-      const day = d.getDay();
-      return day === 0 || day === 6;
-    })
-    .reduce((sum, [, count]) => sum + count, 0);
-
-  const weekdayMatches = totalMatches - weekendMatches;
-
-  const weekendShare =
-    totalMatches > 0
-      ? Math.round((weekendMatches / totalMatches) * 100)
-      : 0;
-
-  /* =========================
-     LEAGUE DISTRIBUTION
-  ========================= */
-
-  const leagueMap: Record<string, number> = {};
-
-  londonFootballEvents.forEach((event: any) => {
-    if (!event.league) return; // 🔥 Other 제거
-    leagueMap[event.league] = (leagueMap[event.league] || 0) + 1;
-  });
-
-  const leagueChartData = Object.entries(leagueMap)
-    .sort((a, b) => b[1] - a[1])
-    .map(([league, count]) => ({
-      sport: league,
-      count,
-    }));
-
-  /* =========================
-     CLUB DISTRIBUTION
-  ========================= */
-
-  const clubMap: Record<string, number> = {};
-
-  londonFootballEvents.forEach((event: any) => {
-    if (!event.homeTeam) return;
-    clubMap[event.homeTeam] = (clubMap[event.homeTeam] || 0) + 1;
-  });
-
-  const topClubs = Object.entries(clubMap)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5);
-
-  /* =========================
-     STADIUM DISTRIBUTION
-  ========================= */
-
-  const stadiumMap: Record<string, number> = {};
-
-  londonFootballEvents.forEach((event: any) => {
-    if (!event.venue) return;
-    stadiumMap[event.venue] = (stadiumMap[event.venue] || 0) + 1;
-  });
-
-  const stadiumDistribution = Object.entries(stadiumMap)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5);
-
-  /* =========================
-     CHART DATA
-  ========================= */
-
-  const chartData = sortedEntries.map(([date, count]) => ({
-    date: date.slice(8, 10),
-    count,
-  }));
-
-  const weekendChartData = [
-    { name: "Weekend", value: weekendMatches },
-    { name: "Weekday", value: weekdayMatches },
-  ];
+  const ukFootballEvents = events.filter((e: any) => {
+  const eventKey =
+    (e.startDate ?? e.date ?? e.utcDate)?.slice(0, 10);
 
   return (
-    <main className="max-w-5xl mx-auto px-5 py-12 space-y-16">
+    e.sport?.toLowerCase() === "football" &&
+    eventKey === date
+  );
+});
 
-      <header>
-        <h1 className="text-3xl md:text-4xl font-bold">
-          London Football Fixtures – {displayMonth}
+  const londonShare =
+    ukFootballEvents.length > 0
+      ? Math.round(
+          (footballEvents.length / ukFootballEvents.length) * 100
+        )
+      : 0;
+
+  const displayDate = formatDisplayDate(date);
+
+  return (
+    <main className="max-w-3xl mx-auto px-6 py-16 space-y-8">
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": `How many football matches are in London on ${displayDate}?`,
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": `There are ${footballEvents.length} professional matches scheduled in London on ${displayDate}.`
+                }
+              },
+              {
+                "@type": "Question",
+                "name": `Are there overlapping matches in London?`,
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": `Some fixtures may kick off at similar times depending on the matchday schedule.`
+                }
+              }
+            ]
+          })
+        }}
+      />
+
+      <header className="space-y-4">
+        <h1 className="text-3xl font-bold">
+          Football Matches in London – {displayDate}
         </h1>
-        <p className="text-muted-foreground text-sm">
-          Complete match schedule and monthly distribution analysis
+
+        <p className="text-muted-foreground">
+          {footballEvents.length} professional football match
+          {footballEvents.length !== 1 ? "es" : ""} 
+          {footballEvents.length === 1 ? " is" : " are"} scheduled in London on {displayDate}.
         </p>
+
+        <p className="text-sm text-muted-foreground">
+          This includes Premier League and EFL fixtures scheduled across multiple London stadiums, with kickoff times and venue details listed below.
+        </p>
+
       </header>
 
-      {/* SUMMARY */}
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <SummaryCard title="Total Fixtures" value={totalMatches} />
-        <SummaryCard
-          title="Busiest Matchday"
-          value={busiestDay ? busiestDay[1] : 0}
-          subtitle={
-            busiestDay ? formatFullDate(busiestDay[0]) : "N/A"
-          }
+      <section className="rounded-2xl p-6 bg-background shadow-sm border border-border/30">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h2 className="text-sm font-semibold uppercase tracking-wide">
+              Export Schedule
+            </h2>
+            <p className="text-xs text-muted-foreground mt-1">
+              Download fixture data for planning, reporting or calendar sync.
+            </p>
+          </div>
+        </div>
 
-        />
-        <SummaryCard
-          title="Weekend Share"
-          value={`${weekendShare}%`}
-        />
-      </section>
+        <div className="flex gap-4 flex-wrap">
 
-      {/* DAILY VOLUME */}
-      <section>
-        <DailyVolumeChart data={chartData} />
-      </section>
+          {/* Primary CSV Button */}
+          <a
+            href={`/api/export/london-football?date=${date}`}
+            className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-black text-white text-sm font-medium hover:opacity-90 transition shadow-md"
+          >
+            ⬇ Download Full Fixture List (CSV)
+          </a>
 
-      {/* WEEKEND SPLIT */}
-      <section>
-        <WeekendSplitChart data={weekendChartData} />
-      </section>
+          {/* Secondary ICS Button */}
+          <a
+            href={`/api/export/london-football?date=${date}&format=ics`}
+            className="inline-flex items-center gap-2 px-5 py-3 rounded-xl border text-sm font-medium hover:bg-muted transition"
+          >
+            📅 Add All Matches to Calendar (.ics)
+          </a>
 
-      <section className="text-sm text-muted-foreground leading-relaxed">
-        <p>
-          In <strong>{displayMonth}</strong>, London hosts{" "}
-          <strong>{totalMatches}</strong> professional football fixtures
-          across multiple competitions. The busiest matchday falls on{" "}
-          <strong>
-            {busiestDay ? formatFullDate(busiestDay[0]) : "N/A"}
-          </strong>, with strong weekend concentration representing{" "}
-          <strong>{weekendShare}%</strong> of the monthly schedule.
-        </p>
-      </section>
-
-      {/* LEAGUE DISTRIBUTION */}
-      {leagueChartData.length > 0 && (
-        <section>
-          <h2 className="text-xl font-semibold mb-4">
-            League Distribution – {displayMonth}
-          </h2>
-          <SportDistributionChart data={leagueChartData} />
-        </section>
-      )}
-
-      {/* TOP CLUBS */}
-      {topClubs.length > 0 && (
-        <section>
-          <h2 className="text-xl font-semibold mb-4">
-            Most Active London Clubs – {displayMonth}
-          </h2>
-          <ul className="space-y-2">
-            {topClubs.map(([club, count]) => (
-              <li key={club} className="flex justify-between border-b py-2">
-                <span>{club}</span>
-                <span className="font-semibold">{count}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {/* STADIUMS */}
-      {stadiumDistribution.length > 0 && (
-        <section>
-          <h2 className="text-xl font-semibold mb-4">
-            Top Stadium Utilisation
-          </h2>
-          <ul className="space-y-2">
-            {stadiumDistribution.map(([venue, count]) => (
-              <li key={venue} className="flex justify-between border-b py-2">
-                <span>{venue}</span>
-                <span className="font-semibold">{count}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {/* DAILY INDEX */}
-      <section>
-        <h2 className="text-lg font-semibold mb-4">
-          Daily Fixture Index
-        </h2>
-        <ul className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
-          {sortedEntries.map(([date, count]) => (
-            <li key={date}>
-              <Link href={`/uk/london/football/${date}`} className="underline">
-                {formatFullDate(date)} – {count}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      {/* MONTH NAVIGATION */}
-      <section className="pt-8 border-t">
-        <h2 className="text-lg font-semibold mb-4">
-          Browse Nearby Months
-        </h2>
-
-        <div className="flex flex-wrap gap-3 text-sm">
-          {monthRange.map(({ year: y, month: m }) => {
-            const label = formatMonthDisplay(String(y), m);
-
-            const isCurrent =
-              Number(y) === Number(year) && m === month;
-
-            return (
-              <Link
-                key={`${y}-${m}`}
-                href={`/uk/london/football/month/${y}/${m}`}
-                className={`px-4 py-2 rounded-lg border ${
-                  isCurrent
-                    ? "bg-black text-white border-black"
-                    : "hover:bg-gray-100"
-                }`}
-              >
-                {label}
-              </Link>
-            );
-          })}
         </div>
       </section>
 
-    </main>
-  );
-}
+      <section className="rounded-2xl p-6 bg-background shadow-sm border border-border/30">
+        <h2 className="text-xl font-semibold mb-4 space-y-4">
+          Daily Match Summary
+        </h2>
 
-function SummaryCard({
-  title,
-  value,
-  subtitle,
-}: {
-  title: string;
-  value: any;
-  subtitle?: string;
-}) {
-  return (
-    <div className="rounded-2xl border p-5 bg-white shadow-sm">
-      <p className="text-xs uppercase tracking-wide text-gray-500">
-        {title}
-      </p>
-      <p className="text-4xl font-bold mt-2">{value}</p>
-      {subtitle && (
-        <p className="text-sm text-gray-500 mt-1">{subtitle}</p>
+        <div className="grid grid-cols-3 gap-6 text-center space-y-4">
+          <div>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">
+              UK football fixtures
+            </p>
+            <p className="text-2xl font-semibold">
+              {ukFootballEvents.length}
+            </p>
+          </div>
+
+          <div>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">
+              London football fixtures
+            </p>
+            <p className="text-2xl font-semibold">
+              {footballEvents.length}
+            </p>
+          </div>
+
+          <div>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">
+              London football share
+            </p>
+            <p className="text-2xl font-semibold">
+              {londonShare}%
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-6 flex flex-col items-center gap-3">
+          <Link
+            href={`/uk/football/${date}`}
+            className="text-sm underline hover:opacity-70 transition"
+          >
+            View all UK football fixtures →
+          </Link>
+
+          <Link
+            href={`/uk/london/football/month/${year}/${month}`}
+            className="text-sm underline hover:opacity-70 transition"
+          >
+            London football fixtures in {month}/{year} →
+          </Link>
+        </div>
+
+      </section>
+
+      <Link href={`/uk/london/fixture-congestion/${date}`} className="underline">
+        View congestion analysis for London →
+      </Link>
+
+      <section>
+        <h2 className="text-xl font-semibold mb-4">
+          Full list of London football matches – {shortDate}
+        </h2>
+
+        <EventList events={footballEvents} fixedStartDate={date} />
+      </section>  
+
+      <section className="mt-10 space-y-4">
+        <h2 className="text-xl font-semibold">
+          FAQs – London football on {displayDate}
+        </h2>
+
+        <div className="space-y-3 text-sm">
+          <p>
+            <strong>How many football matches are in London on {displayDate}?</strong><br />
+            There are {footballEvents.length} professional matches scheduled.
+          </p>
+
+          <p>
+            <strong>What time do London football matches kick off?</strong><br />
+            Kickoff times vary by fixture and are listed above.
+          </p>
+
+          <p>
+            <strong>Which stadiums are hosting matches?</strong><br />
+            Each fixture includes venue information for the hosting stadium.
+          </p>
+
+          <p>
+            <strong>Are there overlapping matches in London?</strong><br />
+            Some fixtures may kick off at similar times depending on the matchday schedule.
+          </p>
+        </div>
+      </section>
+
+
+
+      {footballEvents.length > 0 && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(
+              footballEvents
+                .filter((event: any) => event.startDate || event.date || event.utcDate)
+                .map((event: any) => ({
+                  "@context": "https://schema.org",
+                  "@type": "SportsEvent",
+                  name:
+                    event.homeTeam && event.awayTeam
+                      ? `${event.homeTeam} vs ${event.awayTeam}`
+                      : event.title ?? "Sports Event",
+                  startDate: event.startDate ?? event.date ?? event.utcDate,
+                  eventAttendanceMode:
+                    "https://schema.org/OfflineEventAttendanceMode",
+                  eventStatus:
+                    "https://schema.org/EventScheduled",
+                  location: {
+                    "@type": "Place",
+                    name: event.venue ?? "Sports Venue",
+                    address: {
+                      "@type": "PostalAddress",
+                      addressLocality: event.city ?? "",
+                      addressCountry: event.region ?? "",
+                    },
+                  },
+                  sport: event.sport ?? "Sports",
+                  organizer: {
+                    "@type": "Organization",
+                    name: "VenueScope",
+                    url: "https://venuescope.io",
+                  },
+                }))
+            ),
+          }}
+        />
       )}
-    </div>
+
+      {footballEvents.length > 0 && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Dataset",
+              name: `London Football Fixtures Dataset – ${displayDate}`,
+              description: `Structured dataset of professional football fixtures taking place in London on ${displayDate}. Includes date, home team, away team and venue information.`,
+              url: `https://venuescope.io/uk/london/football/${date}`,
+              creator: {
+                "@type": "Organization",
+                name: "VenueScope",
+                url: "https://venuescope.io"
+              },
+              distribution: [
+                {
+                  "@type": "DataDownload",
+                  encodingFormat: "text/csv",
+                  contentUrl: `https://venuescope.io/api/export/london-football?date=${date}`
+                },
+                {
+                  "@type": "DataDownload",
+                  encodingFormat: "text/calendar",
+                  contentUrl: `https://venuescope.io/api/export/london-football?date=${date}&format=ics`
+                }
+              ]
+            })
+          }}
+        />
+      )}
+
+
+      {/* 날짜 네비게이션 */}
+      <DateNav
+        date={date}
+        basePath="/uk/london/football"
+      />
+
+
+      {/* 상위 London 스포츠 날짜 페이지 */}
+      <section className="pt-8">
+        <Link
+          href={`/uk/london/sports/${date}`}
+          className="underline underline-offset-4"
+        >
+          All London fixtures on {displayDate} →
+        </Link>
+      </section>
+
+      {/* UK 레벨 연결 */}
+      <section className="mt-6 space-y-2 text-sm">
+        <Link
+          href={`/uk/london/fixture-congestion/${date}`}
+          className="underline block"
+        >
+          All London sports fixtures on {displayDate}
+        </Link>
+        <Link
+          href={`/uk/live-sports-today`}
+          className="underline block"
+        >
+          View today’s London fixtures
+        </Link>
+      </section>
+
+    </main>
   );
 }
