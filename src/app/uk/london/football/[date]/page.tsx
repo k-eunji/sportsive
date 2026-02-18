@@ -83,6 +83,7 @@ export default async function Page({ params }: Props) {
   }
 
   const events = await getAllEventsRaw("180d");
+  const [year, month] = date.split("-");
 
   const shortDate = new Date(date).toLocaleDateString("en-GB", {
     day: "2-digit",
@@ -237,12 +238,22 @@ export default async function Page({ params }: Props) {
           </div>
         </div>
 
-        <Link
-          href={`/uk/football/${date}`}
-          className="underline text-sm block text-center"
-        >
-          View all UK football fixtures →
-        </Link>
+        <div className="mt-6 flex flex-col items-center gap-3">
+          <Link
+            href={`/uk/football/${date}`}
+            className="text-sm underline hover:opacity-70 transition"
+          >
+            View all UK football fixtures →
+          </Link>
+
+          <Link
+            href={`/uk/london/football/month/${year}/${month}`}
+            className="text-sm underline hover:opacity-70 transition"
+          >
+            London football fixtures in {month}/{year} →
+          </Link>
+        </div>
+
       </section>
 
       <Link href={`/uk/london/fixture-congestion/${date}`} className="underline">
@@ -379,12 +390,6 @@ export default async function Page({ params }: Props) {
 
       {/* UK 레벨 연결 */}
       <section className="mt-6 space-y-2 text-sm">
-        <Link
-          href={`/uk/football/${date}`}
-          className="underline block"
-        >
-          All UK football fixtures on {displayDate}
-        </Link>
         <Link
           href={`/uk/london/fixture-congestion/${date}`}
           className="underline block"

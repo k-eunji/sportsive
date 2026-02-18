@@ -263,32 +263,19 @@ export default function LandingClient({
     loadAreas();
   }, []);
 
-  useEffect(() => {
-    async function loadAreas() {
-      const res = await fetch("/api/events?window=180d");
-      const data = await res.json();
-
-      if (data.areas) {
-        setAreaIndex(data.areas);
-      }
-    }
-
-    loadAreas();
-  }, []);
-
   /* =========================
      RENDER
   ========================= */
   return (
     <main>
       {/* HERO (Image-based) */}
-        <section className="relative w-full min-h-[calc(480px+64px)] pt-[20px] overflow-hidden">
+        <section className="relative w-full min-h-[420px] pt-[5px] overflow-hidden">
 
           {/* Dark gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-black/10" />
 
           {/* Content */}
-          <div className="relative z-10 max-w-5xl mx-auto px-6 pt-24 space-y-5 text-white">
+          <div className="relative z-10 max-w-5xl mx-auto px-6 pt-10 space-y-5 text-white">
             {/* Top utilities */}
             <div className="flex flex-wrap items-center gap-3">
               <LocationAnchor
@@ -369,6 +356,16 @@ export default function LandingClient({
           <div className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
             Live operational snapshot
           </div>
+
+          <div className="pt-3 text-sm">
+            <a
+              href="/reports"
+              className="inline-flex items-center gap-1 font-semibold underline hover:no-underline"
+            >
+              View monthly analytics →
+            </a>
+          </div>
+
           {todayEvents.length === 0 && (
             <div className="text-sm text-muted-foreground">
               Nothing happening
@@ -378,8 +375,11 @@ export default function LandingClient({
           {todayEvents.length > 0 && (
             <div className="flex flex-wrap gap-3 text-sm font-medium">
               {todayBreakdown.live > 0 && (
-                <span>LIVE ({todayBreakdown.live})</span>
+                <span className="text-red-600 font-semibold">
+                  LIVE ({todayBreakdown.live})
+                </span>
               )}
+
               {todayBreakdown.soon > 0 && (
                 <span>Starting soon ({todayBreakdown.soon})</span>
               )}
