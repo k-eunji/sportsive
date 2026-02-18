@@ -12,53 +12,31 @@ export default function sitemap(): MetadataRoute.Sitemap {
   }
 
   // =========================
-  // 1️⃣ 정적 페이지 (page.tsx)
+  // 1️⃣ 정적 페이지 (그대로 유지)
   // =========================
 
   const staticRoutes = [
     "/",
 
-    // 🇬🇧 UK – Today
+    // 🇬🇧 UK Core
     "/uk/live-sports-today",
     "/uk/football-today",
-    "/uk/london/live-sports-today",
-    "/uk/manchester/live-sports-today",
-    "/uk/birmingham/live-sports-today",
-
-    // 🇬🇧 UK – Weekend
     "/uk/sports-this-weekend",
-    "/uk/london/sports-this-weekend",
     "/uk/sports-next-weekend",
 
-    // 🇬🇧 UK – Fixture Congestion (Root)
-    "/uk/birmingham/fixture-congestion",
+    "/uk/london/live-sports-today",
+    "/uk/london/sports-this-weekend",
+
+    // 🇬🇧 Fixture Congestion 루트 유지
     "/uk/england/fixture-congestion",
     "/uk/london/fixture-congestion",
-    "/uk/manchester/fixture-congestion",
-    "/uk/northern-ireland/fixture-congestion",
-    "/uk/scotland/fixture-congestion",
-    "/uk/wales/fixture-congestion",
     "/uk/premier-league/fixture-congestion",
     "/uk/league-two/fixture-congestion",
     "/uk/league-one/fixture-congestion",
     "/uk/championship/fixture-congestion",
     "/uk/horse-racing/fixture-congestion",
 
-    // 🇬🇧 UK – Weekend Fixture Pages
-    "/uk/fixture-congestion/this-weekend",
-    "/uk/fixture-congestion/next-weekend",
-    "/uk/london/fixture-congestion/this-weekend",
-    "/uk/london/fixture-congestion/next-weekend",
-
-    // 🇮🇪 Ireland – Today
-    "/ireland/live-sports-today",
-    "/ireland/dublin/live-sports-today",
-
-    // 🇮🇪 Ireland – Weekend
-    "/ireland/sports-this-weekend",
-
-    // 🇮🇪 Ireland – Fixture Congestion
-    "/ireland/fixture-congestion",
+    // 🇮🇪 Ireland
     "/ireland/horse-racing/fixture-congestion",
   ];
 
@@ -70,12 +48,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
   });
 
   // =========================
-  // 3️⃣ 월 기반 페이지 (London Football Month)
+  // 2️⃣ London 월 허브 유지
   // =========================
 
   const pastMonths = 6;
   const futureMonths = 3;
-
   const baseMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
   for (let i = -pastMonths; i <= futureMonths; i++) {
@@ -92,11 +69,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
   }
 
   // =========================
-  // 2️⃣ 날짜 기반 페이지 ([date])
+  // 3️⃣ 날짜 기반 (핵심 전략 유지)
+  // 과거 30일 / 미래 30일
   // =========================
 
-  const pastDays = 90;
-  const futureDays = 14;
+  const pastDays = 30;
+  const futureDays = 30;
 
   for (let i = -pastDays; i <= futureDays; i++) {
     const date = new Date();
@@ -104,34 +82,21 @@ export default function sitemap(): MetadataRoute.Sitemap {
     const dateStr = formatDate(date);
 
     urls.push(
-      // 🇬🇧 UK 기본 날짜
+      // 🇬🇧 UK 날짜
       { url: `${baseUrl}/uk/sports/${dateStr}`, lastModified: now },
       { url: `${baseUrl}/uk/football/${dateStr}`, lastModified: now },
-      { url: `${baseUrl}/uk/london/sports/${dateStr}`, lastModified: now },
-      { url: `${baseUrl}/uk/manchester/sports/${dateStr}`, lastModified: now },
-      { url: `${baseUrl}/uk/birmingham/sports/${dateStr}`, lastModified: now },
 
-      // 🇬🇧 UK – Fixture Congestion 날짜
-      { url: `${baseUrl}/uk/birmingham/fixture-congestion/${dateStr}`, lastModified: now },
+      // 🇬🇧 London 날짜
+      { url: `${baseUrl}/uk/london/sports/${dateStr}`, lastModified: now },
+      { url: `${baseUrl}/uk/london/football/${dateStr}`, lastModified: now },
+
+      // 🇬🇧 Fixture Congestion 날짜 (전략 유지)
       { url: `${baseUrl}/uk/england/fixture-congestion/${dateStr}`, lastModified: now },
       { url: `${baseUrl}/uk/london/fixture-congestion/${dateStr}`, lastModified: now },
-      { url: `${baseUrl}/uk/manchester/fixture-congestion/${dateStr}`, lastModified: now },
-      { url: `${baseUrl}/uk/northern-ireland/fixture-congestion/${dateStr}`, lastModified: now },
-      { url: `${baseUrl}/uk/scotland/fixture-congestion/${dateStr}`, lastModified: now },
-      { url: `${baseUrl}/uk/wales/fixture-congestion/${dateStr}`, lastModified: now },
       { url: `${baseUrl}/uk/premier-league/fixture-congestion/${dateStr}`, lastModified: now },
-      { url: `${baseUrl}/uk/league-two/fixture-congestion/${dateStr}`, lastModified: now },
-      { url: `${baseUrl}/uk/league-one/fixture-congestion/${dateStr}`, lastModified: now },
       { url: `${baseUrl}/uk/championship/fixture-congestion/${dateStr}`, lastModified: now },
-      { url: `${baseUrl}/uk/horse-racing/fixture-congestion/${dateStr}`, lastModified: now },
 
-      // 🇮🇪 Ireland 기본 날짜
-      { url: `${baseUrl}/ireland/sports/${dateStr}`, lastModified: now },
-      { url: `${baseUrl}/ireland/football/${dateStr}`, lastModified: now },
-      { url: `${baseUrl}/ireland/dublin/sports/${dateStr}`, lastModified: now },
-
-      // 🇮🇪 Ireland – Fixture Congestion 날짜
-      { url: `${baseUrl}/ireland/fixture-congestion/${dateStr}`, lastModified: now },
+      // 🇮🇪 Ireland Horse Racing 날짜
       { url: `${baseUrl}/ireland/horse-racing/fixture-congestion/${dateStr}`, lastModified: now }
     );
   }
