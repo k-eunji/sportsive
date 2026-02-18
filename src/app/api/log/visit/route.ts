@@ -26,18 +26,33 @@ export async function POST(req: NextRequest) {
       document_visibility,
     } = body;
 
-    // ✅ IP 추출 (Vercel 환경 대응)
-    const forwardedFor = req.headers.get("x-forwarded-for");
+    /* ===============================
+       1️⃣ IP 추출 (Vercel 안전 버전)
+    =============================== */
+
     const ip =
-      forwardedFor?.split(",")[0]?.trim() ??
+      req.headers
+        .get("x-vercel-forwarded-for")
+        ?.split(",")[0]
+        ?.trim() ??
+      req.headers
+        .get("x-forwarded-for")
+        ?.split(",")[0]
+        ?.trim() ??
       req.headers.get("x-real-ip") ??
       "unknown";
 
-    // ✅ User-Agent 추출
+    /* ===============================
+       2️⃣ User-Agent 추출
+    =============================== */
+
     const user_agent =
       req.headers.get("user-agent") ?? "unknown";
 
-    // ✅ 특정 client_id는 기록 안 함
+    /* ===============================
+       3️⃣ 개발자 client 차단
+    =============================== */
+
     if (client_id && BLOCKED_CLIENT_IDS.has(client_id)) {
       return NextResponse.json({
         ok: true,
@@ -45,7 +60,26 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // ✅ payload 검증
+    /* ===============================
+       4️⃣ 기본 봇 필터 (1차 방어)
+    =============================== */
+
+    const suspiciousUA =
+      user_agent.toLowerCase().includes("curl") ||
+      user_agent.toLowerCase().includes("python") ||
+      user_agent.toLowerCase().includes("wget");
+
+    if (ip === "unknown" || suspiciousUA) {
+      return NextResponse.json({
+        ok: true,
+        skipped: "suspicious_request",
+      });
+    }
+
+    /* ===============================
+       5️⃣ payload 검증
+    =============================== */
+
     if (
       !client_id ||
       typeof is_within_first_24h !== "boolean" ||
@@ -57,7 +91,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ✅ Supabase 기록
+    /* ===============================
+       6️⃣ DB 저장
+    =============================== */
+
     const { error } = await supabase
       .from("visit_logs")
       .insert({
@@ -66,8 +103,6 @@ export async function POST(req: NextRequest) {
         entry_reason,
         document_visibility: document_visibility ?? null,
         visited_at: new Date().toISOString(),
-
-        // 👇 새로 추가된 필드
         ip_address: ip,
         user_agent,
       });
@@ -81,6 +116,7 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ ok: true });
+
   } catch (e) {
     console.error("visit log error", e);
     return NextResponse.json(
