@@ -70,6 +70,28 @@ export default function sitemap(): MetadataRoute.Sitemap {
   });
 
   // =========================
+  // 3️⃣ 월 기반 페이지 (London Football Month)
+  // =========================
+
+  const pastMonths = 6;
+  const futureMonths = 3;
+
+  const baseMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  for (let i = -pastMonths; i <= futureMonths; i++) {
+    const d = new Date(baseMonth);
+    d.setMonth(baseMonth.getMonth() + i);
+
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+
+    urls.push({
+      url: `${baseUrl}/uk/london/football/month/${year}/${month}`,
+      lastModified: now,
+    });
+  }
+
+  // =========================
   // 2️⃣ 날짜 기반 페이지 ([date])
   // =========================
 

@@ -39,6 +39,13 @@ export async function generateMetadata(
 
   const displayDate = formatDisplayDate(date);
   const events = await getAllEventsRaw("180d");
+
+  const shortDate = new Date(date).toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    timeZone: "Europe/London",
+  });
   
   const footballEvents = events.filter((e: any) => {
     const eventKey =
@@ -53,8 +60,8 @@ export async function generateMetadata(
 
 
   return {
-    title: `London Football Matches on ${displayDate} – Kickoff Times & Stadiums`,
-    description: `${footballEvents.length} football matches scheduled in London on ${displayDate}. Kickoff times, stadium details and full fixture list across Premier League and EFL.`,
+    title: `Football Matches in London – ${shortDate} | Full Fixture List`,
+    description: `Full list of football matches in London on ${shortDate}. View kickoff times, stadium details and download the fixture schedule in CSV or calendar format.`,
     alternates: {
       canonical: `https://venuescope.io/uk/london/football/${date}`,
     },
@@ -76,6 +83,14 @@ export default async function Page({ params }: Props) {
   }
 
   const events = await getAllEventsRaw("180d");
+
+  const shortDate = new Date(date).toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    timeZone: "Europe/London",
+  });
+  
 
   const footballEvents = events.filter((e: any) => {
     const eventKey =
@@ -140,7 +155,7 @@ export default async function Page({ params }: Props) {
 
       <header className="space-y-4">
         <h1 className="text-3xl font-bold">
-          London Football Matches on {displayDate}
+          Football Matches in London – {displayDate}
         </h1>
 
         <p className="text-muted-foreground">
@@ -155,54 +170,45 @@ export default async function Page({ params }: Props) {
 
       </header>
 
-      <Link href={`/uk/london/fixture-congestion/${date}`} className="underline">
-        View congestion analysis for London →
-      </Link>
+      <section className="rounded-2xl p-6 bg-background shadow-sm border border-border/30">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h2 className="text-sm font-semibold uppercase tracking-wide">
+              Export Schedule
+            </h2>
+            <p className="text-xs text-muted-foreground mt-1">
+              Download fixture data for planning, reporting or calendar sync.
+            </p>
+          </div>
+        </div>
 
+        <div className="flex gap-4 flex-wrap">
 
-      <section>
-        <h2 className="text-xl font-semibold mb-4">
-          London football kickoff times — {displayDate}
-        </h2>
+          {/* Primary CSV Button */}
+          <a
+            href={`/api/export/london-football?date=${date}`}
+            className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-black text-white text-sm font-medium hover:opacity-90 transition shadow-md"
+          >
+            ⬇ Download Full Fixture List (CSV)
+          </a>
 
-        <EventList events={footballEvents} fixedStartDate={date} />
-      </section>  
+          {/* Secondary ICS Button */}
+          <a
+            href={`/api/export/london-football?date=${date}&format=ics`}
+            className="inline-flex items-center gap-2 px-5 py-3 rounded-xl border text-sm font-medium hover:bg-muted transition"
+          >
+            📅 Add All Matches to Calendar (.ics)
+          </a>
 
-      <section className="mt-10 space-y-4">
-        <h2 className="text-xl font-semibold">
-          FAQs – London football on {displayDate}
-        </h2>
-
-        <div className="space-y-3 text-sm">
-          <p>
-            <strong>How many football matches are in London on {displayDate}?</strong><br />
-            There are {footballEvents.length} professional matches scheduled.
-          </p>
-
-          <p>
-            <strong>What time do London football matches kick off?</strong><br />
-            Kickoff times vary by fixture and are listed above.
-          </p>
-
-          <p>
-            <strong>Which stadiums are hosting matches?</strong><br />
-            Each fixture includes venue information for the hosting stadium.
-          </p>
-
-          <p>
-            <strong>Are there overlapping matches in London?</strong><br />
-            Some fixtures may kick off at similar times depending on the matchday schedule.
-          </p>
         </div>
       </section>
 
-
-      <section className="border rounded-xl p-6 space-y-4 mt-8">
-        <h2 className="text-xl font-semibold">
-          London vs UK fixture share
+      <section className="rounded-2xl p-6 bg-background shadow-sm border border-border/30">
+        <h2 className="text-xl font-semibold mb-4 space-y-4">
+          Daily Match Summary
         </h2>
 
-        <div className="grid grid-cols-3 gap-6 text-center">
+        <div className="grid grid-cols-3 gap-6 text-center space-y-4">
           <div>
             <p className="text-xs uppercase tracking-wide text-muted-foreground">
               UK football fixtures
@@ -238,6 +244,48 @@ export default async function Page({ params }: Props) {
           View all UK football fixtures →
         </Link>
       </section>
+
+      <Link href={`/uk/london/fixture-congestion/${date}`} className="underline">
+        View congestion analysis for London →
+      </Link>
+
+      <section>
+        <h2 className="text-xl font-semibold mb-4">
+          Full list of London football matches – {shortDate}
+        </h2>
+
+        <EventList events={footballEvents} fixedStartDate={date} />
+      </section>  
+
+      <section className="mt-10 space-y-4">
+        <h2 className="text-xl font-semibold">
+          FAQs – London football on {displayDate}
+        </h2>
+
+        <div className="space-y-3 text-sm">
+          <p>
+            <strong>How many football matches are in London on {displayDate}?</strong><br />
+            There are {footballEvents.length} professional matches scheduled.
+          </p>
+
+          <p>
+            <strong>What time do London football matches kick off?</strong><br />
+            Kickoff times vary by fixture and are listed above.
+          </p>
+
+          <p>
+            <strong>Which stadiums are hosting matches?</strong><br />
+            Each fixture includes venue information for the hosting stadium.
+          </p>
+
+          <p>
+            <strong>Are there overlapping matches in London?</strong><br />
+            Some fixtures may kick off at similar times depending on the matchday schedule.
+          </p>
+        </div>
+      </section>
+
+
 
       {footballEvents.length > 0 && (
         <script
@@ -278,6 +326,39 @@ export default async function Page({ params }: Props) {
           }}
         />
       )}
+
+      {footballEvents.length > 0 && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Dataset",
+              name: `London Football Fixtures Dataset – ${displayDate}`,
+              description: `Structured dataset of professional football fixtures taking place in London on ${displayDate}. Includes date, home team, away team and venue information.`,
+              url: `https://venuescope.io/uk/london/football/${date}`,
+              creator: {
+                "@type": "Organization",
+                name: "VenueScope",
+                url: "https://venuescope.io"
+              },
+              distribution: [
+                {
+                  "@type": "DataDownload",
+                  encodingFormat: "text/csv",
+                  contentUrl: `https://venuescope.io/api/export/london-football?date=${date}`
+                },
+                {
+                  "@type": "DataDownload",
+                  encodingFormat: "text/calendar",
+                  contentUrl: `https://venuescope.io/api/export/london-football?date=${date}&format=ics`
+                }
+              ]
+            })
+          }}
+        />
+      )}
+
 
       {/* 날짜 네비게이션 */}
       <DateNav

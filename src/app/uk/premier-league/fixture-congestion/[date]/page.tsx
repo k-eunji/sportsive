@@ -42,9 +42,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const displayDate = formatDisplayDate(date);
 
+  const events = await getAllEventsRaw("180d");
+
+  const leagueEvents = events.filter((e: any) => {
+    const raw = e.startDate ?? e.date ?? e.utcDate;
+    if (!raw) return false;
+
+    const competition = (e.competition ?? "").toLowerCase();
+
+    return (
+      competition.includes("premier") &&
+      competition.includes("league") &&
+      raw.slice(0, 10) === date
+    );
+  });
+
   return {
-    title: `Premier League Matches on ${displayDate} – Kickoff Times & UK Match Share`,
-    description: `Full Premier League fixture list on ${displayDate} including kickoff times, stadium details and national fixture share analysis.`,
+    title: `Premier League Schedule Load – ${displayDate} (${leagueEvents.length} Fixtures)`,
+    description: `${leagueEvents.length} Premier League fixtures on ${displayDate}. Includes UK match share, scheduling load and kickoff distribution analysis.`,
     alternates: {
       canonical: `https://venuescope.io/uk/premier-league/fixture-congestion/${date}`,
     },
@@ -134,7 +149,7 @@ export default async function Page({ params }: Props) {
       {/* HEADER */}
       <header className="space-y-4">
         <h1 className="text-4xl font-bold">
-          Premier League Matches on {displayDate}
+          Premier League Schedule Density – {displayDate}
         </h1>
 
         <p className="text-muted-foreground">

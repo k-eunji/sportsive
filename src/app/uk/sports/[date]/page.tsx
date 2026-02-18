@@ -7,6 +7,7 @@ import { getAllEventsRaw } from "@/lib/events/getAllEventsRaw";
 import { isWithinAllowedRange } from "@/utils/dateRangeGuard";
 import { DateNav } from "@/app/components/DateNav";
 import Link from "next/link";
+import SportDistributionChart from "@/app/components/SportDistributionChart";
 
 const UK_REGIONS = [
   "england",
@@ -74,6 +75,29 @@ export default async function UKSportsByDatePage({ params }: Props) {
     );
   });
 
+  /* ================= SPORT DISTRIBUTION ================= */
+
+  const sportCounts: Record<string, number> = {};
+
+  dateEvents.forEach((event: any) => {
+    const sport = event.sport?.toLowerCase() ?? "other";
+
+    sportCounts[sport] = (sportCounts[sport] || 0) + 1;
+  });
+
+  const totalSports = dateEvents.length;
+
+  const sportDistribution = Object.entries(sportCounts).map(
+    ([sport, count]) => ({
+      sport,
+      count,
+      percentage:
+        totalSports > 0
+          ? Math.round((count / totalSports) * 100)
+          : 0,
+    })
+  );
+
   const displayDate = formatDisplayDate(date);
 
   return (
@@ -90,6 +114,66 @@ export default async function UKSportsByDatePage({ params }: Props) {
           Fixtures include football, rugby, cricket and horse racing.
         </p>
       </header>
+
+      {/* ================= EXPORT ================= */}
+
+      <section className="rounded-2xl p-6 bg-background shadow-sm border border-border/30">
+
+        <h2 className="text-sm font-semibold uppercase tracking-wide">
+          Export Schedule
+        </h2>
+
+        <div className="flex gap-4 flex-wrap">
+
+          <a
+            href={`/api/export/uk-sports?date=${date}`}
+            className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-black text-white text-sm font-medium hover:opacity-90 transition shadow-md"
+          >
+            ⬇ Download Full Fixture List (CSV)
+          </a>
+
+          <a
+            href={`/api/export/uk-sports?date=${date}&format=ics`}
+            className="inline-flex items-center gap-2 px-5 py-3 rounded-xl border text-sm font-medium hover:bg-muted transition"
+          >
+            📅 Add All Events to Calendar (.ics)
+          </a>
+
+        </div>
+
+      </section>
+
+      {/* ================= SPORT SHARE ANALYSIS ================= */}
+
+      <section className="rounded-2xl p-6 bg-background shadow-sm border border-border/30">
+        <h2 className="text-lg font-semibold">
+          Sport distribution – UK fixtures
+        </h2>
+
+        {/* 🔥 도넛 차트 */}
+        <SportDistributionChart data={sportDistribution} />
+
+        {/* 숫자 요약 */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-center">
+          {sportDistribution.map((item) => (
+            <div key={item.sport}>
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                {item.sport}
+              </p>
+              <p className="text-xl md:text-2xl font-semibold">
+                {item.count}
+              </p>
+
+              <p className="text-xs md:text-sm text-muted-foreground">
+                {item.percentage}%
+              </p>
+
+            </div>
+          ))}
+
+        </div>
+
+      </section>
 
       <section>
         <h2 className="text-xl font-semibold mb-4">
@@ -115,6 +199,7 @@ export default async function UKSportsByDatePage({ params }: Props) {
 
         <EventList events={dateEvents} fixedStartDate={date} />
       </section>
+
       {dateEvents.length > 0 && (
         <script
           type="application/ld+json"
