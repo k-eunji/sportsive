@@ -163,6 +163,11 @@ export function EventCard({ card }: { card: EventCardModel }) {
           )}
         </div>
 
+        <div className="sr-only">
+          {card.title} in {card.event.city} on {card.event.date}
+        </div>
+
+
       </div>
       
         <span className="

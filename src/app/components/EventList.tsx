@@ -105,27 +105,24 @@ export function EventList({
 
         const cards = grouped[key] ?? [];
 
+        // 🔥 이벤트 없는 날짜는 렌더하지 않음
+        if (cards.length === 0) return null;
+
         return (
           <section key={key}>
             <h3 className="mt-6 mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
               {formatDateHeader(key)}
             </h3>
 
-            {cards.length > 0 ? (
-              <div className="divide-y divide-border/50">
-
-                {cards.map((card) => (
-                  <EventCard key={card.id} card={card} />
-                ))}
-              </div>
-            ) : (
-              <p className="py-4 text-sm text-muted-foreground">
-                No events scheduled.
-              </p>
-            )}
+            <div className="divide-y divide-border/50">
+              {cards.map((card) => (
+                <EventCard key={card.id} card={card} />
+              ))}
+            </div>
           </section>
         );
       })}
     </div>
   );
+
 }

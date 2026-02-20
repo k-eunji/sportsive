@@ -311,9 +311,11 @@ export default function ReportsDashboard({ events }: { events: any[] }) {
 
       {/* HEADER */}
       <header>
-        <h1 className="text-3xl md:text-4xl font-bold">
-          {region ?? "All Regions"} {city ?? ""} {sport} – {displayMonth}
+        <h1>
+          {sport === "all" ? "Sports Fixtures" : `${sport} Fixtures`} 
+          in {city ?? region ?? "the UK"} — {displayMonth}
         </h1>
+
         <p className="text-muted-foreground text-sm">
           Complete match schedule and monthly distribution analysis
         </p>

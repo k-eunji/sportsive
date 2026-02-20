@@ -53,7 +53,7 @@ export default function LandingClient({
 }) {
   const [events, setEvents] = useState<Event[]>(initialEvents);
 
-  const [weekCount, setWeekCount] = useState(1);
+  const [weekCount, setWeekCount] = useState(2);
 
   // price filter
   const [priceFilter, setPriceFilter] =
@@ -318,15 +318,15 @@ export default function LandingClient({
 
             {/* Hero copy */}
             <h1 className="text-4xl md:text-5xl font-bold leading-tight max-w-3xl">
-              Multiple events. Same city. Same time.
+              Sports fixtures across the UK & Ireland — by city and date
             </h1>
 
-            <p className="text-lg md:text-xl font-medium max-w-2xl text-white/90">
-              Identify schedule overlap and crowd concentration before matchday disruption.
+            <p>
+              Explore upcoming football, rugby, cricket and more across the UK and Ireland.
             </p>
 
             <p className="text-sm text-white/70">
-              For league, club and event operations teams.
+              Operational insights available for venues & event teams.
             </p>
 
             {/* CTA */}
@@ -353,10 +353,6 @@ export default function LandingClient({
       {/* ✅ TODAY SUMMARY (추가만) */}
       <section className="max-w-3xl mx-auto px-4 pb-4">
         <div className="rounded-2xl bg-muted/40 px-4 py-4 space-y-2">
-          <div className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-            Live operational snapshot
-          </div>
-
           <div className="pt-3 text-sm">
             <a
               href="/reports"
@@ -407,6 +403,11 @@ export default function LandingClient({
           </div>
         </div>
 
+        <p className="text-sm text-muted-foreground mb-6">
+          Browse upcoming sports fixtures across major cities including London, Manchester, Dublin and Belfast.
+        </p>
+
+
         {isLocationFiltering ? (
           <div className="py-20 text-center text-sm text-muted-foreground">
             Finding events near you…
@@ -426,7 +427,7 @@ export default function LandingClient({
               transition
             "
           >
-            Next 7 days →
+            Show 7 more days →
           </button>
         )}  
       </section>

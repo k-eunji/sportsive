@@ -34,8 +34,8 @@ export async function generateMetadata(
   const displayDate = formatDisplayDate(date);
 
   return {
-    title: `London Fixture Congestion — ${displayDate}`,
-    description: `Fixture congestion analysis across London for ${displayDate}, including kickoff overlap, concurrent fixtures and scheduling density.`,
+    title: `All Sports Events in London – ${displayDate} (Schedule & Kickoff Times)`,
+    description: `Full list of all sports events taking place in London on ${displayDate}, including football, rugby and more. View kickoff times and venue details.`,
     alternates: {
       canonical: `https://venuescope.io/uk/london/fixture-congestion/${date}`,
     },
@@ -187,6 +187,7 @@ export default async function Page({ params }: Props) {
           __html: JSON.stringify(breadcrumbData),
         }}
       />
+      
 
       {/* ================= HEADER ================= */}
 

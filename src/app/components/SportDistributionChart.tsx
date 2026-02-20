@@ -32,7 +32,15 @@ export default function SportDistributionChart({ data }: any) {
               <Cell key={index} fill={COLORS[index % COLORS.length]} />
             ))}
           </Pie>
-          <Tooltip />
+          <Tooltip
+            formatter={(value: any, name: any, props: any) => {
+              const item = props?.payload;
+              const percentage = item?.percentage ?? 0;
+              return [`${value} (${percentage}%)`, item?.sport];
+            }}
+          />
+
+
         </PieChart>
       </ResponsiveContainer>
     </div>

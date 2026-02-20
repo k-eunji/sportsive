@@ -33,7 +33,11 @@ export default function WeekendSplitChart({ data }: any) {
               />
             ))}
           </Pie>
-          <Tooltip />
+          <Tooltip
+            formatter={(value: any, name: any, props: any) => {
+              return [`${value} (${props.payload.percentage}%)`, props.payload.name];
+            }}
+          />
         </PieChart>
       </ResponsiveContainer>
     </div>

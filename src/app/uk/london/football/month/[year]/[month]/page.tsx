@@ -62,8 +62,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const displayMonth = formatMonthDisplay(year, month);
 
   return {
-    title: `London Football Fixtures – ${displayMonth} (Full Match List & Stats)`,
-    description: `Full list of London football fixtures in ${displayMonth}. View match volume, busiest days, league distribution and stadium usage across the capital.`,
+    title: `Football Matches in London – ${displayMonth} (Full Schedule)`,
+    description: `See all football matches in London in ${displayMonth}. View Premier League, EFL and other fixtures with match dates and stadium details.`,
     alternates: {
       canonical: `https://venuescope.io/uk/london/football/month/${year}/${month}`,
     },
@@ -212,12 +212,25 @@ export default async function Page({ params }: Props) {
 
       <header>
         <h1 className="text-3xl md:text-4xl font-bold">
-          London Football Fixtures – {displayMonth}
+          Football Matches in London – {displayMonth}
         </h1>
         <p className="text-muted-foreground text-sm">
-          Complete match schedule and monthly distribution analysis
+          Complete match schedule for football in London this month
         </p>
       </header>
+
+      <section className="text-sm text-muted-foreground leading-relaxed">
+        <p>
+          Looking for football matches in London in {displayMonth}? 
+          This page lists every professional football game taking place 
+          across London stadiums during the month.
+        </p>
+        <p>
+          This monthly London football schedule includes home and away fixtures 
+          involving London-based clubs competing in the Premier League, 
+          EFL Championship, League One and League Two.
+        </p>
+      </section>
 
       {/* GLOBAL REPORT CTA */}
       <section className="bg-gray-50 border rounded-xl p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
@@ -366,6 +379,32 @@ export default async function Page({ params }: Props) {
             );
           })}
         </div>
+      </section>
+      <section className="text-sm text-muted-foreground leading-relaxed">
+        <p>
+          Whether you're planning a weekend trip or checking upcoming games,
+          this page helps you see what football is on in London in {displayMonth}.
+        </p>
+      </section>
+      <section className="mt-16 space-y-4 text-sm">
+        <h2 className="text-xl font-semibold">
+          FAQs – Football in London in {displayMonth}
+        </h2>
+
+        <p>
+          <strong>How many football matches are played in London in {displayMonth}?</strong><br />
+          There are {totalMatches} professional fixtures scheduled across London stadiums.
+        </p>
+
+        <p>
+          <strong>Which London teams play at home this month?</strong><br />
+          Home fixtures for London-based clubs are listed in the daily index above.
+        </p>
+
+        <p>
+          <strong>Are most London football matches played on weekends?</strong><br />
+          {weekendShare}% of fixtures take place on Saturdays and Sundays.
+        </p>
       </section>
 
     </main>

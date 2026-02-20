@@ -38,7 +38,6 @@ export async function generateMetadata(
   }
 
   const displayDate = formatDisplayDate(date);
-  const events = await getAllEventsRaw("180d");
 
   const shortDate = new Date(date).toLocaleDateString("en-GB", {
     day: "2-digit",
@@ -46,28 +45,16 @@ export async function generateMetadata(
     year: "numeric",
     timeZone: "Europe/London",
   });
-  
-  const footballEvents = events.filter((e: any) => {
-    const eventKey =
-      (e.startDate ?? e.date ?? e.utcDate)?.slice(0, 10);
-
-    return (
-      e.sport?.toLowerCase() === "football" &&
-      e.city?.toLowerCase() === "london" &&
-      eventKey === date
-    );
-  });
-
 
   return {
-    title: `Football Matches in London – ${shortDate} | Full Fixture List`,
-    description: `Full list of football matches in London on ${shortDate}. View kickoff times, stadium details and download the fixture schedule in CSV or calendar format.`,
+    title: `Football Matches in London – ${shortDate} (Kickoff Times & Stadiums)`,
+    description: `See all football matches in London on ${shortDate}. Kickoff times, stadium locations and full fixture list in one place.`,
     alternates: {
       canonical: `https://venuescope.io/uk/london/football/${date}`,
     },
     openGraph: {
-      title: `London Football Matches on ${displayDate}`,
-      description: `Kickoff times and stadium details for football matches in London on ${displayDate}.`,
+      title: `London Football Fixtures – ${displayDate}`,
+      description: `Kickoff times and venue overlap insights for London football fixtures on ${displayDate}.`,
       type: "website",
     },
 
@@ -154,6 +141,13 @@ export default async function Page({ params }: Props) {
         }}
       />
 
+      {footballEvents.length > 1 && (
+        <div className="text-sm bg-yellow-50 border border-yellow-200 p-3 rounded-md">
+          ⚠ {footballEvents.length} fixtures are scheduled in London on this day. 
+          Multiple kickoffs may overlap across venues.
+        </div>
+      )}
+
       <header className="space-y-4">
         <h1 className="text-3xl font-bold">
           Football Matches in London – {displayDate}
@@ -170,6 +164,10 @@ export default async function Page({ params }: Props) {
         </p>
 
       </header>
+
+      <p className="text-sm text-muted-foreground">
+        This page highlights matchday density across London, including overlapping kickoffs and venue concentration patterns.
+      </p>
 
       <section className="rounded-2xl p-6 bg-background shadow-sm border border-border/30">
         <div className="flex items-center justify-between flex-wrap gap-3">

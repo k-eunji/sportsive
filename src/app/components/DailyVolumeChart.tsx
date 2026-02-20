@@ -21,7 +21,12 @@ export default function DailyVolumeChart({ data }: any) {
         <BarChart data={data}>
           <XAxis dataKey="date" tick={{ fontSize: 10 }} />
           <YAxis />
-          <Tooltip />
+          <Tooltip
+            formatter={(value: any, name: any, props: any) => {
+              return [`${value} (${props.payload.percentage}%)`, "Matches"];
+            }}
+          />
+
           <Bar dataKey="count">
             {data.map((entry: any, index: number) => (
               <Cell
