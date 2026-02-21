@@ -2,28 +2,44 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import DatePresetBar from "@/app/ops/components/home/DatePresetBar";
 import type { AttentionLevel } from "@/lib/infra/attentionLevel";
+import type { Event } from "@/types";
+import { getEventTimeState } from "@/lib/eventTime";
+
+type Factor = {
+  label: string;
+  count: number;
+};
 
 type Props = {
   peakHour: number | null;
   peakCount: number;
   scopeLabel: string;
   dateLabel: string;
-  onExpandChange?: (v: boolean) => void;
   attentionLevel: AttentionLevel | null;
-  hourlyImpact: {
-    hour: number;
-    value: number;
-  }[];
 
-  // 🔥 추가
+  baselineStats?: {
+    todayCount: number;
+    median: number;
+    delta: number;
+    absoluteDiff: number;
+    label: "normal" | "elevated" | "unusual";
+  } | null;
+
+  events: Event[];
+
   activeDate: Date;
   onDateChange: (d: Date) => void;
-  hasAnchor: boolean;
-  onOpenAnchor: () => void;
 };
+
+function getStartDate(e: any): Date | null {
+  const raw = e.date ?? e.utcDate ?? e.startDate ?? null;
+  if (!raw) return null;
+  const d = new Date(raw);
+  return isNaN(d.getTime()) ? null : d;
+}
 
 export default function MobileOpsView({
   peakHour,
@@ -31,15 +47,13 @@ export default function MobileOpsView({
   scopeLabel,
   dateLabel,
   attentionLevel,
-  hourlyImpact,
-  onExpandChange,
+  baselineStats,
+  events,
   activeDate,
   onDateChange,
-  hasAnchor,
-  onOpenAnchor,
 }: Props) {
 
-  const [expanded, setExpanded] = useState(false);
+  const [listOpen, setListOpen] = useState(false);
 
   const levelColor =
     attentionLevel === "high"
@@ -48,119 +62,156 @@ export default function MobileOpsView({
       ? "from-amber-400 to-amber-500"
       : "from-emerald-400 to-emerald-500";
 
-  const toggle = () => {
-    const next = !expanded;
-    setExpanded(next);
-    onExpandChange?.(next);
-  };
-  
-  useEffect(() => {
-    const setHeight = () => {
-      document.documentElement.style.setProperty(
-        "--vh",
-        `${window.innerHeight * 0.01}px`
-      );
+  const activityLabel =
+    attentionLevel === "high"
+      ? "High overlap expected"
+      : attentionLevel === "medium"
+      ? "Moderate overlap expected"
+      : "Low overlap expected";
+
+  const sortedEvents = useMemo(() => {
+    const priority = (e: Event) => {
+      const state = getEventTimeState(e);
+
+      if (state === "LIVE") return 0;
+      if (state === "SOON") return 1;
+      if (state === "UPCOMING") return 2;
+      if (state === "ENDED") return 3;
+
+      return 4;
     };
 
-    setHeight();
-    window.addEventListener("resize", setHeight);
-    return () => window.removeEventListener("resize", setHeight);
-  }, []);
+    return [...events].sort((a, b) => {
+      const pDiff = priority(a) - priority(b);
+      if (pDiff !== 0) return pDiff;
 
+      const da = getStartDate(a);
+      const db = getStartDate(b);
+      if (!da || !db) return 0;
+
+      return da.getTime() - db.getTime();
+    });
+  }, [events]);
 
   return (
     <div
-      className={`
+      className="
         md:hidden
         fixed
         inset-x-0
-        bottom-14 
+        bottom-14
         z-40
-        transition-all
-        duration-300
-        ${expanded ? "h-[75vh]" : "h-[180px]"}
-      `}
+        h-[180px]
+      "
     >
-
       <div className="h-full bg-background rounded-t-3xl shadow-2xl p-4 flex flex-col">
 
-        {/* Drag handle */}
-        <div
-          onClick={toggle}
-          className="w-10 h-1.5 bg-muted rounded-full mx-auto mb-3 cursor-pointer"
-        />
-
-        {/* SUMMARY CARD */}
-        <div
-          className={`
-            rounded-2xl p-4 text-white bg-gradient-to-br ${levelColor}
-          `}
-        >
-          <p className="text-xs uppercase opacity-80">
-            {scopeLabel} · {dateLabel}
-          </p>
-
-          <p className="text-lg font-semibold mt-1">
-            {attentionLevel === "high"
-              ? "High overlap expected"
-              : attentionLevel === "medium"
-              ? "Moderate overlap expected"
-              : "Low overlap expected"}
-          </p>
-
-          {peakHour !== null && (
-            <p className="text-sm opacity-90 mt-1">
-              Peak {peakHour}:00 · {peakCount} events
-            </p>
-          )}
-        </div>
-
-        {/* DATE + ANCHOR BAR */}
-        <div className="mt-3 flex items-center justify-between">
-          <DatePresetBar
-            activeDate={activeDate}
-            onChange={onDateChange}
-            maxDays={60}
-          />
-
-          <button
-            onClick={onOpenAnchor}
-            className="px-3 py-1.5 text-xs font-semibold rounded-full bg-muted/40"
-          >
-            {hasAnchor ? "Reference set" : "Set reference location"}
-          </button>
-        </div>
-
-
-        {/* EXPANDED CONTENT */}
-        {expanded && (
-          <div className="mt-4 flex-1 overflow-y-auto">
-
-            {/* Mini chart */}
-            <div className="mb-4">
-              <p className="text-xs text-muted-foreground mb-2">
-                Event impact by hour
+        {!listOpen ? (
+          <>
+            {/* SUMMARY */}
+            <div className={`rounded-2xl p-4 text-white bg-gradient-to-br ${levelColor}`}>
+              <p className="text-xs uppercase opacity-80">
+                {scopeLabel} · {dateLabel}
               </p>
 
-              <div className="flex items-end gap-1 h-24">
-                {hourlyImpact.map((h) => (
-                  <div
-                    key={h.hour}
-                    className="flex-1 bg-primary/40 rounded-sm"
-                    style={{
-                      height: `${Math.max(4, h.value * 10)}px`,
-                    }}
-                  />
-                ))}
-              </div>
+              <p className="text-lg font-semibold mt-1">
+                {activityLabel}
+              </p>
+
+              {peakHour !== null && (
+                <p className="text-sm opacity-90 mt-1">
+                  Peak {peakHour}:00 · {peakCount} events
+                </p>
+              )}
+
+              {baselineStats && (
+                <p className="text-xs mt-2 opacity-90">
+                  {baselineStats.todayCount} events ·{" "}
+                  {baselineStats.delta > 0
+                    ? `+${baselineStats.delta}% vs norm`
+                    : `${baselineStats.delta}% vs norm`}
+                </p>
+              )}
             </div>
 
-            <p className="text-xs text-muted-foreground">
-              Tap map markers to inspect overlapping fixtures.
-            </p>
+            {/* DATE + BUTTON */}
+            <div className="mt-3 flex justify-between items-center">
+              <DatePresetBar
+                activeDate={activeDate}
+                onChange={onDateChange}
+                maxDays={60}
+              />
 
-          </div>
+              <button
+                onClick={() => setListOpen(true)}
+                className="text-sm font-medium text-primary"
+              >
+                List view
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* LIST HEADER */}
+            <div className="flex justify-between items-center mb-2">
+              <p className="text-sm font-medium">
+                {scopeLabel} · {dateLabel}
+              </p>
+              <button
+                onClick={() => setListOpen(false)}
+                className="text-xs text-muted-foreground"
+              >
+                Close
+              </button>
+            </div>
+
+            {/* LIST */}
+            <div className="flex-1 overflow-y-auto border-t pt-2 space-y-2">
+              {sortedEvents.length === 0 && (
+                <p className="text-sm text-muted-foreground">
+                  No events scheduled.
+                </p>
+              )}
+
+              {sortedEvents.map((e) => {
+                const start = getStartDate(e);
+                const time = start
+                  ? start.toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })
+                  : "";
+
+                const state = getEventTimeState(e);
+                const isEnded = state === "ENDED";
+                const isLive = state === "LIVE";
+
+                return (
+                  <div
+                    key={e.id}
+                    className={[
+                      "p-3 rounded-lg border transition text-sm",
+                      isLive ? "border-red-400 bg-red-50/40" : "border-transparent",
+                      isEnded ? "opacity-60 text-muted-foreground" : "",
+                    ].join(" ")}
+                  >
+                    <div className="font-medium truncate">
+                      {e.homeTeam && e.awayTeam
+                        ? `${e.homeTeam} vs ${e.awayTeam}`
+                        : e.title}
+                    </div>
+
+                    <div className="text-xs text-muted-foreground flex justify-between mt-1">
+                      <span>{time}</span>
+                      <span className="capitalize">{e.sport}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
         )}
+
       </div>
     </div>
   );

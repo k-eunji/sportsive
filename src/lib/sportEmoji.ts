@@ -6,6 +6,7 @@ export const sportEmoji: Record<string, string> = {
   cricket: "🏏",
   golf: "⛳️",
   f1: "🏎️",
-  horseracing: "🐎",
+  "horse-racing":  "🐎",
   darts: "🎯",
+  basketball: "🏀", 
 };

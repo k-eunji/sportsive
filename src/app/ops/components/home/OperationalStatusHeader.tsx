@@ -12,7 +12,6 @@ type Props = {
   dateLabel: string;
   operationalSignal: string | null;
   attentionLevel: AttentionLevel | null;
-  attentionHint: string | null;
 };
 
 /* =========================
@@ -54,7 +53,6 @@ export default function OperationalStatusHeader({
   dateLabel,
   operationalSignal,
   attentionLevel,
-  attentionHint,
 }: Props) {
   const [open, setOpen] = useState(false);
 
@@ -142,12 +140,18 @@ export default function OperationalStatusHeader({
               <p className="text-xs text-muted-foreground tracking-wide">
                 Operational focus window
               </p>
-
+              
               <p className="text-base font-semibold">
                 {windowLabel}
                 <span className="mx-2 text-muted-foreground">·</span>
                 {peak.count} concurrent events
               </p>
+
+              {peak.count >= 5 && (
+                <p className="text-xs text-center text-red-600 mt-2">
+                  Concurrent scheduling density above normal range
+                </p>
+              )}
 
               <p className="text-[11px] text-muted-foreground">
                 {scopeLabel}
@@ -159,24 +163,6 @@ export default function OperationalStatusHeader({
               <p className="mb-3 text-xs text-muted-foreground text-center">
                 {operationalSignal}
               </p>
-            )}
-
-            {/* Attention hint */}
-            {attentionHint && (
-              <div className="flex items-center justify-center gap-2 text-xs">
-                <span
-                  className={[
-                    "px-2 py-0.5 rounded-full font-medium",
-                    style.badge,
-                  ].join(" ")}
-                >
-                  {style.label}
-                </span>
-
-                <span className="text-muted-foreground">
-                  {attentionHint}
-                </span>
-              </div>
             )}
           </div>
         </>

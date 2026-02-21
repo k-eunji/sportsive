@@ -10,7 +10,6 @@ import HomeMapStage from "@/app/ops/components/home/HomeMapStage";
 import HomeMapSnapCard from "@/app/ops/components/map-hero/HomeMapSnapCard";
 import DatePresetBar from "@/app/ops/components/home/DatePresetBar";
 
-import { useUserLocation } from "@/app/ops/components/home/useUserLocation";
 import { track } from "@/lib/track";
 
 import type { HomeEventMapRef } from "@/app/ops/components/map-hero/HomeEventMap";
@@ -24,13 +23,8 @@ import { detectEntryReason } from "@/lib/entryReason";
 import { getPeakBucket } from "@/lib/infra/peak";
 import type { PeakScope } from "@/types/infra";
 
-import OperationalStatusMobile from "@/app/ops/components/home/OperationalStatusMobile";
-import { buildTimeBuckets } from "@/lib/impact/buildTimeBuckets";
-
-import { useAnchorLocation } from "@/app/ops/anchor/useAnchorLocation";
-import { detectAnchorArea } from "@/app/ops/anchor/detectAnchorCandidates";
-import AnchorSetupSheet from "@/app/ops/anchor/AnchorSetupSheet";
 import type { AttentionLevel } from "@/lib/infra/attentionLevel";
+import { sportEmoji } from "@/lib/sportEmoji";
 
 import OperationalOverviewPanel, {
   type OperationalPanelProps,
@@ -39,8 +33,8 @@ import OperationalOverviewPanel, {
 import OperationalStatusHeader from
   "@/app/ops/components/home/OperationalStatusHeader";
 
-import { buildRangeImpact } from "@/lib/impact/buildRangeImpact";
 import MobileOpsView from "@/app/ops/components/mobile/MobileOpsView";
+import { getEventTimeState } from "@/lib/eventTime";
 
 /* =====================
    Types
@@ -58,19 +52,54 @@ type ActiveArea =
   level: AttentionLevel;
 };
 
-type ViewMode = "event_operator" | "league" | "club";
-
 /* =====================
    Date helpers
 ===================== */
-
-type TimeViewMode = "events" | "impact";
 
 function getStartDate(e: any): Date | null {
   const raw = e.date ?? e.utcDate ?? e.startDate ?? null;
   if (!raw) return null;
   const d = new Date(raw);
   return isNaN(d.getTime()) ? null : d;
+}
+
+function getTimelineTitle(e: any) {
+  const sport = (e.sport ?? "").toLowerCase();
+
+  // 🏇 Horse racing → 코스명
+  if (sport.includes("horse")) {
+    return e.venue ?? e.title ?? "Race meeting";
+  }
+
+  // 🎾 Tennis / 🎯 Darts → title
+  if (sport === "tennis" || sport === "darts") {
+    return e.title ?? "Event";
+  }
+
+  // 🏀⚽ 기타 → 홈 vs 원정
+  if (e.homeTeam && e.awayTeam) {
+    return `${e.homeTeam} vs ${e.awayTeam}`;
+  }
+
+  return e.title ?? "Event";
+}
+
+function getTimelineTimeLabel(e: any) {
+  const sport = (e.sport ?? "").toLowerCase();
+
+  // 🏇 Horse racing → sessionTime 표시
+  if (sport.includes("horse")) {
+    return e.sessionTime ?? e.payload?.sessionTime ?? "";
+  }
+
+  // 일반 스포츠 → 시각 표시
+  const start = getStartDate(e);
+  if (!start) return "";
+
+  return start.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function startOfLocalDay(d: Date) {
@@ -89,51 +118,8 @@ function isInBounds(
   );
 }
 
-function toLocalDateKey(d: Date) {
-  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
-}
-
-function formatActiveAreaLabel(area: ActiveArea) {
-  if (area.type === "all") return "Portfolio-wide";
-  if (area.type === "region") return `Regional footprint`;
-  if (area.type === "city") return `Local footprint`;
-  return "";
-}
-
-function formatRegionLabel(r: string) {
-  if (r === "ENGLAND") return "England";
-  if (r === "SCOTLAND") return "Scotland";
-  if (r === "WALES") return "Wales";
-  return r;
-}
-
-function getMovementWindow(
-  buckets: { minute: number; value: number }[],
-  peakMinute: number,
-  ratio = 0.7
-) {
-  const idx = buckets.findIndex(b => b.minute === peakMinute);
-  if (idx === -1) return null;
-
-  const peakValue = buckets[idx].value;
-  const threshold = peakValue * ratio;
-
-  let start = peakMinute;
-  let end = peakMinute;
-
-  // backward
-  for (let i = idx - 1; i >= 0; i--) {
-    if (buckets[i].value >= threshold) start = buckets[i].minute;
-    else break;
-  }
-
-  // forward
-  for (let i = idx + 1; i < buckets.length; i++) {
-    if (buckets[i].value >= threshold) end = buckets[i].minute;
-    else break;
-  }
-
-  return { start, end };
+function toUTCDateKey(d: Date) {
+  return `${d.getUTCFullYear()}-${d.getUTCMonth() + 1}-${d.getUTCDate()}`;
 }
 
 /* =====================
@@ -142,9 +128,7 @@ function getMovementWindow(
 
 export default function HomePage() {
   const mapRef = useRef<HomeEventMapRef | null>(null);
-  const didPanToUserRef = useRef(false); 
   const [areaIndex, setAreaIndex] = useState<AreaIndex[]>([]);
-  const [currentEvents, setCurrentEvents] = useState<Event[]>([]);
   const [snapEvent, setSnapEvent] = useState<Event | null>(null);
 
   const [activeArea, setActiveArea] = useState<ActiveArea>({
@@ -156,35 +140,19 @@ export default function HomePage() {
     startOfLocalDay(new Date())
   );
 
-  const [viewMode, setViewMode] =
-    useState<ViewMode>("event_operator");
-
   const [mobileExpanded, setMobileExpanded] = useState(false);
   const [appliedBounds, setAppliedBounds] =
     useState<google.maps.LatLngBoundsLiteral | null>(null);
 
   const [sharedEventId, setSharedEventId] = useState<string | null>(null);
   const [sharedSource, setSharedSource] = useState<string | null>(null);
-  const [activeRange, setActiveRange] = useState<{
-    start: number;
-    end: number;
-  } | null>(null);
 
-  const [timeOpen, setTimeOpen] = useState(false);
+  const [hoveredEventId, setHoveredEventId] = useState<string | null>(null);
+  const [activeHour, setActiveHour] = useState<number | null>(null);
+  const [mapEventsSource, setMapEventsSource] = useState<Event[]>([]);
+  const [historicalEvents, setHistoricalEvents] = useState<Event[]>([]);
 
-  const { hasAnchor, setAnchor } = useAnchorLocation();
-  const [anchorOpen, setAnchorOpen] = useState(false);
-
-  const isEventView = viewMode === "event_operator";
-  const isLeagueView = viewMode === "league";
-  const isClubView  = viewMode === "club";
-  
   const isLocalFootprint = activeArea.type === "city";
-
-  const { pos } = useUserLocation({
-    enabled: !hasAnchor && !isLocalFootprint,
-  });
-  const didDismissAnchorRef = useRef(false);
 
   /* =====================
      Initial load
@@ -198,20 +166,15 @@ export default function HomePage() {
       const areaData = await areaRes.json();
       setAreaIndex(areaData.areas ?? []);
 
-      const curRes = await fetch("/api/events?window=60d");
-      const curData = await curRes.json();
-      setCurrentEvents(curData.events ?? []);
+      const mapRes = await fetch("/api/events?window=180d");
+      const mapData = await mapRes.json();
+      setMapEventsSource(mapData.events ?? []);
+
+      const histRes = await fetch("/api/events?window=180d");
+      const histData = await histRes.json();
+      setHistoricalEvents(histData.events ?? []);
     })();
   }, []);
-
-  useEffect(() => {
-    if (!currentEvents.length) return;
-
-    const first = getStartDate(currentEvents[0]);
-    if (!first) return;
-
-    setActiveDate(startOfLocalDay(first));
-  }, [currentEvents]);
 
   /* =====================
      Share entry
@@ -224,9 +187,9 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    if (!sharedEventId || !currentEvents.length || !mapRef.current) return;
+    if (!sharedEventId || !mapEventsSource.length || !mapRef.current) return;
 
-    const ev = currentEvents.find(
+    const ev = mapEventsSource.find(
       (e) => String(e.id) === sharedEventId
     );
     if (!ev) return;
@@ -238,23 +201,164 @@ export default function HomePage() {
       eventId: sharedEventId,
       source: sharedSource ?? "unknown",
     });
-  }, [sharedEventId, currentEvents, sharedSource]);
-
-  useEffect(() => {
-    setActiveRange(null);
-  }, [activeDate, activeArea]);
+  }, [sharedEventId, mapEventsSource, sharedSource]);
 
   /* =====================
      Filtering (ACTIVE DATE 기준)
   ===================== */
 
   const analysisEvents = useMemo(() => {
-    const activeKey = toLocalDateKey(activeDate);
+    const activeKey = toUTCDateKey(activeDate);
 
-    return currentEvents.filter((e: any) => {
+    return mapEventsSource.filter((e: any) => {
       const start = getStartDate(e);
       if (!start) return false;
-      if (toLocalDateKey(start) !== activeKey) return false;
+
+      if (toUTCDateKey(start) !== activeKey) return false;
+
+      if (!e.location) return false;
+
+      if (appliedBounds && !isInBounds(e.location, appliedBounds))
+        return false;
+
+      return true;
+    });
+  }, [mapEventsSource, activeDate, appliedBounds, activeHour]);
+
+  /* =====================
+    Baseline (30-day median)
+  ===================== */
+
+  const scopedHistoricalEvents = useMemo(() => {
+    if (!appliedBounds) return historicalEvents;
+
+    return historicalEvents.filter((e: any) => {
+      if (!e.location) return false;
+      return isInBounds(e.location, appliedBounds);
+    });
+  }, [historicalEvents, appliedBounds]);
+
+
+  const historicalDailyCounts = useMemo(() => {
+    const map = new Map<string, number>();
+
+    for (const e of scopedHistoricalEvents) {
+      const start = getStartDate(e);
+      if (!start) continue;
+
+      const key = toUTCDateKey(start);
+      map.set(key, (map.get(key) ?? 0) + 1);
+    }
+
+    return Array.from(map.entries())
+      .map(([date, count]) => ({
+        date,
+        count,
+      }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+  }, [scopedHistoricalEvents]);
+
+  const baselineStats = useMemo(() => {
+    if (!historicalDailyCounts.length) return null;
+
+    const todayKey = toUTCDateKey(activeDate);
+    const todayCount =
+      historicalDailyCounts.find(d => d.date === todayKey)?.count ?? 0;
+
+    const past30 = historicalDailyCounts
+      .filter(d => d.date !== todayKey)
+      .slice(-30)
+      .map(d => d.count);
+
+    if (!past30.length) return null;
+
+    const sorted = [...past30].sort((a, b) => a - b);
+    const median = sorted[Math.floor(sorted.length / 2)];
+
+    const delta = median > 0
+      ? Math.round(((todayCount - median) / median) * 100)
+      : 0;
+
+    let label: "normal" | "elevated" | "unusual" = "normal";
+
+    if (delta >= 30) label = "unusual";
+    else if (delta >= 15) label = "elevated";
+
+    const absoluteDiff = todayCount - median;
+
+    return {
+      todayCount,
+      median,
+      delta,
+      absoluteDiff,
+      label,
+    };
+  }, [historicalDailyCounts, activeDate]);
+
+  /* =====================
+    7-Day Trend
+  ===================== */
+
+  const sevenDayTrend = useMemo(() => {
+    const result: { date: string; count: number }[] = [];
+
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(activeDate);
+      d.setDate(d.getDate() - i);
+
+      const key = toUTCDateKey(d);
+
+      const count =
+        historicalDailyCounts.find(h => h.date === key)?.count ?? 0;
+
+      result.push({ date: key, count });
+    }
+
+    return result;
+  }, [activeDate, historicalDailyCounts]);
+
+  const sportBreakdown = useMemo(() => {
+    const map = new Map<string, number>();
+
+    for (const e of analysisEvents) {
+      const key = (e.sport ?? "other").toLowerCase();
+      map.set(key, (map.get(key) ?? 0) + 1);
+    }
+
+    return Array.from(map.entries())
+      .map(([sport, count]) => ({
+        sport,
+        count,
+        emoji: sportEmoji[sport] ?? "🏟️",   // ✅ 여기 수정
+      }))
+      .sort((a, b) => b.count - a.count);
+  }, [analysisEvents]);
+
+  const regionBreakdown = useMemo(() => {
+    const map = new Map<string, number>();
+
+    for (const e of analysisEvents) {
+      const key = e.city ?? e.region ?? "Other";
+      map.set(key, (map.get(key) ?? 0) + 1);
+    }
+
+    return Array.from(map.entries())
+      .map(([label, count]) => ({ label, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [analysisEvents]);
+
+  const mapEvents = useMemo(() => {
+    const activeKey = toUTCDateKey(activeDate);
+
+    return mapEventsSource.filter((e: any) => {
+      const start = getStartDate(e);
+      if (!start) return false;
+
+      if (toUTCDateKey(start) !== activeKey) return false;
+
+      if (activeHour !== null) {
+        if (start.getHours() !== activeHour) return false;
+      }
 
       if (appliedBounds && e.location) {
         if (!isInBounds(e.location, appliedBounds)) return false;
@@ -262,26 +366,49 @@ export default function HomePage() {
 
       return true;
     });
-  }, [currentEvents, activeDate, appliedBounds]);
+  }, [mapEventsSource, activeDate, appliedBounds, activeHour]);
+    
+  const visibleEvents = useMemo(() => {
+    if (!appliedBounds) return mapEvents;
 
-  const mapEvents = useMemo(() => {
-    const activeKey = toLocalDateKey(activeDate);
+    return mapEvents.filter((e: any) => {
+      if (!e.location) return false;
 
-    return currentEvents.filter((e: any) => {
-      const start = getStartDate(e);
-      if (!start) return false;
-
-      if (toLocalDateKey(start) !== activeKey) return false;
-
-      if (!timeOpen && appliedBounds && e.location) {
-        if (!isInBounds(e.location, appliedBounds)) return false;
-      }
-
-      return true;
+      return isInBounds(e.location, appliedBounds);
     });
-  }, [currentEvents, activeDate, appliedBounds, timeOpen]);
+  }, [mapEvents, appliedBounds]);
 
+  const timelineEvents = useMemo(() => {
+    const priority = (state: string) => {
+      switch (state) {
+        case "LIVE":
+          return 0;
+        case "SOON":
+          return 1;
+        case "UPCOMING":
+          return 2;
+        case "ENDED":
+          return 3;
+        default:
+          return 4;
+      }
+    };
 
+    return [...visibleEvents].sort((a, b) => {
+      const stateA = getEventTimeState(a);
+      const stateB = getEventTimeState(b);
+
+      const pDiff = priority(stateA) - priority(stateB);
+      if (pDiff !== 0) return pDiff;
+
+      const da = getStartDate(a);
+      const db = getStartDate(b);
+      if (!da || !db) return 0;
+
+      return da.getTime() - db.getTime();
+    });
+  }, [visibleEvents]);
+  
   const timeBuckets = useMemo(() => {
     // ✅ 네가 원한 정확한 범위
     const START_HOUR = 9;
@@ -321,85 +448,53 @@ export default function HomePage() {
   }, [timeBuckets]);
 
   const peakScope: PeakScope = useMemo(() => {
-    if (activeArea.type === "city") {
-      return { type: "city", name: activeArea.name };
-    }
-    if (activeArea.type === "region") {
-      return { type: "region", name: activeArea.name };
+    if (appliedBounds) {
+      return { type: "region", name: "Map view" };
     }
     return { type: "all" };
-  }, [activeArea]);
+  }, [appliedBounds]);
+  
+  const factors = useMemo(() => {
+    const map = new Map<string, number>();
 
-  const factors = useMemo<FactorItem[]>(
-    (): FactorItem[] => {
-      const map = new Map<string, number>();
+    for (const e of analysisEvents) {
+      const key =
+        e.competition ??
+        e.sport ??
+        e.city ??
+        "Other";
 
-      for (const e of analysisEvents) {
-        let key: string;
+      map.set(key, (map.get(key) ?? 0) + 1);
+    }
 
-        if (viewMode === "club") {
-          if (
-            activeArea.type === "city" &&
-            e.city === activeArea.name
-          ) {
-            key = "Your area"; // ✅ 내 지역은 따로 묶기
-          } else {
-            key = e.city ?? "Nearby events";
-          }
-          key = e.city ?? "Nearby events";
-        } else if (viewMode === "league") {
-          key = e.competition ?? "Other competitions";
-        } else {
-          key = e.competition ?? e.sport ?? "Other";
-        }
-
-        map.set(key, (map.get(key) ?? 0) + 1);
-      }
-
-      return Array.from(map.entries())
-        .map(([label, count]) => ({
-          label,
-          count,
-          level:
-            (count >= 5
-              ? "high"
-              : count >= 2
-              ? "medium"
-              : "low") as AttentionLevel,
-        }))
-        .sort((a, b) => b.count - a.count);
-    },
-    [analysisEvents, viewMode] // 🔥 이것도 반드시 추가
-  );
+    return Array.from(map.entries())
+      .map(([label, count]) => ({
+        label,
+        count,
+        level:
+          (count >= 5
+            ? "high"
+            : count >= 2
+            ? "medium"
+            : "low") as AttentionLevel,   // 🔥 여기 추가
+      }))
+      .sort((a, b) => b.count - a.count);
+  }, [analysisEvents]);
 
   const attentionLevel: AttentionLevel | null =
     peakBucket
-      ? peakBucket.count >= 4
+      ? peakBucket.count >= 5
         ? "high"
-        : peakBucket.count >= 2
+        : peakBucket.count >= 3
         ? "medium"
         : "low"
       : null;
 
   const operationalSignal = useMemo(() => {
-    if (!peakBucket || attentionLevel === "low") return null;
+    if (!peakBucket) return null;
 
-    if (isLeagueView) {
-      return `Concurrent fixtures detected around ${peakBucket.hour}:00`;
-    }
-    if (isClubView) {
-      return `Nearby events overlap around ${peakBucket.hour}:00`;
-    }
-    return `Highest overlap detected around ${peakBucket.hour}:00`;
-  }, [peakBucket, attentionLevel, isLeagueView, isClubView]);
-
-  const attentionHint =
-    attentionLevel === "high"
-      ? "Consider crowd flow and staffing readiness"
-      : attentionLevel === "medium"
-      ? "Monitor overlapping start times"
-      : null;
-    
+    return `Peak activity at ${peakBucket.hour}:00 · ${peakBucket.count} events`;
+  }, [peakBucket]);
 
   const peakDateLabel = useMemo(() => {
     const today = startOfLocalDay(new Date());
@@ -411,107 +506,26 @@ export default function HomePage() {
     });
   }, [activeDate]);
 
-  const impactBuckets = useMemo(() => {
-    return buildTimeBuckets(analysisEvents);
-  }, [analysisEvents]);
-
-  const movementSummary = useMemo(() => {
-    const summary = buildRangeImpact(impactBuckets, {
-      start: 9,
-      end: 22,
-    });
-
-    if (!summary.peakMinute) {
-      return {
-        peakMinute: null,
-        peakValue: 0,
-        window: null,
-      };
-    }
-
-    return {
-      peakMinute: summary.peakMinute,
-      peakValue: summary.peakValue,
-      window: getMovementWindow(
-        impactBuckets,
-        summary.peakMinute
-      ),
-    };
-  }, [impactBuckets]);
-
-  const anchorAreaLabel = useMemo(() => {
-    return detectAnchorArea(pos, areaIndex);
-  }, [pos, areaIndex]);
-
-  // 🔥 위치 공유 → 자동 지역 스코프 설정
   useEffect(() => {
-    // 1️⃣ 위치 없으면 아무 것도 안 함
-    if (!pos) return;
-
-    // 2️⃣ 이미 사용자가 지역을 골랐으면 자동 개입 ❌
-    if (activeArea.type !== "all") return;
-
-    // 3️⃣ area index 아직 없으면 대기
-    if (!areaIndex.length) return;
-
-    const label = detectAnchorArea(pos, areaIndex);
-    if (!label) return;
-
-    /**
-     * detectAnchorArea 반환값 예:
-     *  - "Manchester area detected"
-     *  - "London area detected"
-     */
-    const cityName = label
-      .replace(" area detected", "")
-      .replace(" region detected", "");
-
-    setActiveArea({
-      type: "city",
-      name: cityName,
-    });
-  }, [pos, areaIndex, activeArea.type]);
-
-  useEffect(() => {
-    console.log("currentEvents", currentEvents.length);
+    console.log("mapEventsSource", mapEventsSource.length);
+    console.log("historicalEvents", historicalEvents.length);
     console.log("analysisEvents", analysisEvents.length);
     console.log("timeBuckets", timeBuckets);
-  }, [currentEvents, analysisEvents, timeBuckets]);
-
-  const didAskAnchorRef = useRef(false);
-
-  useEffect(() => {
-    if (didAskAnchorRef.current) return;
-  }, [hasAnchor]);
+  }, [mapEventsSource, historicalEvents, analysisEvents, timeBuckets]);
 
   const scopeLabel = useMemo(() => {
-    const area =
-      activeArea.type === "all"
-        ? "Portfolio-wide"
-        : activeArea.type === "region"
-        ? `${activeArea.name} footprint`
-        : activeArea.type === "city"
-        ? `${activeArea.name} area`
-        : "";
-
-    return area;
-  }, [activeArea, activeDate]);
-
-  const didUserPickCountry = useRef(false);
+    if (appliedBounds) return "Map view";
+    return "UK & Ireland";
+  }, [appliedBounds]);
 
   const lastMapViewRef = useRef<{
     center: { lat: number; lng: number };
     zoom: number;
   } | null>(null);
 
-  useEffect(() => {
-    if (!pos) return;
-    if (hasAnchor) return;
-    if (didPanToUserRef.current) return; // 🔥 핵심
-
-    mapRef.current?.panTo(pos);
-    didPanToUserRef.current = true;      // 딱 한 번만
-  }, [pos, hasAnchor]);
+  const filterStateLabel = useMemo(() => {
+    return `${scopeLabel} · ${peakDateLabel}`;
+  }, [scopeLabel, peakDateLabel]);
 
   /* =====================
      Analytics
@@ -539,57 +553,48 @@ export default function HomePage() {
   const panelProps = useMemo<OperationalPanelProps>(
     () => ({
       scopeLabel,
+      filterStateLabel,
       scopeType: peakScope.type,
       dateLabel: peakDateLabel,
+      sports: sportBreakdown,
+      regions: regionBreakdown,
 
       activeDate,
-      onDateChange: setActiveDate,
-      hasAnchor,
-      onOpenAnchor: () => setAnchorOpen(true),
-
-      criticalWindow: peakBucket
-        ? {
-            from: `${peakBucket.hour}:00`,
-            to: `${peakBucket.hour + 1}:00`,
-          }
-        : null,
-
-      riskSummary: {
-        low: Math.max(0, analysisEvents.length - (peakBucket?.count ?? 0)),
-        medium: peakBucket ? Math.floor(peakBucket.count / 2) : 0,
-        high: peakBucket?.count ?? 0,
-      },
+      activeHour,
+      onHourSelect: (hour) =>
+        setActiveHour(prev => prev === hour ? null : hour),
 
       hourlyImpact: timeBuckets.map((b) => ({
         hour: b.hour,
         value: b.count,
         level:
-          b.count >= 4
+          b.count >= 5
             ? "high"
-            : b.count >= 2
+            : b.count >= 3
             ? "medium"
             : "low",
       })),
 
       factors,
-      movementSummary,
-      viewMode,
-      showMovement: isEventView,
-    }),
 
+      // 🔥 여기 이렇게만 쓰면 됨
+      baselineStats,
+      sevenDayTrend,
+    }),
     [
       scopeLabel,
-      peakScope.type,        // 🔥 의존성에도 추가
-      peakBucket,
+      peakScope.type,
+      filterStateLabel,
+      activeHour,
       peakDateLabel,
-      analysisEvents.length,
       timeBuckets,
       factors,
-      movementSummary,
-      isEventView,
-      viewMode,
+      regionBreakdown,
+      baselineStats,
+      sportBreakdown,
+      sevenDayTrend,
     ]
-  );
+  );  
 
   /* =====================
      Render
@@ -604,7 +609,6 @@ export default function HomePage() {
         dateLabel={peakDateLabel}
         operationalSignal={operationalSignal}
         attentionLevel={attentionLevel}
-        attentionHint={attentionHint}
       />
 
       {/* MOBILE MESSAGE */}
@@ -618,41 +622,6 @@ export default function HomePage() {
       >
         ← Fan view
       </Link>
-
-      {/* VIEW MODE TOGGLE */}
-      <div className="hidden md:flex px-4 py-2 bg-background/80 backdrop-blur shadow-sm justify-end">
-        <div className="flex items-center gap-2 text-xs">
-          <span className="text-muted-foreground">
-            Viewing as
-          </span>  
-
-          <select
-            value={viewMode}
-            onChange={(e) =>
-              setViewMode(e.target.value as ViewMode)
-            }
-            className="
-              rounded-md
-              border
-              bg-background
-              px-2
-              py-1
-              text-xs
-              font-medium
-            "
-          >
-            <option value="event_operator">
-              Event
-            </option>
-            <option value="league">
-              League
-            </option>
-            <option value="club">
-              Club
-            </option>
-          </select>
-        </div>
-      </div>
 
       <div className="
         flex
@@ -668,13 +637,13 @@ export default function HomePage() {
 
         {/* MAP AREA */}
         <div
-          className={`
+          className="
             relative
             flex-1
             min-h-0
-            ${mobileExpanded ? "pb-[500px]" : "pb-[160px]"}
+            pb-[180px]
             md:pb-0
-          `}
+          "
         >
 
           {/* gradient edge */}
@@ -692,7 +661,9 @@ export default function HomePage() {
             <HomeMapStage
               ref={mapRef}
               events={mapEvents}
+              highlightedId={hoveredEventId} 
               onDiscoverFromMap={(id) => {
+                setHoveredEventId(id); 
                 lastMapViewRef.current =
                   mapRef.current?.getViewState() ?? null;
 
@@ -719,6 +690,86 @@ export default function HomePage() {
             />
           )}
 
+          {/* =====================
+              TIMELINE LIST (DESKTOP)
+          ===================== */}
+          <div className="hidden md:block absolute bottom-0 left-0 right-0 bg-background border-t max-h-[260px] overflow-y-auto z-20">
+            <div className="px-6 py-4 space-y-2">
+
+              {timelineEvents.length === 0 && (
+                <p className="text-sm text-muted-foreground">
+                  No events in current map view.
+                </p>
+              )}
+
+              {timelineEvents.map((e: any) => {
+                const start = getStartDate(e);
+                const hour = start?.getHours();
+                const timeState = getEventTimeState(e);
+                const isEnded = timeState === "ENDED";
+                const isLive = timeState === "LIVE";
+
+                const isPeak =
+                  peakBucket && hour === peakBucket.hour;
+
+                const isHovered =
+                  hoveredEventId === String(e.id);
+
+                return (
+                  <div
+                    key={e.id}
+                    onMouseEnter={() =>
+                      setHoveredEventId(String(e.id))
+                    }
+                    onMouseLeave={() =>
+                      setHoveredEventId(null)
+                    }
+                    onClick={() => {
+                      const id = String(e.id);
+
+                      // 🔁 같은 카드를 다시 누르면 → 이전 화면 복구
+                      if (hoveredEventId === id && lastMapViewRef.current) {
+                        mapRef.current?.restoreViewState(lastMapViewRef.current);
+                        setHoveredEventId(null);
+                        lastMapViewRef.current = null;
+                        return;
+                      }
+
+                      // 🔍 처음 누르는 경우 → 현재 뷰 저장 후 확대
+                      lastMapViewRef.current =
+                        mapRef.current?.getViewState() ?? null;
+
+                      setHoveredEventId(id);
+                      mapRef.current?.focus(id);
+                    }}
+                    className={[
+                      "p-3 rounded-lg cursor-pointer border transition",
+                      isHovered ? "bg-muted" : "",
+                      isPeak ? "border-red-400" : "border-transparent",
+                      isLive ? "border-red-400 bg-red-50/40" : "",
+                      isEnded ? "opacity-60" : "",
+                    ].join(" ")}
+                  >
+                    <p
+                      className={[
+                        "text-sm font-medium",
+                        isEnded ? "text-muted-foreground" : "",
+                      ].join(" ")}
+                    >
+                      {getTimelineTitle(e)}
+                    </p>
+
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>{getTimelineTimeLabel(e)}</span>
+                      <span>
+                        {sportEmoji[e.sport?.toLowerCase()] ?? "🏟️"} {e.sport}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -742,16 +793,6 @@ export default function HomePage() {
             maxDays={60}
           />
 
-          <button
-            onClick={() => setAnchorOpen(true)}
-            className="px-3 py-1.5 text-xs font-semibold rounded-full bg-muted/40 hover:bg-muted"
-          >
-            {hasAnchor
-              ? "Reference set"
-              : "Set reference location"}
-
-          </button>
-
         </div>
       </div>
 
@@ -763,40 +804,12 @@ export default function HomePage() {
           scopeLabel={scopeLabel}
           dateLabel={peakDateLabel}
           attentionLevel={attentionLevel}
-          hourlyImpact={timeBuckets.map(b => ({
-            hour: b.hour,
-            value: b.count,
-          }))}
+          baselineStats={baselineStats}
+          events={timelineEvents}
           activeDate={activeDate}
           onDateChange={setActiveDate}
-          hasAnchor={hasAnchor}
-          onOpenAnchor={() => setAnchorOpen(true)}
-          onExpandChange={setMobileExpanded}
         />
       </div>
-
-      {anchorOpen && (
-        <AnchorSetupSheet
-          areaLabel={anchorAreaLabel}
-          onSubmit={(label, point) => {
-            setAnchor({
-              id: "custom",
-              label,
-              type: "custom",
-              lat: point.lat,
-              lng: point.lng,
-              source: "user",
-            });
-
-            mapRef.current?.panTo(point);
-            setAnchorOpen(false);
-          }}
-          onClose={() => {
-            didDismissAnchorRef.current = true; // ✅ 핵심
-            setAnchorOpen(false);
-          }}
-        />
-      )}
 
     </main>
   );

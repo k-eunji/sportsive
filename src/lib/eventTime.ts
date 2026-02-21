@@ -139,7 +139,13 @@ function deriveHorseRacingSessionWindow(e: any): {
     e.sessionTime?.toLowerCase?.() ??
     "";
 
-  const baseRaw = e.date ?? e.startDate;
+  let baseRaw = e.date ?? e.startDate;
+  if (!baseRaw) return null;
+
+  if (typeof baseRaw === "string" && baseRaw.includes(" ") && !baseRaw.includes("T")) {
+    baseRaw = baseRaw.replace(" ", "T");
+  }
+
   const base = new Date(baseRaw);
   if (isNaN(base.getTime())) return null;
 
@@ -226,7 +232,14 @@ export function getEventTimeState(
   }
 
   // ⚽ default fixed match
-  const raw = e.date ?? e.utcDate ?? e.startDate;
+  let raw = e.startAtUtc ?? e.date ?? e.utcDate ?? e.startDate;
+  if (!raw) return "ENDED";
+
+  // 🔥 "YYYY-MM-DD HH:mm:ss" → ISO 변환
+  if (typeof raw === "string" && raw.includes(" ") && !raw.includes("T")) {
+    raw = raw.replace(" ", "T");
+  }
+
   const start = new Date(raw);
   if (isNaN(start.getTime())) return "ENDED";
 

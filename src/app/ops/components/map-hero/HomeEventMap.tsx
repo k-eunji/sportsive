@@ -10,6 +10,7 @@ import {
 import type { Event } from "@/types";
 import { useGoogleMaps } from "@/components/GoogleMapsProvider";
 import { getMapVisibility } from "@/lib/eventVisibility";
+import { getEventTimeState } from "@/lib/eventTime";
 
 /* =====================
    Constants
@@ -121,6 +122,7 @@ const HomeEventMap = forwardRef<
   HomeEventMapRef,
   {
     events: MapEvent[];
+    highlightedId?: string | null;
     onDiscover: (eventId: string) => void;
     onBoundsChanged?: (
       bounds: google.maps.LatLngBoundsLiteral
@@ -131,6 +133,7 @@ const HomeEventMap = forwardRef<
   {
     events,
     onDiscover,
+    highlightedId,  
     onBoundsChanged,
     mapStyleOverride,
   },
@@ -292,29 +295,45 @@ const HomeEventMap = forwardRef<
     const zoom = mapRef.current.getZoom() ?? 12;
 
     for (const e of events) {
+      const isHighlighted =
+        highlightedId &&
+        String(e.id) === highlightedId;
+
       if (!e.location) continue;
 
       const visibility = getMapVisibility(e);
-
-      // ❌ 지도에 안 보여야 하면 생성 안 함
       if (visibility === "HIDDEN") continue;
+
+      const timeState = getEventTimeState(e);
+
+      // 🔹 이미 시작했거나 끝난 이벤트
+      const isPastOrLive =
+        timeState === "LIVE" ||
+        timeState === "ENDED";
+
+      const baseIcon = getMarkerIcon(e, zoom);
 
       const marker = new google.maps.Marker({
         position: e.location,
         map: mapRef.current,
-        icon: getMarkerIcon(e, zoom),
+        icon: isHighlighted
+          ? {
+              ...baseIcon,
+              scale: markerScaleForZoom(zoom) + 2,
+              fillColor: "#ef4444",
+            }
+          : isPastOrLive
+          ? {
+              ...baseIcon,
+              fillColor: "#9ca3af", // 회색
+              strokeColor: "#e5e7eb",
+            }
+          : baseIcon,
 
-        // ⬇️ 오늘 끝난 이벤트는 회색
-        opacity:
-          visibility === "ENDED_TODAY"
-            ? 0.35
-            : e.__dimmed
-            ? 0.3
-            : 1,
+        opacity: isPastOrLive ? 0.75 : 1,
 
-        zIndex: visibility === "ACTIVE" ? 20 : 5,
+        zIndex: isHighlighted ? 50 : 10,
       });
-
       marker.addListener("click", () => {
         onDiscover((e as any).id);
         focusById((e as any).id);
@@ -322,7 +341,7 @@ const HomeEventMap = forwardRef<
 
       markersRef.current.push(marker);
     }
-  }, [events]);
+  }, [events, highlightedId]);
 
   /* =====================
      Render

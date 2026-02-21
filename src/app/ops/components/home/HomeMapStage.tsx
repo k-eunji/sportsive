@@ -7,19 +7,22 @@ import HomeEventMap, { HomeEventMapRef } from "@/app/ops/components/map-hero/Hom
 
 type Props = {
   events: Event[];
+  highlightedId?: string | null; 
   onDiscoverFromMap: (eventId: string) => void;
   onBoundsChanged?: (bounds: google.maps.LatLngBoundsLiteral) => void;
 };
 
+
 const HomeMapStage = forwardRef<HomeEventMapRef, Props>(
   function HomeMapStage(
-    { events, onDiscoverFromMap, onBoundsChanged }, // ✅ 여기!
+    { events, highlightedId, onDiscoverFromMap, onBoundsChanged },
     ref
   ) {
     return (
       <HomeEventMap
         ref={ref}
         events={events}
+        highlightedId={highlightedId}
         onDiscover={onDiscoverFromMap}
         onBoundsChanged={onBoundsChanged}
       />

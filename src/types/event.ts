@@ -9,6 +9,7 @@ export interface Event {
   date: string;
   startDate?: string; // "2026-06-29"
   endDate?: string;  
+  utcDate?: string;
   sport:
     | 'football'
     | 'rugby'

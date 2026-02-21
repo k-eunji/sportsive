@@ -10,7 +10,6 @@ import {
   haversineKm,
 } from "@/app/ops/components/home/useUserLocation";
 import { useDistanceUnit } from "@/app/ops/components/home/useDistanceUnit";
-import { formatDistance } from "@/lib/distance";
 import { getEventTimeState } from "@/lib/eventTime";
 
 /* ---------------- helpers ---------------- */
@@ -33,21 +32,17 @@ function formatStartsLabel(e: any) {
 
 function formatMatchTime(e: any) {
   if (e.kind === "session") return null;
+
   const d = getAnchorDate(e);
   if (!d) return null;
 
-  return d.toLocaleString(undefined, {
+  return d.toLocaleString("en-GB", {
     weekday: "short",
-    hour: "numeric",
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
     minute: "2-digit",
   });
-}
-
-function isHorseRacing(e: any) {
-  return (
-    typeof e.sport === "string" &&
-    e.sport.replace(/\s+/g, "-").toLowerCase() === "horse-racing"
-  );
 }
 
 function formatHorseRacingLabel(e: any): string | null {
@@ -83,8 +78,15 @@ export default function HomeMapSnapCard({
   const { unit } = useDistanceUnit();
 
   const distance =
-    pos && e.location ? haversineKm(pos, e.location) : null;
+    pos && e.location
+      ? haversineKm(pos, e.location)
+      : null;
 
+  const distanceMiles =
+    typeof distance === "number"
+      ? distance * 0.621371
+      : null;
+      
   const mapsHref = useMemo(() => {
     const { lat, lng } = e.location ?? {};
     if (typeof lat !== "number" || typeof lng !== "number") return null;
@@ -140,8 +142,8 @@ export default function HomeMapSnapCard({
               )}
               {/* Meta */}
               <div className="mt-1 text-xs text-muted-foreground">
-                {typeof distance === "number" && (
-                  <span>{formatDistance(distance, unit)}</span>
+                {typeof distanceMiles === "number" && (
+                  <span>{distanceMiles.toFixed(1)} mi</span>
                 )}
                 {e.city && <span> · {e.city}</span>}
                 {e.sport && <span> · {e.sport}</span>}
