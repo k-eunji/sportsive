@@ -91,15 +91,75 @@ export default async function Page({ params }: Props) {
     );
   });
 
+  /* =========================
+    MONTH CONTEXT (Relative Position)
+  ========================= */
+
+  const monthPrefix = date.slice(0, 7); // YYYY-MM
+  const monthEvents = events.filter((e: any) => {
+    const eventMonth =
+      (e.startDate ?? e.date ?? e.utcDate)?.slice(0, 7);
+
+    return (
+      e.sport?.toLowerCase() === "football" &&
+      e.city?.toLowerCase() === "london" &&
+      eventMonth === monthPrefix
+    );
+  });
+
+  // 날짜별 집계
+  const monthGrouped: Record<string, number> = {};
+
+  monthEvents.forEach((e: any) => {
+    const d =
+      (e.startDate ?? e.date ?? e.utcDate)?.slice(0, 10);
+    if (!d) return;
+    monthGrouped[d] = (monthGrouped[d] || 0) + 1;
+  });
+
+  const monthCounts = Object.values(monthGrouped);
+
+  const monthMedian =
+    monthCounts.length > 0
+      ? [...monthCounts].sort((a, b) => a - b)[
+          Math.floor(monthCounts.length / 2)
+        ]
+      : 0;
+
+  const todayCount = footballEvents.length;
+
+  const deltaVsMonth =
+    monthMedian > 0
+      ? Math.round(((todayCount - monthMedian) / monthMedian) * 100)
+      : 0;
+
+  // 순위 계산
+  const sortedMonthDays = Object.entries(monthGrouped)
+    .sort((a, b) => b[1] - a[1]);
+
+  const rank =
+    sortedMonthDays.findIndex(([d]) => d === date) + 1;
+
+  const totalDays = sortedMonthDays.length;
+
+  function getActivityLabel(delta: number) {
+    if (delta >= 50) return "Significantly busier than a typical matchday";
+    if (delta >= 20) return "Above monthly average activity";
+    if (delta <= -30) return "Quieter than usual for this month";
+    return "In line with typical monthly activity";
+  }
+
+  const activityLabel = getActivityLabel(deltaVsMonth);
+
   const ukFootballEvents = events.filter((e: any) => {
   const eventKey =
     (e.startDate ?? e.date ?? e.utcDate)?.slice(0, 10);
 
-  return (
-    e.sport?.toLowerCase() === "football" &&
-    eventKey === date
-  );
-});
+    return (
+      e.sport?.toLowerCase() === "football" &&
+      eventKey === date
+    );
+  });
 
   const londonShare =
     ukFootballEvents.length > 0
@@ -206,6 +266,45 @@ export default async function Page({ params }: Props) {
         <h2 className="text-xl font-semibold mb-4 space-y-4">
           Daily Match Summary
         </h2>
+
+        {monthCounts.length > 0 && (
+          <section className="rounded-2xl p-6 bg-muted/40 border border-border/30">
+            <h2 className="text-sm font-semibold uppercase tracking-wide mb-3">
+              Matchday Context – This Month
+            </h2>
+
+            <p className="text-sm">
+              <strong>{todayCount}</strong> fixtures scheduled.
+            </p>
+
+            <p className="text-sm text-muted-foreground mt-1">
+              Typical London matchday this month:{" "}
+              <strong>{monthMedian}</strong> fixtures.
+            </p>
+
+            <p className="text-sm mt-2">
+              {deltaVsMonth > 0 && (
+                <>
+                  <strong>+{deltaVsMonth}%</strong> vs monthly median ·{" "}
+                </>
+              )}
+              {deltaVsMonth < 0 && (
+                <>
+                  <strong>{deltaVsMonth}%</strong> vs monthly median ·{" "}
+                </>
+              )}
+              {deltaVsMonth === 0 && <>0% vs monthly median · </>}
+              {activityLabel}
+            </p>
+
+            {rank > 0 && (
+              <p className="text-xs text-muted-foreground mt-2">
+                Ranked <strong>#{rank}</strong> of {totalDays} matchdays this month
+                by fixture volume.
+              </p>
+            )}
+          </section>
+        )}
 
         <div className="grid grid-cols-3 gap-6 text-center space-y-4">
           <div>

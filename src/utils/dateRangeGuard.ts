@@ -11,7 +11,7 @@ export function isWithinAllowedRange(dateStr: string) {
   pastLimit.setDate(today.getDate() - 90);
 
   const futureLimit = new Date(today);
-  futureLimit.setDate(today.getDate() + 14);
+  futureLimit.setDate(today.getDate() + 90); // 🔥 14 → 90
 
   return input >= pastLimit && input <= futureLimit;
 }
