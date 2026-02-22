@@ -60,7 +60,7 @@ export default function Header({
           transition
         "
       >
-        Switch to Ops →
+        Switch to Map →
       </Link>
     </header>
 

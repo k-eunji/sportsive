@@ -161,8 +161,12 @@ export default async function Page({ params }: Props) {
     .map(([league, count]) => ({
       sport: league,
       count,
+      percentage:
+        totalMatches > 0
+          ? Math.round((count / totalMatches) * 100)
+          : 0,
     }));
-
+    
   /* =========================
      CLUB DISTRIBUTION
   ========================= */
@@ -200,11 +204,29 @@ export default async function Page({ params }: Props) {
   const chartData = sortedEntries.map(([date, count]) => ({
     date: date.slice(8, 10),
     count,
+    percentage:
+      totalMatches > 0
+        ? Math.round((count / totalMatches) * 100)
+        : 0,
   }));
 
   const weekendChartData = [
-    { name: "Weekend", value: weekendMatches },
-    { name: "Weekday", value: weekdayMatches },
+    {
+      name: "Weekend",
+      value: weekendMatches,
+      percentage:
+        totalMatches > 0
+          ? Math.round((weekendMatches / totalMatches) * 100)
+          : 0,
+    },
+    {
+      name: "Weekday",
+      value: weekdayMatches,
+      percentage:
+        totalMatches > 0
+          ? Math.round((weekdayMatches / totalMatches) * 100)
+          : 0,
+    },
   ];
 
   return (
