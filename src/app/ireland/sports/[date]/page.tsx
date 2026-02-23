@@ -116,34 +116,82 @@ export default async function IrelandSportsByDatePage(
             __html: JSON.stringify(
               dateEvents
                 .filter((event: any) => event.startDate || event.date || event.utcDate)
-                .map((event: any) => ({
-                  "@context": "https://schema.org",
-                  "@type": "SportsEvent",
-                  name:
-                    event.homeTeam && event.awayTeam
-                      ? `${event.homeTeam} vs ${event.awayTeam}`
-                      : event.title ?? "Sports Event",
-                  startDate: event.startDate ?? event.date ?? event.utcDate,
-                  eventAttendanceMode:
-                    "https://schema.org/OfflineEventAttendanceMode",
-                  eventStatus:
-                    "https://schema.org/EventScheduled",
-                  location: {
-                    "@type": "Place",
-                    name: event.venue ?? "Sports Venue",
-                    address: {
-                      "@type": "PostalAddress",
-                      addressLocality: event.city ?? "",
-                      addressCountry: event.region ?? "",
+                .map((event: any) => {
+                  const start = event.startDate ?? event.date ?? event.utcDate;
+
+                  const end =
+                    event.endDate ??
+                    (start
+                      ? new Date(new Date(start).getTime() + 2 * 60 * 60 * 1000).toISOString()
+                      : undefined);
+
+                  return {
+                    "@context": "https://schema.org",
+                    "@type": "SportsEvent",
+
+                    name:
+                      event.homeTeam && event.awayTeam
+                        ? `${event.homeTeam} vs ${event.awayTeam}`
+                        : event.title ?? "Sports Event",
+
+                    description:
+                      event.description ??
+                      `${event.sport ?? "Sport"} fixture taking place in ${
+                        event.city ?? "Ireland"
+                      } on ${displayDate}.`,
+
+                    startDate: start,
+                    endDate: end,
+
+                    eventAttendanceMode:
+                      "https://schema.org/OfflineEventAttendanceMode",
+
+                    eventStatus:
+                      "https://schema.org/EventScheduled",
+
+                    image:
+                      event.image ??
+                      "https://venuescope.io/default-event-image.jpg",
+
+                    location: {
+                      "@type": "Place",
+                      name: event.venue ?? "Sports Venue",
+                      address: {
+                        "@type": "PostalAddress",
+                        addressLocality: event.city ?? "",
+                        addressCountry: "IE",
+                      },
                     },
-                  },
-                  sport: event.sport ?? "Sports",
-                  organizer: {
-                    "@type": "Organization",
-                    name: "VenueScope",
-                    url: "https://venuescope.io",
-                  },
-                }))
+
+                    performer:
+                      event.homeTeam && event.awayTeam
+                        ? [
+                            {
+                              "@type": "SportsTeam",
+                              name: event.homeTeam,
+                            },
+                            {
+                              "@type": "SportsTeam",
+                              name: event.awayTeam,
+                            },
+                          ]
+                        : undefined,
+
+                    offers: {
+                      "@type": "Offer",
+                      url: `https://venuescope.io/ireland/sports/${date}`,
+                      availability: "https://schema.org/InStock",
+                      price: "0",
+                      priceCurrency: "EUR",
+                    },
+
+                    organizer: {
+                      "@type": "Organization",
+                      name: "VenueScope",
+                      url: "https://venuescope.io",
+                    },
+                  };
+                })
             ),
           }}
         />
