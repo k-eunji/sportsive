@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import useScrollDirection from '@/hooks/useScrollDirection';
 import { usePathname } from 'next/navigation';
+import { getClientId } from "@/lib/clientId";
+import { useRef } from "react";
 
 export default function Header({
   disableHide = false,
@@ -14,15 +16,39 @@ export default function Header({
 }) {
   const direction = useScrollDirection();
   const pathname = usePathname() || '';
+  const clickedRef = useRef(false);
 
   const segments = pathname.split('/');
   const isLiveChatRoom =
     segments.length === 4 && segments[1] === 'live';
 
-  const shouldHide = !disableHide && direction === 'down'
+  const shouldHide =
+    !disableHide && direction === 'down';
+
   const isOps = pathname.startsWith('/ops');
 
   if (isLiveChatRoom) return null;
+
+  const handleMapSwitch = async () => {
+    // 🔥 중복 클릭 방지
+    if (clickedRef.current) return;
+    clickedRef.current = true;
+
+    try {
+      await fetch('/api/log/map-switch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          client_id: getClientId(),
+          pathname,
+          referrer: document.referrer || null,
+        }),
+      });
+    } catch (e) {
+      // 로그 실패해도 네비게이션은 계속
+      console.error('Map switch log failed');
+    }
+  };
 
   return (
     <header
@@ -38,7 +64,11 @@ export default function Header({
       `}
     >
       {/* LEFT */}
-      <Link href="/" aria-label="VenueScope home" className="select-none">
+      <Link
+        href="/"
+        aria-label="VenueScope home"
+        className="select-none"
+      >
         <motion.div layoutId="header-logo">
           <span className="text-lg md:text-xl font-semibold tracking-tight text-black dark:text-white">
             Venue<span className="opacity-60">Scope</span>
@@ -47,22 +77,24 @@ export default function Header({
       </Link>
 
       {/* RIGHT */}
-      <Link
-        href="/ops"
-        className="
-          text-sm
-          font-medium
-          px-5 py-2
-          rounded-full
-          bg-black text-white
-          dark:bg-white dark:text-black
-          hover:opacity-90
-          transition
-        "
-      >
-        Switch to Map →
-      </Link>
+      {!isOps && (
+        <Link
+          href="/ops"
+          onClick={handleMapSwitch}
+          className="
+            text-sm
+            font-medium
+            px-5 py-2
+            rounded-full
+            bg-black text-white
+            dark:bg-white dark:text-black
+            hover:opacity-90
+            transition
+          "
+        >
+          Switch to Map →
+        </Link>
+      )}
     </header>
-
   );
 }
