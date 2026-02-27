@@ -1,8 +1,18 @@
 // src/app/ops/risk/page.tsx
-export default function RiskPage() {
+
+import { getAllEventsRaw } from "@/lib/events/getAllEventsRaw";
+import RiskClient from "./RiskClient";
+
+export default async function RiskPage() {
+
+  const events = await getAllEventsRaw("180d");
+
+  const targetDate = new Date().toISOString().slice(0, 10);
+
   return (
-    <div className="p-8 text-sm text-muted-foreground">
-      Risk & Impact (partners only)
-    </div>
+    <RiskClient
+      events={events}
+      targetDate={targetDate}
+    />
   );
 }

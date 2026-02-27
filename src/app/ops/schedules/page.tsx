@@ -509,7 +509,7 @@ export default function SchedulesPage() {
 
             return (
               <div
-                key={e.id}
+                key={`${e.id}-${d.getTime()}`}
                 className="grid grid grid-cols-[110px_120px_160px_1fr_140px_140px] items-center px-3 py-2 text-xs font-mono border-b last:border-b-0"
               >
                 {/* Date */}

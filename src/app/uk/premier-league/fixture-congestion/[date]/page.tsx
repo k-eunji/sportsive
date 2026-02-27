@@ -94,6 +94,39 @@ export default async function Page({ params }: Props) {
         new Date(b.startDate ?? b.date ?? b.utcDate).getTime()
     );
 
+  
+  if (leagueEvents.length === 0) {
+    notFound();
+  }
+
+  const availableDates = new Set<string>();
+
+  events.forEach((e: any) => {
+    const raw = e.startDate ?? e.date ?? e.utcDate;
+    if (!raw) return;
+
+    const competition = (e.competition ?? "").toLowerCase();
+
+    if (
+      competition.includes("premier") &&
+      competition.includes("league")
+    ) {
+      availableDates.add(raw.slice(0, 10));
+    }
+  });
+
+  const sortedDates = Array.from(availableDates).sort();
+
+  const currentIndex = sortedDates.indexOf(date);
+
+  const previousDate =
+    currentIndex > 0 ? sortedDates[currentIndex - 1] : null;
+
+  const nextDate =
+    currentIndex !== -1 && currentIndex < sortedDates.length - 1
+      ? sortedDates[currentIndex + 1]
+      : null;  
+
   const ukFootballEvents = events.filter((e: any) => {
     const raw = e.startDate ?? e.date ?? e.utcDate;
     if (!raw) return false;
@@ -276,11 +309,28 @@ export default async function Page({ params }: Props) {
         />
       )}
 
-      <DateNav
-        date={date}
-        basePath="/uk/premier-league/fixture-congestion"
-      />
+      <section className="flex justify-between border-t pt-6 text-sm">
 
+        {previousDate ? (
+          <Link
+            href={`/uk/premier-league/fixture-congestion/${previousDate}`}
+            className="underline"
+          >
+            ← Previous matchday
+          </Link>
+        ) : <span />}
+
+        {nextDate ? (
+          <Link
+            href={`/uk/premier-league/fixture-congestion/${nextDate}`}
+            className="underline"
+          >
+            Next matchday →
+          </Link>
+        ) : <span />}
+
+      </section>
+      
       {/* BOTTOM LINKS */}
       <section className="mt-6 space-y-2 text-sm">
         <Link href={`/uk/football/${date}`} className="underline block">

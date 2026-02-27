@@ -15,8 +15,7 @@ const BLOCKED_CLIENT_IDS = new Set([
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { client_id, pathname, referrer } = body;
-
+    const { client_id, pathname, referrer, source } = body;
     const country =
       req.headers.get("x-vercel-ip-country") ?? "unknown";
 
@@ -44,12 +43,12 @@ export async function POST(req: NextRequest) {
       client_id,
       pathname,
       referrer: referrer ?? null,
+      source: source ?? "unknown",
       ip_address: ip,
       country,
       user_agent,
       clicked_at: new Date().toISOString(),
     });
-
     return NextResponse.json({ ok: true });
 
   } catch (e) {

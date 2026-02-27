@@ -6,8 +6,7 @@ import Link from "next/link";
 import { getAllEventsRaw } from "@/lib/events/getAllEventsRaw";
 
 import DailyVolumeChart from "@/app/components/DailyVolumeChart";
-import WeekendSplitChart from "@/app/components/WeekendSplitChart";
-import SportDistributionChart from "@/app/components/SportDistributionChart";
+import CompetitionShareChart from "@/app/components/CompetitionShareChart";
 
 type Props = {
   params: Promise<{ year: string; month: string }>;
@@ -39,17 +38,27 @@ function formatFullDate(dateStr: string) {
 
 function getMonthRange(year: string, month: string) {
   const baseDate = new Date(Number(year), Number(month) - 1);
-
   const months = [];
+
+  const today = new Date();
+  const currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+  const min = new Date(currentMonth);
+  min.setMonth(min.getMonth() - 6);
+
+  const max = new Date(currentMonth);
+  max.setMonth(max.getMonth() + 3);
 
   for (let i = -2; i <= 2; i++) {
     const d = new Date(baseDate);
     d.setMonth(d.getMonth() + i);
 
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, "0");
-
-    months.push({ year: y, month: m });
+    if (d >= min && d <= max) {
+      months.push({
+        year: d.getFullYear(),
+        month: String(d.getMonth() + 1).padStart(2, "0"),
+      });
+    }
   }
 
   return months;
@@ -77,24 +86,23 @@ export default async function Page({ params }: Props) {
   const displayMonth = formatMonthDisplay(year, month);
   const prefix = `${year}-${month}`;
 
+  const requested = new Date(Number(year), Number(month) - 1, 1);
+
   const today = new Date();
-  const base = new Date(today.getFullYear(), today.getMonth(), 1);
+  const currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
   const PAST_MONTHS = 6;
   const FUTURE_MONTHS = 3;
 
-  const min = new Date(base);
+  const min = new Date(currentMonth);
   min.setMonth(min.getMonth() - PAST_MONTHS);
 
-  const max = new Date(base);
+  const max = new Date(currentMonth);
   max.setMonth(max.getMonth() + FUTURE_MONTHS);
-
-  const requested = new Date(Number(year), Number(month) - 1, 1);
 
   if (requested < min || requested > max) {
     notFound();
   }
-
   const monthRange = getMonthRange(year, month);
 
   const events = await getAllEventsRaw("180d");
@@ -146,27 +154,27 @@ export default async function Page({ params }: Props) {
       : 0;
 
   /* =========================
-     LEAGUE DISTRIBUTION
+    COMPETITION DISTRIBUTION
   ========================= */
 
-  const leagueMap: Record<string, number> = {};
+  const competitionMap: Record<string, number> = {};
 
   londonFootballEvents.forEach((event: any) => {
-    if (!event.league) return; // 🔥 Other 제거
-    leagueMap[event.league] = (leagueMap[event.league] || 0) + 1;
+    if (!event.competition) return;
+    competitionMap[event.competition] =
+      (competitionMap[event.competition] || 0) + 1;
   });
 
-  const leagueChartData = Object.entries(leagueMap)
+  const competitionChartData = Object.entries(competitionMap)
     .sort((a, b) => b[1] - a[1])
-    .map(([league, count]) => ({
-      sport: league,
+    .map(([competition, count]) => ({
+      sport: competition, // Chart에서 nameKey="sport" 쓰고 있으니까 유지
       count,
       percentage:
         totalMatches > 0
           ? Math.round((count / totalMatches) * 100)
           : 0,
     }));
-    
   /* =========================
      CLUB DISTRIBUTION
   ========================= */
@@ -209,25 +217,53 @@ export default async function Page({ params }: Props) {
         ? Math.round((count / totalMatches) * 100)
         : 0,
   }));
+  /* =========================
+    PREVIOUS MONTH COMPARISON
+  ========================= */
 
-  const weekendChartData = [
-    {
-      name: "Weekend",
-      value: weekendMatches,
-      percentage:
-        totalMatches > 0
-          ? Math.round((weekendMatches / totalMatches) * 100)
-          : 0,
-    },
-    {
-      name: "Weekday",
-      value: weekdayMatches,
-      percentage:
-        totalMatches > 0
-          ? Math.round((weekdayMatches / totalMatches) * 100)
-          : 0,
-    },
-  ];
+  const previousMonthDate = new Date(Number(year), Number(month) - 2);
+  const prevPrefix = `${previousMonthDate.getFullYear()}-${String(
+    previousMonthDate.getMonth() + 1
+  ).padStart(2, "0")}`;
+
+  const previousMonthMatches = events.filter((e: any) => {
+    const eventMonth =
+      (e.startDate ?? e.date ?? e.utcDate)?.slice(0, 7);
+
+    return (
+      e.sport?.toLowerCase() === "football" &&
+      e.city?.toLowerCase() === "london" &&
+      eventMonth === prevPrefix
+    );
+  }).length;
+
+  const monthChange =
+    previousMonthMatches > 0
+      ? Math.round(
+          ((totalMatches - previousMonthMatches) /
+            previousMonthMatches) *
+            100
+        )
+      : null;
+
+  /* =========================
+    LONDON SHARE OF UK
+  ========================= */
+
+  const ukMonthMatches = events.filter((e: any) => {
+    const eventMonth =
+      (e.startDate ?? e.date ?? e.utcDate)?.slice(0, 7);
+
+    return (
+      e.sport?.toLowerCase() === "football" &&
+      eventMonth === prefix
+    );
+  }).length;
+
+  const londonShareOfUK =
+    ukMonthMatches > 0
+      ? Math.round((totalMatches / ukMonthMatches) * 100)
+      : 0;    
 
   return (
     <main className="max-w-5xl mx-auto px-5 py-12 space-y-16">
@@ -291,15 +327,51 @@ export default async function Page({ params }: Props) {
         />
       </section>
 
+      {/* MONTHLY CONTEXT */}
+      <section className="rounded-2xl border p-6 bg-background shadow-sm">
+
+        <h2 className="text-xl font-semibold mb-4">
+          Monthly Context
+        </h2>
+
+        <div className="space-y-3 text-sm text-muted-foreground">
+
+          {monthChange !== null && (
+            <p>
+              Fixture volume{" "}
+              <strong>
+                {monthChange > 0 ? "increased" : "decreased"}
+              </strong>{" "}
+              by <strong>{Math.abs(monthChange)}%</strong>{" "}
+              compared to the previous month.
+            </p>
+          )}
+
+          <p>
+            London represents{" "}
+            <strong>{londonShareOfUK}%</strong> of all UK football
+            fixtures in {displayMonth}.
+          </p>
+
+        </div>
+
+      </section>
+      
       {/* DAILY VOLUME */}
       <section>
         <DailyVolumeChart data={chartData} />
       </section>
 
-      {/* WEEKEND SPLIT */}
-      <section>
-        <WeekendSplitChart data={weekendChartData} />
-      </section>
+      {/* COMPETITION SHARE */}
+      {competitionChartData.length > 0 && (
+        <section>
+          <h2 className="text-xl font-semibold mb-4">
+            Competition Distribution – {displayMonth}
+          </h2>
+
+          <CompetitionShareChart data={competitionChartData} />
+        </section>
+      )}
 
       <section className="text-sm text-muted-foreground leading-relaxed">
         <p>
@@ -308,20 +380,16 @@ export default async function Page({ params }: Props) {
           across multiple competitions. The busiest matchday falls on{" "}
           <strong>
             {busiestDay ? formatFullDate(busiestDay[0]) : "N/A"}
-          </strong>, with strong weekend concentration representing{" "}
-          <strong>{weekendShare}%</strong> of the monthly schedule.
+          </strong>.{" "}
+          {competitionChartData.length > 0 && (
+            <>
+              The largest share of fixtures comes from{" "}
+              <strong>{competitionChartData[0].sport}</strong>, accounting for{" "}
+              <strong>{competitionChartData[0].percentage}%</strong> of the monthly schedule.
+            </>
+          )}
         </p>
       </section>
-
-      {/* LEAGUE DISTRIBUTION */}
-      {leagueChartData.length > 0 && (
-        <section>
-          <h2 className="text-xl font-semibold mb-4">
-            League Distribution – {displayMonth}
-          </h2>
-          <SportDistributionChart data={leagueChartData} />
-        </section>
-      )}
 
       {/* TOP CLUBS */}
       {topClubs.length > 0 && (
@@ -428,7 +496,118 @@ export default async function Page({ params }: Props) {
           {weekendShare}% of fixtures take place on Saturdays and Sundays.
         </p>
       </section>
+      {/* ================= DATASET ================= */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Dataset",
+            name: `London Football Fixtures Dataset – ${displayMonth}`,
+            description: `Structured dataset of all professional football matches taking place in London during ${displayMonth}.`,
+            url: `https://venuescope.io/uk/london/football/month/${year}/${month}`,
+            temporalCoverage: `${prefix}-01/${prefix}-31`,
+            spatialCoverage: {
+              "@type": "Place",
+              name: "London, United Kingdom"
+            },
+            variableMeasured: [
+              "Total Matches",
+              "Weekend Share",
+              "League Distribution",
+              "Club Activity",
+              "Stadium Utilisation"
+            ]
+          })
+        }}
+      />
 
+      {sortedEntries.length > 0 && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "ItemList",
+              name: `Daily Football Matches in London – ${displayMonth}`,
+              itemListElement: sortedEntries.map(
+                ([date, count], index) => ({
+                  "@type": "ListItem",
+                  position: index + 1,
+                  name: `${formatFullDate(date)} – ${count} matches`,
+                  url: `https://venuescope.io/uk/london/football/${date}`
+                })
+              )
+            })
+          }}
+        />
+      )}
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            mainEntity: [
+              {
+                "@type": "Question",
+                name: `How many football matches are played in London in ${displayMonth}?`,
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text: `${totalMatches} professional football fixtures are scheduled in London during ${displayMonth}.`
+                }
+              },
+              {
+                "@type": "Question",
+                name: `Which London clubs are most active in ${displayMonth}?`,
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text: `The most active London clubs are determined by home fixture volume during this month.`
+                }
+              },
+              {
+                "@type": "Question",
+                name: `Are most London football matches played on weekends?`,
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text: `${weekendShare}% of matches take place on Saturdays and Sundays.`
+                }
+              }
+            ]
+          })
+        }}
+      />
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              {
+                "@type": "ListItem",
+                position: 1,
+                name: "UK Football",
+                item: "https://venuescope.io/uk/football"
+              },
+              {
+                "@type": "ListItem",
+                position: 2,
+                name: "London Football",
+                item: "https://venuescope.io/uk/london/football"
+              },
+              {
+                "@type": "ListItem",
+                position: 3,
+                name: displayMonth,
+                item: `https://venuescope.io/uk/london/football/month/${year}/${month}`
+              }
+            ]
+          })
+        }}
+      />
     </main>
   );
 }

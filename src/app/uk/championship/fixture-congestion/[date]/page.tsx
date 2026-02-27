@@ -99,6 +99,10 @@ export default async function Page({ params }: Props) {
     hourMap.set(hour, (hourMap.get(hour) ?? 0) + 1);
   });
 
+  if (leagueEvents.length === 0) {
+    notFound();
+  }
+
   const sortedHours = [...hourMap.entries()].sort(
     (a, b) => b[1] - a[1]
   );
@@ -118,8 +122,31 @@ export default async function Page({ params }: Props) {
   const next = new Date(date);
   next.setDate(next.getDate() + 1);
 
-  const previousDate = previous.toISOString().slice(0, 10);
-  const nextDate = next.toISOString().slice(0, 10);
+  const availableDates = new Set<string>();
+
+  events.forEach((e: any) => {
+    const rawDate = e.startDate ?? e.date ?? e.utcDate;
+    if (!rawDate) return;
+
+    const eventKey = rawDate.slice(0, 10);
+    const competition = (e.competition ?? "").toLowerCase();
+
+    if (competition.includes("championship")) {
+      availableDates.add(eventKey);
+    }
+  });
+
+  const sortedDates = Array.from(availableDates).sort();
+
+  const currentIndex = sortedDates.indexOf(date);
+
+  const previousDate =
+    currentIndex > 0 ? sortedDates[currentIndex - 1] : null;
+
+  const nextDate =
+    currentIndex !== -1 && currentIndex < sortedDates.length - 1
+      ? sortedDates[currentIndex + 1]
+      : null;
 
   const todayKey = new Date().toISOString().slice(0, 10);
   const isPast = date < todayKey;
@@ -206,21 +233,26 @@ export default async function Page({ params }: Props) {
       )}
 
       <section className="flex justify-between border-t pt-6 text-sm">
-        <Link
-          href={`/uk/championship/fixture-congestion/${previousDate}`}
-          className="underline"
-        >
-          ← Previous day
-        </Link>
 
-        <Link
-          href={`/uk/championship/fixture-congestion/${nextDate}`}
-          className="underline"
-        >
-          Next day →
-        </Link>
+        {previousDate ? (
+          <Link
+            href={`/uk/championship/fixture-congestion/${previousDate}`}
+            className="underline"
+          >
+            ← Previous day
+          </Link>
+        ) : <span />}
+
+        {nextDate ? (
+          <Link
+            href={`/uk/championship/fixture-congestion/${nextDate}`}
+            className="underline"
+          >
+            Next day →
+          </Link>
+        ) : <span />}
+
       </section>
-
       <section>
         <Link
           href="/uk/championship/fixture-congestion"

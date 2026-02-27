@@ -64,6 +64,23 @@ export default async function Page({ params }: Props) {
     );
   });
 
+  if (londonEvents.length === 0) {
+    notFound();
+  }
+
+  const availableDates = new Set<string>();
+
+  events.forEach((e: any) => {
+    const eventKey =
+      (e.startDate ?? e.date ?? e.utcDate)?.slice(0, 10);
+
+    if (e.city?.toLowerCase() === "london" && eventKey) {
+      availableDates.add(eventKey);
+    }
+  });
+
+  const sortedDates = Array.from(availableDates).sort();
+
   /* ===================== HOURLY ===================== */
 
   const hourMap = new Map<number, number>();
@@ -162,8 +179,15 @@ export default async function Page({ params }: Props) {
   const next = new Date(currentDate);
   next.setDate(currentDate.getDate() + 1);
 
-  const prevDate = prev.toISOString().slice(0, 10);
-  const nextDate = next.toISOString().slice(0, 10);
+  const currentIndex = sortedDates.indexOf(date);
+
+  const prevDate =
+    currentIndex > 0 ? sortedDates[currentIndex - 1] : null;
+
+  const nextDate =
+    currentIndex !== -1 && currentIndex < sortedDates.length - 1
+      ? sortedDates[currentIndex + 1]
+      : null;
 
   const todayKey = new Date().toISOString().slice(0, 10);
 
@@ -279,22 +303,26 @@ export default async function Page({ params }: Props) {
 
       <section className="pt-8 border-t flex justify-between text-sm">
 
-        <Link
-          href={`/uk/london/fixture-congestion/${prevDate}`}
-          className="underline"
-        >
-          ← Previous day
-        </Link>
+        {prevDate ? (
+          <Link
+            href={`/uk/london/fixture-congestion/${prevDate}`}
+            className="underline"
+          >
+            ← Previous day
+          </Link>
+        ) : <span />}
 
-        <Link
-          href={`/uk/london/fixture-congestion/${nextDate}`}
-          className="underline"
-        >
-          Next day →
-        </Link>
+        {nextDate ? (
+          <Link
+            href={`/uk/london/fixture-congestion/${nextDate}`}
+            className="underline"
+          >
+            Next day →
+          </Link>
+        ) : <span />}
 
       </section>
-
+      
       <section className="space-y-6">
 
         <Link

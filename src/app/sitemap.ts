@@ -12,32 +12,29 @@ export default function sitemap(): MetadataRoute.Sitemap {
   }
 
   // =========================
-  // 1️⃣ 정적 페이지 (그대로 유지)
+  // 1️⃣ 정적 페이지
   // =========================
 
   const staticRoutes = [
     "/",
 
-    // 🇬🇧 UK Core
-    "/uk/live-sports-today",
-    "/uk/football-today",
-    "/uk/sports-this-weekend",
-    "/uk/sports-next-weekend",
+    // =========================
+    // 🇬🇧 UK Horse Racing
+    // =========================
+    "/uk/horse-racing",
+    "/uk/horse-racing/calendar-2026",
+    "/uk/horse-racing/busiest-days-2026",
+    "/uk/horse-racing/meeting-frequency-2026",
+    "/uk/horse-racing/next-60-days-density",
+    "/uk/horse-racing/overlap-report-2026",
+    "/uk/horse-racing/courses",
 
-    "/uk/london/live-sports-today",
-    "/uk/london/sports-this-weekend",
-
-    // 🇬🇧 Fixture Congestion 루트 유지
-    "/uk/england/fixture-congestion",
-    "/uk/london/fixture-congestion",
-    "/uk/premier-league/fixture-congestion",
-    "/uk/league-two/fixture-congestion",
-    "/uk/league-one/fixture-congestion",
-    "/uk/championship/fixture-congestion",
-    "/uk/horse-racing/fixture-congestion",
-
-    // 🇮🇪 Ireland
-    "/ireland/horse-racing/fixture-congestion",
+    // =========================
+    // 🇮🇪 Ireland Horse Racing
+    // =========================
+    "/ireland/horse-racing",
+    "/ireland/horse-racing/calendar-2026",
+    "/ireland/horse-racing/courses",
   ];
 
   staticRoutes.forEach((path) => {
@@ -48,7 +45,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   });
 
   // =========================
-  // 2️⃣ London 월 허브 유지
+  // 2️⃣ Monthly Hubs (기존)
   // =========================
 
   const pastMonths = 6;
@@ -62,15 +59,28 @@ export default function sitemap(): MetadataRoute.Sitemap {
     const year = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, "0");
 
-    urls.push({
-      url: `${baseUrl}/uk/london/football/month/${year}/${month}`,
-      lastModified: now,
-    });
+    urls.push(
+      {
+        url: `${baseUrl}/uk/sports/month/${year}/${month}`,
+        lastModified: now,
+      },
+      {
+        url: `${baseUrl}/uk/football/month/${year}/${month}`,
+        lastModified: now,
+      },
+      {
+        url: `${baseUrl}/uk/london/sports/month/${year}/${month}`,
+        lastModified: now,
+      },
+      {
+        url: `${baseUrl}/uk/london/football/month/${year}/${month}`,
+        lastModified: now,
+      }
+    );
   }
 
   // =========================
-  // 3️⃣ 날짜 기반 (핵심 전략 유지)
-  // 과거 30일 / 미래 30일
+  // 3️⃣ 날짜 기반 (과거 30일 / 미래 30일)
   // =========================
 
   const pastDays = 30;
@@ -82,24 +92,66 @@ export default function sitemap(): MetadataRoute.Sitemap {
     const dateStr = formatDate(date);
 
     urls.push(
-      // 🇬🇧 UK 날짜
       { url: `${baseUrl}/uk/sports/${dateStr}`, lastModified: now },
       { url: `${baseUrl}/uk/football/${dateStr}`, lastModified: now },
-
-      // 🇬🇧 London 날짜
       { url: `${baseUrl}/uk/london/sports/${dateStr}`, lastModified: now },
       { url: `${baseUrl}/uk/london/football/${dateStr}`, lastModified: now },
-
-      // 🇬🇧 Fixture Congestion 날짜 (전략 유지)
-      { url: `${baseUrl}/uk/england/fixture-congestion/${dateStr}`, lastModified: now },
-      { url: `${baseUrl}/uk/london/fixture-congestion/${dateStr}`, lastModified: now },
       { url: `${baseUrl}/uk/premier-league/fixture-congestion/${dateStr}`, lastModified: now },
-      { url: `${baseUrl}/uk/championship/fixture-congestion/${dateStr}`, lastModified: now },
-
-      // 🇮🇪 Ireland Horse Racing 날짜
-      { url: `${baseUrl}/ireland/horse-racing/fixture-congestion/${dateStr}`, lastModified: now }
+      { url: `${baseUrl}/uk/championship/fixture-congestion/${dateStr}`, lastModified: now }
     );
   }
+
+  // =========================
+  // 4️⃣ Horse Racing 2026 Month Pages
+  // =========================
+
+  const months2026 = Array.from({ length: 12 }, (_, i) =>
+    String(i + 1).padStart(2, "0")
+  );
+
+  months2026.forEach((month) => {
+    // 🇬🇧 UK
+    urls.push({
+      url: `${baseUrl}/uk/horse-racing/month/2026/${month}`,
+      lastModified: now,
+    });
+
+    // 🇮🇪 Ireland
+    urls.push({
+      url: `${baseUrl}/ireland/horse-racing/month/2026/${month}`,
+      lastModified: now,
+    });
+  });
+
+  // =========================
+  // 5️⃣ Horse Racing Course Slug Pages
+  // ⚠️ 실제 코스 slug 리스트로 교체 필요
+  // =========================
+
+  const ukCourses = [
+    "ascot",
+    "cheltenham",
+    "aintree",
+  ];
+
+  const irelandCourses = [
+    "curragh",
+    "leopardstown",
+  ];
+
+  ukCourses.forEach((slug) => {
+    urls.push({
+      url: `${baseUrl}/uk/horse-racing/courses/${slug}`,
+      lastModified: now,
+    });
+  });
+
+  irelandCourses.forEach((slug) => {
+    urls.push({
+      url: `${baseUrl}/ireland/horse-racing/courses/${slug}`,
+      lastModified: now,
+    });
+  });
 
   return urls;
 }

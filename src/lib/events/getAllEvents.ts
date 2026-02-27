@@ -92,16 +92,18 @@ export async function getAllEvents(window: string = "7d") {
 
   let filteredBase: any[];
 
-  if (window === "180d") {
-    // ✅ 스케줄 페이지용 — 과거 포함 전부 반환
+  if (window === "all") {
+    // ✅ 완전 무제한
+    filteredBase = merged;
+  } else if (window === "180d") {
+    // ✅ 180일도 무제한으로 쓸 거면 그대로
     filteredBase = merged;
   } else {
-    // ✅ 랜딩 / ops용 — 현재 이후만
     filteredBase = merged.filter((e: any) =>
       isEventActiveInWindow(e, now, windowEnd)
     );
   }
-
+  
   const filtered = filteredBase
     .map((e: any) => ({
       ...e,
@@ -116,12 +118,14 @@ export async function getAllEvents(window: string = "7d") {
   /* =========================
      4️⃣ RETURN
   ========================= */
-  if (window === "180d") {
-    return {
-      events: filtered,
-      areas: buildAreaIndex(filtered),
-    };
+  if (window === "all") {
+    filteredBase = merged; // ✅ 아무 제한 없음
+  } else if (window === "180d") {
+    filteredBase = merged; // 필요하면 유지
+  } else {
+    filteredBase = merged.filter((e: any) =>
+      isEventActiveInWindow(e, now, windowEnd)
+    );
   }
-
   return { events: filtered };
 }

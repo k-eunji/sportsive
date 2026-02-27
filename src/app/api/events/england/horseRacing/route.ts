@@ -46,7 +46,8 @@ export async function GET() {
         )
       `)
 
-      .order("date", { ascending: true });
+      .order("date", { ascending: true })
+      .range(0, 5000); // 🔥 이 줄 추가
 
     if (error || !sessions) {
       console.error(error);
@@ -100,6 +101,17 @@ export async function GET() {
       };
     });
 
+    console.log(
+      "🐎 HORSE RAW COUNT:",
+      matches.length,
+      "MAX DATE:",
+      matches
+        .map(m => m.startDate)
+        .sort()
+        .slice(-3)
+    );  
+    console.log("🔎 SESSIONS LENGTH:", sessions?.length);
+    
     return NextResponse.json({ matches });
   } catch (err) {
     console.error("❌ horse racing events error:", err);

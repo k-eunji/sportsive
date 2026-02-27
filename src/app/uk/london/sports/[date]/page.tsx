@@ -7,6 +7,7 @@ import { getAllEventsRaw } from "@/lib/events/getAllEventsRaw";
 import { isWithinAllowedRange } from "@/utils/dateRangeGuard";
 import { DateNav } from "@/app/components/DateNav";
 import Link from "next/link";
+import OpsCta from "@/app/components/OpsCta";
 
 const UK_REGIONS = [
   "england",
@@ -89,6 +90,55 @@ export default async function Page({ params }: Props) {
     );
   });
 
+  // ✅ 추가
+  if (dateEvents.length === 0) {
+    notFound();
+  }
+
+  /* =========================
+    GROUP BY SPORT
+  ========================= */
+
+  const groupedBySport: Record<string, any[]> = {};
+
+  dateEvents.forEach((event: any) => {
+    const sport = event.sport ?? "Other Sports";
+
+    if (!groupedBySport[sport]) {
+      groupedBySport[sport] = [];
+    }
+
+    groupedBySport[sport].push(event);
+  });
+
+  /* =========================
+    SPORT PRIORITY ORDER
+  ========================= */
+
+  const SPORT_PRIORITY = [
+    "football",
+    "rugby",
+    "cricket",
+    "tennis",
+    "basketball",
+    "horse racing",
+    "dart",
+  ];
+
+  const sortedSports = Object.entries(groupedBySport).sort((a, b) => {
+    const indexA = SPORT_PRIORITY.indexOf(a[0]?.toLowerCase());
+    const indexB = SPORT_PRIORITY.indexOf(b[0]?.toLowerCase());
+
+    const priorityA = indexA === -1 ? 999 : indexA;
+    const priorityB = indexB === -1 ? 999 : indexB;
+
+    if (priorityA !== priorityB) {
+      return priorityA - priorityB;
+    }
+
+    return a[0].localeCompare(b[0]);
+  });
+
   const ukEvents = events.filter((e: any) => {
     const eventKey =
       (e.startDate ?? e.date ?? e.utcDate)?.slice(0, 10);
@@ -99,13 +149,97 @@ export default async function Page({ params }: Props) {
     );
   });
 
+  /* =========================
+    NEXT LONDON EVENTS
+  ========================= */
+
+  const upcomingLondonEvents = events
+    .filter((e: any) => {
+      const eventDate = e.startDate ?? e.date ?? e.utcDate;
+      if (!eventDate) return false;
+
+      return (
+        e.city?.toLowerCase() === "london" &&
+        new Date(eventDate) > new Date(date)
+      );
+    })
+    .sort(
+      (a: any, b: any) =>
+        new Date(a.startDate ?? a.date ?? a.utcDate).getTime() -
+        new Date(b.startDate ?? b.date ?? b.utcDate).getTime()
+    );
+
+  const nextEvents = upcomingLondonEvents.slice(0, 5);
+
   const londonShare =
     ukEvents.length > 0
       ? Math.round((dateEvents.length / ukEvents.length) * 100)
       : 0;
+   
+  /* =========================
+    MONTH CONTEXT (ALL SPORTS)
+  ========================= */
+
+  const monthPrefix = date.slice(0, 7);
+
+  const monthEvents = events.filter((e: any) => {
+    const eventMonth =
+      (e.startDate ?? e.date ?? e.utcDate)?.slice(0, 7);
+
+    return (
+      e.city?.toLowerCase() === "london" &&
+      eventMonth === monthPrefix
+    );
+  });
+
+  const monthGrouped: Record<string, number> = {};
+
+  monthEvents.forEach((e: any) => {
+    const d =
+      (e.startDate ?? e.date ?? e.utcDate)?.slice(0, 10);
+    if (!d) return;
+    monthGrouped[d] = (monthGrouped[d] || 0) + 1;
+  });
+
+  const sortedMonthDays = Object.entries(monthGrouped)
+    .sort((a, b) => b[1] - a[1]);
+
+  const rank =
+    sortedMonthDays.findIndex(([d]) => d === date) + 1;
+
+  const totalDays = sortedMonthDays.length;
+
+  function getOrdinal(n: number) {
+    const s = ["th", "st", "nd", "rd"];
+    const v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+  }    
 
   const displayDate = formatDisplayDate(date);
   const shortDate = formatShortDate(date);
+
+  const availableDates = new Set<string>();
+
+  events.forEach((e: any) => {
+    const raw = e.startDate ?? e.date ?? e.utcDate;
+    if (!raw) return;
+
+    if (e.city?.toLowerCase() === "london") {
+      availableDates.add(raw.slice(0, 10));
+    }
+  });
+
+  const sortedDates = Array.from(availableDates).sort();
+
+  const currentIndex = sortedDates.indexOf(date);
+
+  const previousDate =
+    currentIndex > 0 ? sortedDates[currentIndex - 1] : null;
+
+  const nextDate =
+    currentIndex !== -1 && currentIndex < sortedDates.length - 1
+      ? sortedDates[currentIndex + 1]
+      : null;
 
   return (
     <main className="max-w-3xl mx-auto px-6 py-16 space-y-8">
@@ -146,9 +280,10 @@ export default async function Page({ params }: Props) {
           >
             📅 Add All Events to Calendar (.ics)
           </a>
-
         </div>
-
+        <div className="mt-4">
+          <OpsCta />
+        </div>
       </section>
       {/* ================= SHARE ANALYSIS ================= */}
 
@@ -158,6 +293,14 @@ export default async function Page({ params }: Props) {
           Daily Match Summary
         </h2>
 
+        {rank > 0 && totalDays > 1 && (
+          <p className="text-sm text-muted-foreground mb-4">
+            With <strong>{dateEvents.length}</strong> fixtures scheduled,
+            this is the <strong>{getOrdinal(rank)}</strong> busiest
+            London sports matchday of {totalDays} this month.
+          </p>
+        )}
+        
         <div className="grid grid-cols-3 gap-6 text-center space-y-4">
 
           <div>
@@ -221,10 +364,20 @@ export default async function Page({ params }: Props) {
           </div>
         </div>
 
-        <EventList
-          events={dateEvents}
-          fixedStartDate={date}
-        />
+        <div className="space-y-10">
+          {sortedSports.map(([sport, events]) => (
+            <div key={sport} className="space-y-4">
+              <h3 className="text-lg font-semibold border-b pb-2">
+                {sport} ({events.length})
+              </h3>
+
+              <EventList
+                events={events}
+                fixedStartDate={date}
+              />
+            </div>
+          ))}
+        </div>
       </section>
 
 
@@ -281,11 +434,28 @@ export default async function Page({ params }: Props) {
         />
       )}
 
-      <DateNav
-        date={date}
-        basePath="/uk/london/sports"
-      />
+      <section className="flex justify-between border-t pt-6 text-sm">
 
+        {previousDate ? (
+          <Link
+            href={`/uk/london/sports/${previousDate}`}
+            className="underline"
+          >
+            ← Previous matchday
+          </Link>
+        ) : <span />}
+
+        {nextDate ? (
+          <Link
+            href={`/uk/london/sports/${nextDate}`}
+            className="underline"
+          >
+            Next matchday →
+          </Link>
+        ) : <span />}
+
+      </section>
+      
       <section className="pt-8">
         <Link
           href={`/uk/sports/${date}`}
