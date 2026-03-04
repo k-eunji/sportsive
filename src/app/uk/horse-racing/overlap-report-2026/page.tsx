@@ -27,15 +27,19 @@ export const metadata: Metadata = {
 };
 
 export default async function Page() {
+
   const events = await getHorseRacingEventsRaw();
 
   const racing2026 = events.filter((e: any) => {
+
     const year = (e.startDate ?? "").slice(0, 4);
+
     return (
       e.sport === "horse-racing" &&
       UK_REGIONS.includes(e.region?.toLowerCase()) &&
       year === "2026"
     );
+
   });
 
   const totalMeetings = racing2026.length;
@@ -45,6 +49,7 @@ export default async function Page() {
   const sessionMap: Record<string, number> = {};
 
   racing2026.forEach((e: any) => {
+
     const session =
       e.sessionTime ||
       e.payload?.sessionTime ||
@@ -52,6 +57,7 @@ export default async function Page() {
 
     sessionMap[session] =
       (sessionMap[session] || 0) + 1;
+
   });
 
   const sortedSessions = Object.entries(sessionMap)
@@ -72,8 +78,11 @@ export default async function Page() {
   const dayMap: Record<string, number> = {};
 
   racing2026.forEach((e: any) => {
+
     const d = (e.startDate ?? "").slice(0, 10);
+
     dayMap[d] = (dayMap[d] || 0) + 1;
+
   });
 
   const sortedDays = Object.entries(dayMap)
@@ -86,13 +95,17 @@ export default async function Page() {
   const weekdayMap: Record<string, number> = {};
 
   racing2026.forEach((e: any) => {
+
     const date = new Date(e.startDate);
-    const weekday = date.toLocaleString("en-GB", {
-      weekday: "long",
-    });
+
+    const weekday = date.toLocaleString(
+      "en-GB",
+      { weekday: "long" }
+    );
 
     weekdayMap[weekday] =
       (weekdayMap[weekday] || 0) + 1;
+
   });
 
   const sortedWeekdays = Object.entries(weekdayMap)
@@ -159,23 +172,27 @@ export default async function Page() {
 
   racing2026.forEach((e: any) => {
     if (!e.venue) return;
-    courseMap[e.venue] = (courseMap[e.venue] || 0) + 1;
+    courseMap[e.venue] =
+      (courseMap[e.venue] || 0) + 1;
   });
 
   const topCourses = Object.entries(courseMap)
     .sort((a, b) => b[1] - a[1])
-    .slice(0, 3);    
+    .slice(0, 3);
 
   return (
     <main className="max-w-4xl mx-auto px-6 py-14 space-y-14">
 
       {/* HEADER */}
+
       <header className="space-y-4 border-b pb-8">
+
         <p className="text-xs uppercase tracking-widest text-muted-foreground">
           National Session Overlap Analysis
         </p>
 
         <div className="flex items-center gap-3">
+
           <h1 className="text-3xl font-bold">
             UK Horse Racing Overlap – 2026
           </h1>
@@ -191,139 +208,196 @@ export default async function Page() {
           >
             {overlapLevel} Overlap · {overlapIndex}/100
           </span>
+
         </div>
+
       </header>
 
+      {/* BREADCRUMB */}
+
+      <div className="text-xs text-muted-foreground space-x-1">
+
+        <Link href="/uk/horse-racing" className="hover:underline">
+          UK Racing
+        </Link>
+
+        <span>/</span>
+
+        <Link href="/sport/horse-racing" className="hover:underline">
+          Horse Racing Data
+        </Link>
+
+        <span>/</span>
+
+        <span>Overlap Report</span>
+
+      </div>
+
       {/* KPI GRID */}
+
       <section className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center border-t pt-8">
+
         <Stat title="Total Meetings" value={totalMeetings} />
+
         <Stat title="Peak Session" value={peakSession?.session ?? "-"} />
+
         <Stat title="Peak Session %" value={`${peakSession?.percentage ?? 0}%`} />
+
         <Stat title="Peak Day Volume" value={peakDay?.[1] ?? 0} />
+
         <Stat title="Weekend Share" value={`${weekendPercentage}%`} />
+
       </section>
 
-      <section className="pt-8 border-t text-sm text-muted-foreground space-y-4">
-        <h2 className="text-lg font-semibold text-black">
-          Structural Insight
+      {/* DASHBOARD LINK */}
+
+      <section className="border rounded-xl p-6 bg-gray-50">
+
+        <h2 className="font-semibold mb-2">
+          Interactive Dashboard
         </h2>
 
-        <p>
-          {peakSession?.session} sessions account for{" "}
-          {peakSession?.percentage}% of total meetings,
-          indicating national scheduling concentration.
+        <p className="text-sm text-muted-foreground mb-3">
+          Explore race session overlap using the interactive
+          horse racing analytics dashboard.
         </p>
 
-        <p>
-          Weekend fixtures represent {weekendPercentage}% of the
-          annual calendar, highlighting peak spectator windows.
-        </p>
+        <Link
+          href="/sport/horse-racing?tab=overlap"
+          className="text-sm underline"
+        >
+          Open Overlap Dashboard →
+        </Link>
+
       </section>
 
       {/* SESSION DISTRIBUTION */}
+
       <section className="pt-8 border-t space-y-6">
+
         <h2 className="text-lg font-semibold">
           Session Distribution
         </h2>
 
         <ul className="space-y-2 text-sm">
+
           {sortedSessions.map((s) => (
+
             <li key={s.session} className="flex justify-between">
+
               <span>{s.session}</span>
+
               <span className="font-medium">
                 {s.count} meetings ({s.percentage}%)
               </span>
+
             </li>
+
           ))}
+
         </ul>
+
       </section>
 
-      {/* WEEKDAY DISTRIBUTION */}
-      <section className="pt-8 border-t space-y-6">
-        <h2 className="text-lg font-semibold">
-          Weekday Distribution
-        </h2>
-
-        <ul className="space-y-2 text-sm">
-          {sortedWeekdays.map((w) => (
-            <li key={w.day} className="flex justify-between">
-              <span>{w.day}</span>
-              <span className="font-medium">
-                {w.count} meetings ({w.percentage}%)
-              </span>
-            </li>
-          ))}
-        </ul>
-      </section>
+      {/* TOP COURSES */}
 
       <section className="pt-8 border-t space-y-6">
+
         <h2 className="text-lg font-semibold">
           Most Active Racecourses
         </h2>
 
         <ul className="space-y-2 text-sm">
+
           {topCourses.map(([venue, count]) => (
+
             <li key={venue} className="flex justify-between">
+
               <Link
                 href={`/uk/horse-racing/courses/${slugifyVenue(venue)}`}
                 className="underline hover:opacity-70"
               >
                 {venue.replace(" Racecourse", "")}
               </Link>
+
               <span className="font-medium">
                 {count} meetings
               </span>
+
             </li>
+
           ))}
+
         </ul>
+
       </section>
 
-      {/* TOP 5 DAYS */}
+      {/* TOP DAYS */}
+
       <section className="pt-8 border-t space-y-6">
+
         <h2 className="text-lg font-semibold">
           Top 5 Overlap Days
         </h2>
 
         <ul className="space-y-2 text-sm">
-          {sortedDays.slice(0, 5).map(([date, count]) => (
+
+          {sortedDays.slice(0,5).map(([date,count]) => (
+
             <li key={date} className="flex justify-between">
+
               <span>{date}</span>
+
               <span className="font-medium">
                 {count} meetings
               </span>
+
             </li>
+
           ))}
+
         </ul>
+
       </section>
 
+      {/* INTERNAL LINKS */}
+
       <section className="pt-8 border-t text-sm space-y-2">
-        <h2 className="font-semibold">Related 2026 Reports</h2>
+
+        <h2 className="font-semibold">
+          Related 2026 Reports
+        </h2>
+
         <ul className="underline space-y-1">
+
           <li>
-            <Link
-              href="/uk/horse-racing"
-            >
-              UK Horse Racing Hub→
+            <Link href="/uk/horse-racing">
+              UK Horse Racing Hub →
             </Link>
           </li>
+
           <li>
             <Link href="/uk/horse-racing/calendar-2026">
               Full 2026 Calendar Overview
             </Link>
           </li>
+
           <li>
             <Link href="/uk/horse-racing/busiest-days-2026">
               Busiest Racing Days
             </Link>
           </li>
+
           <li>
             <Link href="/uk/horse-racing/meeting-frequency-2026">
               Course Frequency Ranking
             </Link>
           </li>
+
         </ul>
+
       </section>
-      
+
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{

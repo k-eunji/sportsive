@@ -3,7 +3,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getHorseRacingEventsRaw } from "@/lib/events/getHorseRacingEventsRaw";
-import { BusiestDaysToggle } from "@/app/components/BusiestDaysToggle";
+
+import SportFilterBar from "@/app/sport/_components/SportFilterBar";
+import HorseRacingSportPage from "@/app/sport/_components/HorseRacingSportPage";
 
 const UK_REGIONS = [
   "england",
@@ -20,23 +22,31 @@ export const metadata: Metadata = {
 };
 
 export default async function Page() {
+
   const events = await getHorseRacingEventsRaw();
 
-  /* ===== Filter UK 2026 Horse Racing ===== */
+  /* ===============================
+     UK FILTER
+  =============================== */
 
-  const racing2026 = events.filter((e: any) => {
-    const year = (e.startDate ?? "").slice(0, 4);
+  const ukEvents = events.filter((e: any) => {
+    const region = (e.region ?? "")
+      .toLowerCase()
+      .trim();
 
-    return (
-      e.sport === "horse-racing" &&
-      UK_REGIONS.includes(e.region?.toLowerCase()) &&
-      year === "2026"
-    );
+    return UK_REGIONS.includes(region);
   });
 
-  const totalMeetings = racing2026.length;
+  const racing2026 = ukEvents.filter((e: any) => {
+    const year = (e.startDate ?? "").slice(0, 4);
+    return year === "2026";
+  });
 
-  /* ===== Group by Date ===== */
+  /* ===============================
+     BASIC STATS
+  =============================== */
+
+  const totalMeetings = racing2026.length;
 
   const grouped: Record<string, number> = {};
 
@@ -53,12 +63,13 @@ export default async function Page() {
       : 0;
 
   const sorted = Object.entries(grouped)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 20);
+    .sort((a, b) => b[1] - a[1]);
 
   const peak = sorted[0] ?? null;
 
-  /* ===== Structured Data ===== */
+  /* ===============================
+     STRUCTURED DATA
+  =============================== */
 
   const articleData = {
     "@context": "https://schema.org",
@@ -72,104 +83,110 @@ export default async function Page() {
     },
   };
 
-  /* ===== UI ===== */
-
   return (
-    <main className="max-w-3xl mx-auto px-6 py-14 space-y-12">
+    <main className="max-w-6xl mx-auto px-4 py-12 space-y-12">
 
-      {/* ===== HEADER ===== */}
+      {/* BACK */}
 
-      <header className="space-y-4 border-b pb-8">
-        <p className="text-xs uppercase tracking-widest text-muted-foreground">
-          National Overlap Report
-        </p>
+      <div>
+        <Link
+          href="/uk/horse-racing"
+          className="text-sm text-muted-foreground hover:underline"
+        >
+          ← UK Horse Racing Hub
+        </Link>
+      </div>
+
+      {/* FILTER BAR */}
+
+      <SportFilterBar
+        slug="horse-racing"
+        events={ukEvents}
+      />
+
+      {/* HEADER */}
+
+      <header className="space-y-2">
 
         <h1 className="text-3xl font-bold">
           Busiest UK Horse Racing Days – 2026
         </h1>
 
-        <p className="text-sm text-muted-foreground max-w-2xl">
-          Ranking of the highest-volume racing days across the United Kingdom
-          during the 2026 season, based on total concurrent meetings.
+        <p className="text-muted-foreground">
+          {totalMeetings} meetings · {activeDays} racing days · peak national scheduling density
         </p>
+
       </header>
 
-      {/* ===== KPI SUMMARY ===== */}
+      {/* SUMMARY */}
 
-      <section className="grid grid-cols-2 md:grid-cols-3 gap-6 text-center border-t pt-8">
-        <Stat title="Total Meetings (2026)" value={totalMeetings} />
-        <Stat title="Active Racing Days" value={activeDays} />
-        <Stat title="Avg Meetings / Day" value={avgPerActiveDay} />
-        <Stat title="Peak Single Day" value={peak?.[1] ?? 0} />
-      </section>
-
-      {/* ===== INTERPRETATION ===== */}
-
-      <section className="text-sm text-muted-foreground leading-relaxed space-y-4 border-t pt-8">
-        <h2 className="font-semibold text-black">
-          Structural Congestion Insight
-        </h2>
+      <section className="text-sm text-muted-foreground leading-relaxed max-w-3xl">
 
         {peak && (
           <p>
-            The highest daily volume reached{" "}
+            The busiest racing day in 2026 recorded{" "}
             <strong>{peak[1]}</strong> concurrent meetings
-            on <strong>{peak[0]}</strong>,
-            significantly above the national daily average of{" "}
+            on <strong>{peak[0]}</strong>, significantly
+            above the national daily average of{" "}
             <strong>{avgPerActiveDay}</strong>.
           </p>
         )}
 
         <p>
           High-density racing days increase national overlap,
-          intensify broadcast competition and compress operational
-          scheduling across UK racecourses.
+          intensify broadcast competition and compress
+          operational scheduling across UK racecourses.
         </p>
+
       </section>
 
-      {/* ===== TOP 20 LIST ===== */}
+      {/* SPORT PAGE CONTENT (TABS + BUSIEST DAYS) */}
 
-      <section className="pt-10 border-t space-y-6">
-        <h2 className="text-xl font-semibold">
-          Top 20 Highest-Volume Racing Days
-        </h2>
+      <HorseRacingSportPage
+        events={ukEvents}
+        tab="busiest"
+        course={null}
+      />
 
-        <BusiestDaysToggle
-          days={sorted}
-          allEvents={racing2026}
-        />
-      </section>
-      {/* ===== INTERNAL LINKS ===== */}
+      {/* INTERNAL LINKS */}
 
       <section className="pt-10 border-t text-sm space-y-2">
-        <h2 className="font-semibold">Related 2026 Reports</h2>
+
+        <h2 className="font-semibold">
+          Related 2026 Reports
+        </h2>
+
         <ul className="underline space-y-1">
+
           <li>
-            <Link
-              href="/uk/horse-racing"
-            >
-              UK Horse Racing Hub→
+            <Link href="/uk/horse-racing">
+              UK Horse Racing Hub →
             </Link>
           </li>
+
           <li>
             <Link href="/uk/horse-racing/calendar-2026">
               Full UK Horse Racing Calendar 2026
             </Link>
           </li>
+
           <li>
             <Link href="/uk/horse-racing/courses">
               Course Ranking & Structural Density
             </Link>
           </li>
+
           <li>
             <Link href="/uk/horse-racing/overlap-report-2026">
               National Overlap Report
             </Link>
           </li>
+
         </ul>
+
       </section>
 
-      {/* ===== STRUCTURED DATA ===== */}
+      {/* STRUCTURED DATA */}
 
       <script
         type="application/ld+json"
@@ -179,20 +196,5 @@ export default async function Page() {
       />
 
     </main>
-  );
-}
-
-/* ===== STAT COMPONENT ===== */
-
-function Stat({ title, value }: any) {
-  return (
-    <div className="border rounded-2xl p-6 bg-white">
-      <p className="text-xs uppercase tracking-wide text-muted-foreground">
-        {title}
-      </p>
-      <p className="text-3xl font-semibold mt-2">
-        {value}
-      </p>
-    </div>
   );
 }

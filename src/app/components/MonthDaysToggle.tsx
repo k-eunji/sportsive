@@ -5,17 +5,20 @@
 import { useState } from "react";
 import type { Event } from "@/types";
 import { EventList } from "./EventList";
+import Link from "next/link";
 
 export function MonthDaysToggle({
   monthlyEvents,
   totalMonth,
+  mode = "toggle",
 }: {
   monthlyEvents: Event[];
   totalMonth: number;
+  mode?: "toggle" | "link";
 }) {
+
   const [openDate, setOpenDate] = useState<string | null>(null);
 
-  // 날짜별 그룹핑
   const grouped: Record<string, Event[]> = {};
 
   monthlyEvents.forEach((e: any) => {
@@ -35,6 +38,7 @@ export function MonthDaysToggle({
   return (
     <div className="space-y-3">
       {sorted.map(([date, events]) => {
+
         const isOpen = openDate === date;
         const count = events.length;
 
@@ -50,45 +54,81 @@ export function MonthDaysToggle({
               isOpen ? "shadow-md" : ""
             }`}
           >
-            <button
-              onClick={() => toggle(date)}
-              className="w-full flex justify-between items-center px-4 py-4 text-sm hover:bg-gray-50 transition"
-            >
-              <span>{date}</span>
 
-              <span className="flex items-center gap-2 text-muted-foreground">
-                <span className="tabular-nums">
-                  {count} meetings
+            {/* ===== LINK MODE ===== */}
+
+            {mode === "link" && (
+              <Link
+                href={`/date/${date}?country=uk&sport=horse-racing`}
+                className="w-full flex justify-between items-center px-4 py-4 text-sm hover:bg-gray-50 transition"
+              >
+                <span>{date}</span>
+
+                <span className="flex items-center gap-2 text-muted-foreground">
+                  <span className="tabular-nums">
+                    {count} meetings
+                  </span>
+
+                  <span className="text-xs">
+                    ({percentage}%)
+                  </span>
                 </span>
-                <span className="text-xs">
-                  ({percentage}%)
-                </span>
-                <span
-                  className={`transition-transform duration-200 ${
-                    isOpen ? "rotate-180" : ""
+              </Link>
+            )}
+
+            {/* ===== TOGGLE MODE ===== */}
+
+            {mode === "toggle" && (
+              <>
+                <button
+                  onClick={() => toggle(date)}
+                  className="w-full flex justify-between items-center px-4 py-4 text-sm hover:bg-gray-50 transition"
+                >
+
+                  <span>{date}</span>
+
+                  <span className="flex items-center gap-2 text-muted-foreground">
+                    <span className="tabular-nums">
+                      {count} meetings
+                    </span>
+
+                    <span className="text-xs">
+                      ({percentage}%)
+                    </span>
+
+                    <span
+                      className={`transition-transform duration-200 ${
+                        isOpen ? "rotate-180" : ""
+                      }`}
+                    >
+                      ▾
+                    </span>
+
+                  </span>
+
+                </button>
+
+                <div
+                  className={`grid transition-all duration-300 ${
+                    isOpen
+                      ? "grid-rows-[1fr] opacity-100"
+                      : "grid-rows-[0fr] opacity-0"
                   }`}
                 >
-                  ▾
-                </span>
-              </span>
-            </button>
+                  <div className="overflow-hidden border-t border-gray-100">
+                    <div className="px-4 py-4">
 
-            <div
-              className={`grid transition-all duration-300 ${
-                isOpen
-                  ? "grid-rows-[1fr] opacity-100"
-                  : "grid-rows-[0fr] opacity-0"
-              }`}
-            >
-              <div className="overflow-hidden border-t border-gray-100">
-                <div className="px-4 py-4">
-                  <EventList
-                    events={events}
-                    fixedStartDate={date}
-                  />
+                      <EventList
+                        events={events}
+                        fixedStartDate={date}
+                      />
+
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
+              </>
+            )}
+
           </div>
         );
       })}

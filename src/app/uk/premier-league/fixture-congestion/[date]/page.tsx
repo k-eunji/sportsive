@@ -297,6 +297,19 @@ export default async function Page({ params }: Props) {
                 location: {
                   "@type": "Place",
                   name: event.venue ?? "Football Stadium",
+                  address: {
+                    "@type": "PostalAddress",
+                    addressLocality: event.city,
+                    addressRegion: event.region,
+                    addressCountry: "GB"
+                  },
+                  geo: event.location?.lat && event.location?.lng
+                    ? {
+                        "@type": "GeoCoordinates",
+                        latitude: event.location.lat,
+                        longitude: event.location.lng
+                      }
+                    : undefined
                 },
                 organizer: {
                   "@type": "Organization",

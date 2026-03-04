@@ -8,6 +8,7 @@ import WeekendSplitChart from "@/app/components/WeekendSplitChart";
 import SportDistributionChart from "@/app/components/SportDistributionChart";
 import { useEffect } from "react";
 import { getClientId } from "@/lib/clientId";
+import Link from "next/link";
 
 function formatMonthDisplay(year: string, month: string) {
   const date = new Date(Number(year), Number(month) - 1);
@@ -39,37 +40,193 @@ function SummaryCard({
   );
 }
 
-export default function ReportsDashboard({ events }: { events: any[] }) {
-  const [region, setRegion] = useState<string | null>(null);
-  const [city, setCity] = useState<string | null>(null);
-  const [sport, setSport] = useState<string>("all");
-  const [year] = useState(new Date().getFullYear().toString());
-  const [month, setMonth] = useState(
-    String(new Date().getMonth() + 1).padStart(2, "0")
+export default function ReportsDashboard({
+  events,
+  initialRegion,
+  initialCity,
+  initialSport,
+  initialYear,
+  initialMonth,
+  countryScope,
+}: {
+  events: any[];
+  initialRegion?: string | null;
+  initialCity?: string | null;
+  initialSport?: string;
+  initialYear?: string;
+  initialMonth?: string;
+  countryScope?: "uk" | "ireland" | null;
+}) {
+  const now = new Date();
+
+  const [country, setCountry] = useState<"uk" | "ireland" | "all">(
+    countryScope ?? "all"
   );
 
-  const prefix = `${year}-${month}`;
-  const displayMonth = formatMonthDisplay(year, month);
+  const [region, setRegion] = useState<string | null>(
+    initialRegion ?? null
+  );
 
+  const [city, setCity] = useState<string | null>(
+    initialCity ?? null
+  );
+
+  const [sport, setSport] = useState<string>(
+    initialSport ?? "all"
+  );
+
+  const [selectedMonth, setSelectedMonth] = useState<string>(() => {
+    if (initialYear && initialMonth) {
+      return `${initialYear}-${initialMonth}`;
+    }
+
+    const now = new Date();
+    return `${now.getFullYear()}-${String(
+      now.getMonth() + 1
+    ).padStart(2, "0")}`;
+  });
+
+  const prefix = selectedMonth;
+
+  const [year, month] = selectedMonth.split("-");
+  
+  const displayMonth = formatMonthDisplay(year, month);
+  const normalize = (v?: string) =>
+    v?.toLowerCase().trim() ?? "";
+
+  const UK_SET = new Set([
+    "england",
+    "scotland",
+    "wales",
+    "northern ireland",
+  ]);
+  
+  const availableMonths = useMemo(() => {
+    const months = Array.from(
+      new Set(
+        events
+          .filter((e) => {
+            const eventMonth =
+              (e.startDate ?? e.date ?? e.utcDate)?.slice(0, 7);
+
+            const regionLower = normalize(e.region);
+
+            const isInScope =
+              country === "uk"
+                ? UK_SET.has(regionLower)
+                : country === "ireland"
+                ? regionLower === "ireland"
+                : true;
+
+            return (
+              isInScope &&
+              (!region ||
+                normalize(e.region) === normalize(region)) &&
+              (!city || e.city === city) &&
+              (sport === "all" ||
+                e.sport?.toLowerCase() === sport)
+            );
+          })
+          .map((e) =>
+            (e.startDate ?? e.date ?? e.utcDate)?.slice(0, 7)
+          )
+          .filter(Boolean)
+      )
+    ).sort();
+
+    const now = new Date();
+    const min = new Date(now);
+    min.setMonth(min.getMonth() - 12);
+
+    const max = new Date(now);
+    max.setMonth(max.getMonth() + 12);
+
+    return months.filter((m) => {
+      const [y, mo] = m.split("-");
+      const d = new Date(Number(y), Number(mo) - 1);
+      return d >= min && d <= max;
+    });
+  }, [events, country, region, city, sport]);
   /* =========================
      REGION LIST
   ========================= */
 
   const regions = useMemo(() => {
+    if (country === "ireland") {
+      return ["ireland"];
+    }
+
+    if (country === "uk") {
+      return Array.from(
+        new Set(
+          events
+            .filter((e) => {
+              const eventMonth =
+                (e.startDate ?? e.date ?? e.utcDate)?.slice(0, 7);
+
+              return (
+                UK_SET.has(normalize(e.region)) &&
+                eventMonth === prefix &&
+                (sport === "all" ||
+                  e.sport?.toLowerCase() === sport)
+              );
+            })
+            .map((e) => e.region)
+            .filter(Boolean)
+        )
+      ).sort();
+    }
+
     return Array.from(
-      new Set(events.map((e) => e.region).filter(Boolean))
+      new Set(
+        events
+          .filter((e) => {
+            const eventMonth =
+              (e.startDate ?? e.date ?? e.utcDate)?.slice(0, 7);
+
+            return (
+              eventMonth === prefix &&
+              (sport === "all" ||
+                e.sport?.toLowerCase() === sport)
+            );
+          })
+          .map((e) => e.region)
+          .filter(Boolean)
+      )
     ).sort();
-  }, [events]);
+  }, [events, country, sport, prefix]);
 
   const sports = useMemo(() => {
     return Array.from(
       new Set(
         events
+          .filter((e) => {
+            const eventMonth =
+              (e.startDate ?? e.date ?? e.utcDate)?.slice(0, 7);
+
+            const regionLower = normalize(e.region);
+
+            const isInScope =
+              country === "uk"
+                ? UK_SET.has(regionLower)
+                : country === "ireland"
+                ? regionLower === "ireland"
+                : true;
+
+            return (
+              isInScope &&
+              eventMonth === prefix &&
+              (!region ||
+                normalize(e.region) === normalize(region)) &&
+              (!city || e.city === city)
+            );
+          })
           .map((e) => e.sport?.toLowerCase().trim())
           .filter(Boolean)
       )
     ).sort();
-  }, [events]);
+  }, [events, country, region, city, prefix]);
+  
 
   /* =========================
      CITY LIST (region 기반)
@@ -81,13 +238,22 @@ export default function ReportsDashboard({ events }: { events: any[] }) {
     return Array.from(
       new Set(
         events
-          .filter((e) => e.region === region)
+          .filter((e) => {
+            const eventMonth =
+              (e.startDate ?? e.date ?? e.utcDate)?.slice(0, 7);
+
+            return (
+              normalize(e.region) === normalize(region) &&
+              eventMonth === prefix &&
+              (sport === "all" ||
+                e.sport?.toLowerCase() === sport)
+            );
+          })
           .map((e) => e.city)
           .filter(Boolean)
       )
     ).sort();
-  }, [events, region]);
-
+  }, [events, region, sport, prefix]);
   /* =========================
      FILTER EVENTS
   ========================= */
@@ -97,16 +263,27 @@ export default function ReportsDashboard({ events }: { events: any[] }) {
       const eventMonth =
         (e.startDate ?? e.date ?? e.utcDate)?.slice(0, 7);
 
+      const regionLower = normalize(e.region);
+
+      // 🔥 UK 정의
+      const isInScope =
+        country === "uk"
+          ? UK_SET.has(regionLower)
+          : country === "ireland"
+          ? regionLower === "ireland"
+          : true;
+
       return (
-        (!region || e.region === region) &&
+        isInScope &&
+        (!region ||
+          normalize(e.region) === normalize(region)) &&
         (!city || e.city === city) &&
         (sport === "all" ||
           e.sport?.toLowerCase() === sport) &&
-
         eventMonth === prefix
       );
     });
-  }, [events, region, city, sport, prefix]);
+  }, [events, region, city, sport, prefix, country]);
 
   const totalMatches = filtered.length;
 
@@ -131,6 +308,10 @@ export default function ReportsDashboard({ events }: { events: any[] }) {
   /* =========================
     REPORT VIEW LOG
   ========================= */
+  useEffect(() => {
+    setRegion(null);
+    setCity(null);
+  }, [countryScope]);  
 
   useEffect(() => {
     const clientId = getClientId();
@@ -186,10 +367,11 @@ export default function ReportsDashboard({ events }: { events: any[] }) {
         const key =
           sport === "all"
             ? e.sport
-            : sport === "horse racing"
-              ? e.payload?.course || "Unknown Course"
-              : e.league || e.competition || "Other";
-
+            : sport === "horse-racing"
+            ? e.payload?.course || "Unknown Course"
+            : sport === "football" || sport === "basketball"
+            ? e.league || e.competition || "Other"
+            : e.sport;
         if (!key) return acc;
         acc[key] = (acc[key] || 0) + 1;
         return acc;
@@ -200,20 +382,6 @@ export default function ReportsDashboard({ events }: { events: any[] }) {
     const top = entries.slice(0, TOP_N);
     const rest = entries.slice(TOP_N);
     const otherTotal = rest.reduce((sum, [, count]) => sum + count, 0);
-
-    const weekendData = [
-      {
-        name: "Weekend",
-        value: weekendCount,
-        percentage: weekendShare,
-      },
-      {
-        name: "Weekday",
-        value: totalMatches - weekendCount,
-        percentage: 100 - weekendShare,
-      },
-    ];
-
 
     const finalData = [
       ...top,
@@ -237,16 +405,74 @@ export default function ReportsDashboard({ events }: { events: any[] }) {
 
   })();
 
+  const busiestDay =
+    [...sortedEntries].sort((a, b) => b[1] - a[1])[0] || null;
+  
+  const cityRanking = Object.entries(
+    filtered.reduce<Record<string, number>>((acc, e: any) => {
+      if (!e.city) return acc;
+      acc[e.city] = (acc[e.city] || 0) + 1;
+      return acc;
+    }, {})
+  )
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
+
+  const showBusiestCity =
+    sport === "all" &&
+    !city;
 
   return (
-    <main className="max-w-5xl mx-auto px-5 py-12 space-y-12">
+    <div className="max-w-6xl mx-auto px-4 py-12 space-y-12">
+
+      <Link
+        href="/"
+        className="text-sm text-muted-foreground hover:underline"
+      >
+        ← Back to fixture explorer
+      </Link>
 
       {/* FILTER BAR */}
-      <section className="flex gap-4 flex-wrap">
+      <section className="flex flex-wrap gap-2 py-1 border-b border-zinc-200">
+
+        {/* COUNTRY */}
+        <select
+          value={country}
+          onChange={(e) => {
+            const value = e.target.value as "uk" | "ireland" | "all";
+            setCountry(value);
+
+            if (value === "ireland") {
+              setRegion("ireland");   // ✅ 자동 선택
+            } else {
+              setRegion(null);
+            }
+
+            setCity(null);
+          }}
+          className="
+          bg-white
+          border border-zinc-200
+          rounded-md
+          px-3 py-1.5
+          text-sm
+          text-zinc-700
+          hover:border-zinc-300
+          focus:outline-none
+          focus:ring-1
+          focus:ring-zinc-300
+          transition
+          "
+        >
+          <option value="all">All Countries</option>
+          <option value="uk">United Kingdom</option>
+          <option value="ireland">Ireland</option>
+        </select>
 
         {/* REGION */}
         <select
           value={region ?? ""}
+          disabled={country === "ireland"}
           onChange={(e) => {
             setRegion(e.target.value || null);
             setCity(null);
@@ -267,7 +493,19 @@ export default function ReportsDashboard({ events }: { events: any[] }) {
           onChange={(e) =>
             setCity(e.target.value || null)
           }
-          className="border px-3 py-2 rounded"
+          className="
+          bg-white
+          border border-zinc-200
+          rounded-md
+          px-3 py-1.5
+          text-sm
+          text-zinc-700
+          hover:border-zinc-300
+          focus:outline-none
+          focus:ring-1
+          focus:ring-zinc-300
+          transition
+          "
           disabled={!region}
         >
           <option value="">All Cities</option>
@@ -282,7 +520,19 @@ export default function ReportsDashboard({ events }: { events: any[] }) {
         <select
           value={sport}
           onChange={(e) => setSport(e.target.value)}
-          className="border px-3 py-2 rounded"
+          className="
+          bg-white
+          border border-zinc-200
+          rounded-md
+          px-3 py-1.5
+          text-sm
+          text-zinc-700
+          hover:border-zinc-300
+          focus:outline-none
+          focus:ring-1
+          focus:ring-zinc-300
+          transition
+          "
         >
           <option value="all">All Sports</option>
             {sports.map((s) => (
@@ -294,15 +544,27 @@ export default function ReportsDashboard({ events }: { events: any[] }) {
 
         {/* MONTH */}
         <select
-          value={month}
-          onChange={(e) => setMonth(e.target.value)}
-          className="border px-3 py-2 rounded"
+          value={selectedMonth}
+          onChange={(e) => setSelectedMonth(e.target.value)}
+          className="
+          bg-white
+          border border-zinc-200
+          rounded-md
+          px-3 py-1.5
+          text-sm
+          text-zinc-700
+          hover:border-zinc-300
+          focus:outline-none
+          focus:ring-1
+          focus:ring-zinc-300
+          transition
+          "
         >
-          {Array.from({ length: 12 }).map((_, i) => {
-            const m = String(i + 1).padStart(2, "0");
+          {availableMonths.map((m) => {
+            const [y, mo] = m.split("-");
             return (
               <option key={m} value={m}>
-                {m}
+                {formatMonthDisplay(y, mo)}
               </option>
             );
           })}
@@ -310,12 +572,23 @@ export default function ReportsDashboard({ events }: { events: any[] }) {
       </section>
 
       {/* HEADER */}
-      <header>
-        <h1>
-          {sport === "all" ? "Sports Fixtures" : `${sport} Fixtures`} 
-          in {city ?? region ?? "the UK"} — {displayMonth}
+      <header className="space-y-3">
+
+        <h1 className="text-2xl md:text-2xl font-bold tracking-tight leading-tight">
+          {sport === "all"
+            ? "Sports Fixture Volume & Distribution"
+            : `${sport} Fixture Volume`}
         </h1>
 
+        <p className="text-lg text-muted-foreground">
+          {city ??
+            region ??
+            (country === "uk"
+              ? "United Kingdom"
+              : country === "ireland"
+              ? "Ireland"
+              : "All Countries")} — {displayMonth}
+        </p>
         <p className="text-muted-foreground text-sm">
           Complete match schedule and monthly distribution analysis
         </p>
@@ -338,29 +611,59 @@ export default function ReportsDashboard({ events }: { events: any[] }) {
         />
       </section>
 
+      {/* 🔥 ALL SPORTS MONTH STYLE BLOCK */}
+      {sport === "all" && totalMatches > 0 && (
+        <section className="rounded-2xl border p-6 bg-background shadow-sm text-sm space-y-3">
+          <p>
+            In <strong>{displayMonth}</strong>, a total of{" "}
+            <strong>{totalMatches}</strong> professional sports fixtures
+            were staged across the selected area.
+          </p>
+
+          {busiestDay && (
+            <p>
+              The busiest day was{" "}
+              <strong>{busiestDay[0]}</strong> with{" "}
+              <strong>{busiestDay[1]}</strong> fixtures.
+            </p>
+          )}
+
+          <p>
+            Weekend fixtures represent{" "}
+            <strong>{weekendShare}%</strong> of the schedule.
+          </p>
+        </section>
+      )}
+
       {/* DAILY VOLUME */}
       <section>
-        <DailyVolumeChart data={chartData} />
+        {totalMatches === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            No fixtures found for this selection.
+          </p>
+        ) : (
+          <DailyVolumeChart data={chartData} />
+        )}
       </section>
-
+      
       {/* WEEKEND SPLIT */}
       <section>
-        <WeekendSplitChart
-          data={[
-            {
-              name: "Weekend",
-              value: weekendCount,
-              percentage: weekendShare,
-            },
-            {
-              name: "Weekday",
-              value: totalMatches - weekendCount,
-              percentage: 100 - weekendShare,
-            },
-          ]}
-        />
-
-
+        {totalMatches > 0 && (
+          <WeekendSplitChart
+            data={[
+              {
+                name: "Weekend",
+                value: weekendCount,
+                percentage: weekendShare,
+              },
+              {
+                name: "Weekday",
+                value: totalMatches - weekendCount,
+                percentage: 100 - weekendShare,
+              },
+            ]}
+          />
+        )}
         <p className="text-sm text-muted-foreground leading-relaxed mt-4">
           In <strong>{displayMonth}</strong>,{" "}
           <strong>{region ?? "selected regions"}</strong>{" "}
@@ -374,22 +677,48 @@ export default function ReportsDashboard({ events }: { events: any[] }) {
 
       {/* DISTRIBUTION */}
       <section>
-        <h2 className="text-xl font-semibold mb-4">
-          {sport === "all"
-            ? "Distribution by Sport"
-            : sport === "horse racing"
-              ? "Distribution by Course"
-              : "Distribution by Competition"}
-        </h2>
+        {totalMatches > 0 && (
+          <>
+            <h2 className="text-xl font-semibold mb-4">
+              {sport === "all"
+                ? "Distribution by Sport"
+                : sport === "horse-racing"
+                ? "Distribution by Course"
+                : sport === "football" || sport === "basketball"
+                ? "Distribution by Competition"
+                : "Distribution by Sport"}
+            </h2>
+            <SportDistributionChart data={distributionData} />
 
-        <SportDistributionChart data={distributionData} />
+            {sport === "all" && totalMatches > 0 && (
+              <section className="text-sm text-muted-foreground leading-relaxed">
+                <p>
+                  In <strong>{displayMonth}</strong>, a total of{" "}
+                  <strong>{totalMatches}</strong> professional sports fixtures
+                  were staged across the selected area. The busiest day fell on{" "}
+                  <strong>
+                    {busiestDay ? busiestDay[0] : "N/A"}
+                  </strong>.
+                </p>
 
+                {distributionData[0] && (
+                  <p className="mt-3">
+                    The leading sport during the month was{" "}
+                    <strong>{distributionData[0].sport}</strong>, accounting for{" "}
+                    <strong>{distributionData[0].percentage}%</strong> of all
+                    scheduled fixtures.
+                  </p>
+                )}
+              </section>
+            )}
+          </>
+        )}
       </section>
 
-      {sport !== "all" && (
+      {(sport === "football" || sport === "basketball" || sport === "horse-racing") && (
         <section>
           <h2 className="text-xl font-semibold mb-4">
-            {sport === "horse racing"
+            {sport === "horse-racing"
               ? "Top Racecourses"
               : "Top Competitions"}
           </h2>
@@ -398,7 +727,7 @@ export default function ReportsDashboard({ events }: { events: any[] }) {
             {Object.entries(
               filtered.reduce<Record<string, number>>((acc, e: any) => {
                 const key =
-                  sport === "horse racing"
+                  sport === "horse-racing"
                     ? e.payload?.course || "Unknown Course"
                     : e.league || e.competition || "Other";
 
@@ -499,21 +828,104 @@ export default function ReportsDashboard({ events }: { events: any[] }) {
         </section>
       )}
 
+      {showBusiestCity && cityRanking.length > 0 && (
+        <section>
+          <h2 className="text-xl font-semibold mb-4">
+            Busiest Cities
+          </h2>
+          <ul className="space-y-2">
+            {cityRanking.map(([city, count]) => (
+              <li key={city} className="flex justify-between border-b py-2">
+                <span>{city}</span>
+                <span className="font-semibold">
+                  {count} (
+                  {totalMatches > 0
+                    ? Math.round((count / totalMatches) * 100)
+                    : 0}
+                  %)
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {/* DAILY INDEX */}
       <section>
         <h2 className="text-lg font-semibold mb-4">
           Daily Fixture Index
         </h2>
-        <ul className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
-          {sortedEntries.map(([date, count]) => (
-            <li key={date} className="flex justify-between border-b py-2">
-              <span>{date}</span>
-              <span className="font-semibold">{count}</span>
-            </li>
-          ))}
+        <ul className="space-y-2">
+
+          {sortedEntries.map(([date, count]) => {
+
+            const displayDate = new Date(date).toLocaleDateString("en-GB", {
+              weekday: "short",
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+            });
+
+            return (
+              <li key={date}>
+                <Link
+                  href={{
+                    pathname: `/date/${date}`,
+                    query: {
+                      ...(country !== "all" && { country }),
+                      ...(region && { region }),
+                      ...(city && { city }),
+                      ...(sport !== "all" && { sport }),
+                    },
+                  }}
+                  className="
+                  flex items-center justify-between
+                  px-4 py-3
+                  rounded-xl
+                  border border-gray-200
+                  bg-white
+                  hover:border-gray-300
+                  hover:shadow-sm
+                  transition
+                  "
+                >
+
+                  <span className="font-semibold">
+                    {displayDate}
+                  </span>
+
+                  <span className="text-sm text-muted-foreground">
+                    {count} fixtures →
+                  </span>
+
+                </Link>
+              </li>
+            );
+
+          })}
+
         </ul>
       </section>
 
-    </main>
+      {/* PLATFORM CTA */}
+      <section className="mt-16">
+        <div className="rounded-2xl border p-8 bg-white shadow-sm text-center space-y-4">
+          <h1 className="text-3xl font-bold">
+            UK Fixture Density Dashboard — {displayMonth}
+          </h1>
+          <p className="text-sm text-muted-foreground max-w-xl mx-auto">
+            Browse fixtures by city, filter by date range, or discover what’s happening across the UK & Ireland.
+          </p>
+
+          <Link
+            href="/"
+            className="inline-flex items-center justify-center rounded-full bg-black text-white px-6 py-3 text-sm font-semibold hover:bg-black/90 transition"
+          >
+            Open full fixture explorer →
+          </Link>
+        </div>
+      </section>
+
+    </div>
   );
 }

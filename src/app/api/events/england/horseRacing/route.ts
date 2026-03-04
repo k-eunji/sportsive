@@ -45,7 +45,7 @@ export async function GET() {
           homepage_url
         )
       `)
-
+      .eq("status", "scheduled")
       .order("date", { ascending: true })
       .range(0, 5000); // 🔥 이 줄 추가
 
@@ -101,17 +101,6 @@ export async function GET() {
       };
     });
 
-    console.log(
-      "🐎 HORSE RAW COUNT:",
-      matches.length,
-      "MAX DATE:",
-      matches
-        .map(m => m.startDate)
-        .sort()
-        .slice(-3)
-    );  
-    console.log("🔎 SESSIONS LENGTH:", sessions?.length);
-    
     return NextResponse.json({ matches });
   } catch (err) {
     console.error("❌ horse racing events error:", err);

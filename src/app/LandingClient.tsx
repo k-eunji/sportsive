@@ -269,99 +269,165 @@ export default function LandingClient({
   return (
     <main>
       {/* HERO (Image-based) */}
-        <section className="relative w-full min-h-[420px] pt-[5px] overflow-hidden">
+      <section className="relative w-full min-h-[420px] pt-[5px] overflow-hidden">
 
-          {/* Dark gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-black/10" />
+        {/* Dark gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-black/10" />
 
-          {/* Content */}
-          <div className="relative z-10 max-w-5xl mx-auto px-6 pt-10 space-y-5 text-white">
-            {/* Top utilities */}
-            <div className="flex flex-wrap items-center gap-3">
-              <LocationAnchor
-                hasLocation={hasLocation}
-                observerCity={observerCity}
-                onOpenLocationSheet={() => setLocationOpen(true)}
-              />
-              {hasLocation && (
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setLocationMode("off")}
-                    className={`px-3 py-1.5 rounded-full text-xs font-semibold ${
-                      locationMode === "off"
-                        ? "bg-black text-white"
-                        : "bg-muted/60"
-                    }`}
-                  >
-                    OFF
-                  </button>
+        {/* Content */}
+        <div className="relative z-10 max-w-6xl mx-auto px-4 py-12 space-y-12 text-white">
+          {/* Top utilities */}
+          <div className="flex flex-wrap items-center gap-3">
+            <LocationAnchor
+              hasLocation={hasLocation}
+              observerCity={observerCity}
+              onOpenLocationSheet={() => setLocationOpen(true)}
+            />
+            {hasLocation && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setLocationMode("off")}
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold ${
+                    locationMode === "off"
+                      ? "bg-black text-white"
+                      : "bg-muted/60"
+                  }`}
+                >
+                  OFF
+                </button>
 
-                  <button
-                    onClick={() => setLocationMode("on")}
-                    className={`px-3 py-1.5 rounded-full text-xs font-semibold ${
-                      locationMode === "on"
-                        ? "bg-black text-white"
-                        : "bg-muted/60"
-                    }`}
-                  >
-                    ON
-                  </button>
-                </div>
-              )}
+                <button
+                  onClick={() => setLocationMode("on")}
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold ${
+                    locationMode === "on"
+                      ? "bg-black text-white"
+                      : "bg-muted/60"
+                  }`}
+                >
+                  ON
+                </button>
+              </div>
+            )}
 
 
-              <PriceIntentBar
-                value={priceFilter}
-                onChange={setPriceFilter}
-              />
-            </div>
-
-            {/* Hero copy */}
-            <h1 className="text-4xl md:text-5xl font-bold leading-tight max-w-3xl">
-              Sports fixtures across the UK & Ireland — by city and date
-            </h1>
-
-            <p>
-              Explore upcoming football, rugby, cricket and more across the UK and Ireland.
-            </p>
-
-            <p className="text-sm text-white/70">
-              Operational insights available for venues & event teams.
-            </p>
-
-            {/* CTA */}
-            <div className="pt-2">
-              <a
-                href="/ops"
-                className="
-                  inline-flex items-center gap-2
-                  rounded-full
-                  bg-white text-black
-                  px-5 py-3
-                  text-sm font-semibold
-                  hover:bg-white/90
-                  transition
-                "
-              >
-                Open operational dashboard →
-              </a>
-            </div>
+            <PriceIntentBar
+              value={priceFilter}
+              onChange={setPriceFilter}
+            />
           </div>
-        </section>
+
+          {/* Hero copy */}
+          <h1 className="text-4xl md:text-5xl font-bold leading-tight max-w-3xl">
+            Sports fixtures across the UK & Ireland — by city and date
+          </h1>
+
+          <p>
+            Explore upcoming football, rugby, cricket and more across the UK and Ireland.
+          </p>
+
+          <p className="text-sm text-white/70">
+            Operational insights available for venues & event teams.
+          </p>
+
+          {/* CTA */}
+          <div className="pt-2">
+            <a
+              href="/ops"
+              className="
+                inline-flex items-center gap-2
+                rounded-full
+                bg-white text-black
+                px-5 py-3
+                text-sm font-semibold
+                hover:bg-white/90
+                transition
+              "
+            >
+              Open operational dashboard →
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* ================= COLLISION OVERVIEW ================= */}
+      <section className="max-w-6xl mx-auto px-4 py-12 space-y-12">
+
+        {/* TIME */}
+        <div>
+          <h2 className="text-2xl font-semibold mb-4">
+            In time
+          </h2>
+          <p className="text-muted-foreground mb-4">
+            See when sports fixtures cluster across the UK.
+          </p>
+
+          <div className="flex flex-wrap gap-4">
+            <a href="/uk/sports/today" className="underline">
+              Today’s fixtures
+            </a>
+            <a href="/reports" className="underline">
+              Monthly analytics
+            </a>
+          </div>
+        </div>
+
+        {/* PEAK */}
+        <div>
+          <h2 className="text-2xl font-semibold mb-4">
+            Today’s activity
+          </h2>
+
+          <p className="text-muted-foreground">
+            {todayEvents.length} fixtures scheduled today.
+          </p>
+
+          <a
+            href={`/uk/sports/${new Date().toISOString().slice(0,10)}`}
+            className="inline-block mt-3 underline"
+          >
+            View full matchday report →
+          </a>
+        </div>
+
+        {/* SPACE */}
+        <div>
+          <h2 className="text-2xl font-semibold mb-4">
+            In space
+          </h2>
+
+          <p className="text-muted-foreground">
+            Explore venue clustering and overlapping match locations.
+          </p>
+
+          <a href="/ops" className="inline-block mt-3 underline">
+            View congestion map →
+          </a>
+        </div>
+
+        {/* IMPACT */}
+        <div>
+          <h2 className="text-2xl font-semibold mb-4">
+            Operational impact
+          </h2>
+
+          <p className="text-muted-foreground">
+            Identify peak-hour load and venue density signals.
+          </p>
+
+          <a href="/ops" className="inline-block mt-3 underline">
+            Open operational dashboard →
+          </a>
+        </div>
+
+      </section>
+      
+      {/* LIST */}
+      <section className="max-w-6xl mx-auto px-4 py-12 space-y-12"></section><section className="max-w-6xl mx-auto px-4 py-12 space-y-12"></section>
 
       {/* LIST */}
       {/* ✅ TODAY SUMMARY (추가만) */}
-      <section className="max-w-3xl mx-auto px-4 pb-4">
+      <section className="max-w-6xl mx-auto px-4 py-12 space-y-12">
         <div className="rounded-2xl bg-muted/40 px-4 py-4 space-y-2">
-          <div className="pt-3 text-sm">
-            <a
-              href="/reports"
-              className="inline-flex items-center gap-1 font-semibold underline hover:no-underline"
-            >
-              View monthly analytics →
-            </a>
-          </div>
-
           {todayEvents.length === 0 && (
             <div className="text-sm text-muted-foreground">
               Nothing happening
