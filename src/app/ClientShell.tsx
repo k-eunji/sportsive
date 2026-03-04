@@ -7,7 +7,7 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { Toaster } from "react-hot-toast";
 
-const HEADER_HEIGHT = "pt-[50px]";
+const HEADER_HEIGHT = "pt-[104px] md:pt-[64px]";
 
 export default function ClientShell({
   children,
