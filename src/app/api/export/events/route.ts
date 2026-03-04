@@ -24,6 +24,7 @@ export async function GET(req: NextRequest) {
   const sport = searchParams.get("sport");
   const country = searchParams.get("country");
   const format = searchParams.get("format") || "csv";
+  const source = searchParams.get("source");
 
   if (!date) {
     return new Response("Missing date", { status: 400 });
@@ -56,13 +57,17 @@ export async function GET(req: NextRequest) {
   /* ================= LOG ================= */
 
   await supabase.from("download_events").insert({
-    page: "global-export",
+    page: source ?? "global-export",
     event_date: date,
     sport: sport ?? null,
     country: country ?? null,
     format,
-  });
 
+    result_count: filtered.length,
+
+    referrer: req.headers.get("referer"),
+    user_agent: req.headers.get("user-agent")
+  });
   /* ================= ICS ================= */
 
   if (format === "ics") {
