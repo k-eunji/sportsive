@@ -99,8 +99,15 @@ export default async function DatePage({
     return true;
   });
 
+  let finalEvents = dateEvents;
 
-  if (dateEvents.length === 0) {
+  // 필터 때문에 결과가 0이면 → all 데이터 사용
+  if (dateEvents.length === 0 && dateBaseEvents.length > 0) {
+    finalEvents = dateBaseEvents;
+  }
+
+  // 진짜 이벤트 없는 날짜면 → 404
+  if (finalEvents.length === 0) {
     notFound();
   }
 
@@ -108,14 +115,14 @@ export default async function DatePage({
 
   /* ================= BASIC METRICS ================= */
 
-  const totalEvents = dateEvents.length;
+  const totalEvents = finalEvents.length;
 
   const uniqueCities = new Set(
-    dateEvents.map((e: any) => e.city).filter(Boolean)
+    finalEvents.map((e: any) => e.city).filter(Boolean)
   ).size;
 
   const uniqueVenues = new Set(
-    dateEvents.map((e: any) => e.venue).filter(Boolean)
+    finalEvents.map((e: any) => e.venue).filter(Boolean)
   ).size;
 
   const density =
@@ -127,7 +134,7 @@ export default async function DatePage({
 
   const sportCounts: Record<string, number> = {};
 
-  dateEvents.forEach((e: any) => {
+  finalEvents.forEach((e: any) => {
     const sport = normalize(e.sport);
     sportCounts[sport] = (sportCounts[sport] || 0) + 1;
   });
@@ -146,7 +153,7 @@ export default async function DatePage({
 
   const regionCounts: Record<string, number> = {};
 
-  dateEvents.forEach((e: any) => {
+  finalEvents.forEach((e: any) => {
     const region = normalize(e.region);
     if (!region) return;
     regionCounts[region] = (regionCounts[region] || 0) + 1;
@@ -159,7 +166,7 @@ export default async function DatePage({
 
   const cityCounts: Record<string, number> = {};
 
-  dateEvents.forEach((e: any) => {
+  finalEvents.forEach((e: any) => {
     if (!e.city) return;
     cityCounts[e.city] =
       (cityCounts[e.city] || 0) + 1;
@@ -183,7 +190,7 @@ export default async function DatePage({
 
   const timeCounts: Record<string, number> = {};
 
-  dateEvents.forEach((e: any) => {
+  finalEvents.forEach((e: any) => {
     const raw = e.startDate ?? e.date ?? e.utcDate;
     if (!raw) return;
 
@@ -241,7 +248,7 @@ export default async function DatePage({
   ).sort();
 
   const liveCount = isToday
-    ? dateEvents.filter((e: any) => {
+    ? finalEvents.filter((e: any) => {
         const now = new Date();
         const start = new Date(e.startDate ?? e.date ?? e.utcDate);
         const diff = (now.getTime() - start.getTime()) / (1000 * 60);
@@ -250,7 +257,7 @@ export default async function DatePage({
     : 0;
 
   const upcoming24h = isToday
-    ? dateEvents.filter((e: any) => {
+    ? finalEvents.filter((e: any) => {
         const start = new Date(e.startDate ?? e.date ?? e.utcDate);
         const now = new Date();
         const diff = (start.getTime() - now.getTime()) / (1000 * 60 * 60);
@@ -564,7 +571,7 @@ export default async function DatePage({
         </h2>
 
         <EventList
-          events={dateEvents}
+          events={finalEvents}
           fixedStartDate={date}
         />
       </section>
@@ -593,12 +600,12 @@ export default async function DatePage({
 
       </section>
       
-      {dateEvents.length > 0 && (
+      {finalEvents.length > 0 && (
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify(
-              dateEvents
+              finalEvents
                 .filter((event: any) => event.startDate || event.date || event.utcDate)
                 .map((event: any) => ({
                   "@context": "https://schema.org",
