@@ -42,21 +42,20 @@ export default function Header({
       !pathname.includes('/month')
     );
   const isMap = pathname.startsWith('/ops');
-  const handleMapSwitch = async () => {
+  const handleMapSwitch = () => {
     if (clickedRef.current) return;
     clickedRef.current = true;
 
-    try {
-      await fetch('/api/log/map-switch', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          client_id: getClientId(),
-          pathname,
-          referrer: document.referrer || null,
-        }),
-      });
-    } catch {}
+    const payload = JSON.stringify({
+      client_id: getClientId(),
+      pathname,
+      referrer: document.referrer || null,
+    });
+
+    navigator.sendBeacon(
+      "/api/log/map-switch",
+      payload
+    );
   };
 
   const baseClass =
