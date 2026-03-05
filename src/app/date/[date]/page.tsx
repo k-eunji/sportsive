@@ -2,7 +2,7 @@
 
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getAllEventsRaw } from "@/lib/events/getAllEventsRaw";
+import { getAllEvents } from "@/lib/events/getAllEvents";
 import SportDistributionChart from "@/app/components/SportDistributionChart";
 import { EventList } from "@/app/components/EventList";
 import DateFilterBar from "../components/DateFilterBar";
@@ -63,42 +63,24 @@ export default async function DatePage({
     "northern ireland",
   ]);
 
-  const events = await getAllEventsRaw("180d");
+  const { events } = await getAllEvents("180d");
 
   const dateBaseEvents = events.filter((e: any) => {
-    const key =
-      (e.startDate ?? e.date ?? e.utcDate)?.slice(0, 10);
-
+    const key = (e.startDate ?? e.date ?? e.utcDate)?.slice(0, 10);
     return key === date;
   });
 
-  const dateEvents = events.filter((e: any) => {
-    const key =
-      (e.startDate ?? e.date ?? e.utcDate)?.slice(0, 10);
-
-    if (key !== date) return false;
-
+  const dateEvents = dateBaseEvents.filter((e: any) => {
     const regionLower = normalize(e.region);
 
-    // ✅ country 필터 추가
-    if (country === "uk" && !UK_SET.has(regionLower))
-      return false;
-
-    if (country === "ireland" && regionLower !== "ireland")
-      return false;
-
-    if (region && regionLower !== normalize(region))
-      return false;
-
-    if (city && normalize(e.city) !== normalize(city))
-      return false;
-    
-    if (sport && normalize(e.sport) !== normalize(sport))
-      return false;
+    if (country === "uk" && !UK_SET.has(regionLower)) return false;
+    if (country === "ireland" && regionLower !== "ireland") return false;
+    if (region && regionLower !== normalize(region)) return false;
+    if (city && normalize(e.city) !== normalize(city)) return false;
+    if (sport && normalize(e.sport) !== normalize(sport)) return false;
 
     return true;
   });
-
   let finalEvents = dateEvents;
 
   // 필터 때문에 결과가 0이면 → all 데이터 사용
