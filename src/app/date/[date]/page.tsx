@@ -198,7 +198,7 @@ export default async function DatePage({
   const peakTime = timeDistribution[0] ?? null;
   /* ================= PREV / NEXT ================= */
 
-  const filteredEventsForDates = events.filter((e: any) => {
+  const filteredEventsForDates = dateBaseEvents.filter((e: any) => {
     const regionLower = normalize(e.region);
 
     if (country === "uk" && !UK_SET.has(regionLower))
