@@ -1,4 +1,4 @@
-// src/app/ireland/sports/[date]/page.tsx
+//src/app/ireland/football/[date]/page.tsx
 
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -20,7 +20,6 @@ function isValidDate(date: string) {
 
 function formatDisplayDate(dateStr: string) {
   const date = new Date(dateStr);
-
   return date.toLocaleDateString("en-IE", {
     weekday: "long",
     day: "2-digit",
@@ -29,6 +28,18 @@ function formatDisplayDate(dateStr: string) {
     timeZone: "Europe/Dublin",
   });
 }
+
+function formatShortDate(dateStr: string) {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString("en-IE", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    timeZone: "Europe/Dublin",
+  });
+}
+
+/* ================= METADATA ================= */
 
 export async function generateMetadata(
   { params }: Props
@@ -40,15 +51,14 @@ export async function generateMetadata(
     return {};
   }
 
-  const displayDate = formatDisplayDate(date);
+  const shortDate = formatShortDate(date);
 
   return {
-    title: `Sports Fixtures in Ireland — ${displayDate} | VenueScope`,
-    description:
-      `Professional sports fixtures taking place across Ireland on ${displayDate}.`,
+    title: `Football Fixtures in Ireland – ${shortDate} | Full Match List`,
+    description: `Full list of professional football matches taking place across Ireland on ${shortDate}. View venues and kickoff times.`,
 
     alternates: {
-      canonical: `https://venuescope.io/ireland/sports/${date}`,
+      canonical: `https://venuescope.io/ireland/football/${date}`,
     },
 
     robots: {
@@ -57,16 +67,18 @@ export async function generateMetadata(
     },
 
     openGraph: {
-      title: `Ireland Sports Fixtures — ${displayDate}`,
-      description: `Professional sports fixtures happening across Ireland on ${displayDate}.`,
-      url: `https://venuescope.io/ireland/sports/${date}`,
+      title: `Ireland Football Fixtures – ${shortDate}`,
+      description: `Professional football matches across Ireland on ${shortDate}.`,
+      url: `https://venuescope.io/ireland/football/${date}`,
       siteName: "VenueScope",
       type: "website",
     },
   };
 }
 
-export default async function IrelandSportsByDatePage({ params }: Props) {
+/* ================= PAGE ================= */
+
+export default async function Page({ params }: Props) {
 
   const { date } = await params;
 
@@ -76,42 +88,45 @@ export default async function IrelandSportsByDatePage({ params }: Props) {
 
   const events = await getAllEventsRaw("180d");
 
-  const irelandEvents = events.filter((e: any) => {
+  const footballEvents = events.filter((e: any) => {
     const key =
       (e.startDate ?? e.date ?? e.utcDate)?.slice(0, 10);
 
     return (
+      e.sport?.toLowerCase() === "football" &&
       IRELAND_REGIONS.includes(e.region?.toLowerCase()) &&
       key === date
     );
   });
 
-  /* 🔴 데이터 없으면 검색 안되게 */
-
-  if (irelandEvents.length === 0) {
+  if (footballEvents.length === 0) {
     notFound();
   }
 
   const displayDate = formatDisplayDate(date);
 
-  const eventSchema = irelandEvents.map((event: any) => ({
+  /* ================= STRUCTURED DATA ================= */
+
+  const eventSchema = footballEvents.map((event: any) => ({
     "@type": "SportsEvent",
     name:
       event.homeTeam && event.awayTeam
         ? `${event.homeTeam} vs ${event.awayTeam}`
-        : event.title ?? "Sports Event",
+        : event.title ?? "Football Match",
+
     startDate: event.startDate ?? event.date ?? event.utcDate,
 
-    url: `https://venuescope.io/ireland/sports/${date}`,
+    url: `https://venuescope.io/ireland/football/${date}`,
 
     eventAttendanceMode:
       "https://schema.org/OfflineEventAttendanceMode",
+
     eventStatus:
       "https://schema.org/EventScheduled",
 
     location: {
       "@type": "Place",
-      name: event.venue ?? "Sports Venue",
+      name: event.venue ?? "Football Stadium",
       address: {
         "@type": "PostalAddress",
         addressLocality: event.city ?? "",
@@ -119,7 +134,7 @@ export default async function IrelandSportsByDatePage({ params }: Props) {
       },
     },
 
-    sport: event.sport ?? "Sports",
+    sport: "Football",
 
     organizer: {
       "@type": "Organization",
@@ -134,14 +149,14 @@ export default async function IrelandSportsByDatePage({ params }: Props) {
       {
         "@type": "ListItem",
         position: 1,
-        name: "Ireland Sports",
-        item: "https://venuescope.io/ireland/sports",
+        name: "Ireland Football",
+        item: "https://venuescope.io/ireland/football",
       },
       {
         "@type": "ListItem",
         position: 2,
         name: displayDate,
-        item: `https://venuescope.io/ireland/sports/${date}`,
+        item: `https://venuescope.io/ireland/football/${date}`,
       },
     ],
   };
@@ -158,7 +173,10 @@ export default async function IrelandSportsByDatePage({ params }: Props) {
     <>
       <DatePage
         params={Promise.resolve({ date })}
-        searchParams={Promise.resolve({ country: "ireland" })}
+        searchParams={Promise.resolve({
+          country: "ireland",
+          sport: "football",
+        })}
       />
 
       <script

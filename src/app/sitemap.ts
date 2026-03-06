@@ -83,7 +83,22 @@ export default function sitemap(): MetadataRoute.Sitemap {
       {
         url: `${baseUrl}/uk/london/basketball/month/${year}/${month}`,
         lastModified: now,
-      }
+      },
+
+        // 🇮🇪 Ireland
+      {
+        url: `${baseUrl}/ireland/sports/month/${year}/${month}`,
+        lastModified: now,
+      },
+      {
+        url: `${baseUrl}/ireland/football/month/${year}/${month}`,
+        lastModified: now,
+      },
+
+      {
+        url: `${baseUrl}/uk/london/sports/month/${year}/${month}`,
+        lastModified: now,
+      },
     );
   }
 
@@ -107,7 +122,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       { url: `${baseUrl}/uk/premier-league/fixture-congestion/${dateStr}`, lastModified: now },
       { url: `${baseUrl}/uk/championship/fixture-congestion/${dateStr}`, lastModified: now },
       { url: `${baseUrl}/uk/basketball/${dateStr}`, lastModified: now },
-      { url: `${baseUrl}/uk/london/basketball/${dateStr}`, lastModified: now }
+      { url: `${baseUrl}/uk/london/basketball/${dateStr}`, lastModified: now },
+        // 🇮🇪 Ireland
+      { url: `${baseUrl}/ireland/sports/${dateStr}`, lastModified: now },
+      { url: `${baseUrl}/ireland/football/${dateStr}`, lastModified: now },
+
+      { url: `${baseUrl}/uk/london/sports/${dateStr}`, lastModified: now },
     );
   }
 
