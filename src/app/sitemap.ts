@@ -2,7 +2,7 @@
 
 import type { MetadataRoute } from "next";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = "https://venuescope.io";
   const now = new Date();
   const urls: MetadataRoute.Sitemap = [];
@@ -93,12 +93,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       {
         url: `${baseUrl}/ireland/football/month/${year}/${month}`,
         lastModified: now,
-      },
-
-      {
-        url: `${baseUrl}/uk/london/sports/month/${year}/${month}`,
-        lastModified: now,
-      },
+      }
     );
   }
 
@@ -125,9 +120,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       { url: `${baseUrl}/uk/london/basketball/${dateStr}`, lastModified: now },
         // 🇮🇪 Ireland
       { url: `${baseUrl}/ireland/sports/${dateStr}`, lastModified: now },
-      { url: `${baseUrl}/ireland/football/${dateStr}`, lastModified: now },
-
-      { url: `${baseUrl}/uk/london/sports/${dateStr}`, lastModified: now },
+      { url: `${baseUrl}/ireland/football/${dateStr}`, lastModified: now }
     );
   }
 
