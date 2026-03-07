@@ -226,7 +226,7 @@ export default function DateFilterBar({
             sport !== "all" ? `&sport=${sport}` : ""
           }${
             country !== "all" ? `&country=${country}` : ""
-          }&source=date-page`}
+          }&source=date-page-csv`}
           className="border px-4 py-2 rounded bg-black text-white"
         >
         Download CSV
@@ -237,7 +237,7 @@ export default function DateFilterBar({
             sport !== "all" ? `&sport=${sport}` : ""
           }${
             country !== "all" ? `&country=${country}` : ""
-          }&format=ics&source=date-page`}
+          }&format=ics&source=date-page-ics`}
           className="border px-4 py-2 rounded"
         >
         Add to Calendar

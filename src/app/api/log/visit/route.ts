@@ -49,6 +49,8 @@ export async function POST(req: NextRequest) {
     const user_agent =
       req.headers.get("user-agent") ?? "unknown";
 
+    const ua = user_agent.toLowerCase();
+
     /* ===============================
        3️⃣ 개발자 client 차단
     =============================== */
@@ -61,23 +63,68 @@ export async function POST(req: NextRequest) {
     }
 
     /* ===============================
-       4️⃣ 기본 봇 필터 (1차 방어)
+       4️⃣ 봇 / 스크래퍼 필터
     =============================== */
 
-    const suspiciousUA =
-      user_agent.toLowerCase().includes("curl") ||
-      user_agent.toLowerCase().includes("python") ||
-      user_agent.toLowerCase().includes("wget");
+    const botUAKeywords = [
+      "bot",
+      "crawler",
+      "spider",
+      "headless",
+      "curl",
+      "python",
+      "wget",
+      "axios",
+      "node-fetch",
+      "httpclient",
+      "postman",
+      "insomnia",
+      "scrapy",
+      "phantom",
+      "playwright",
+      "puppeteer",
+    ];
+
+    const suspiciousUA = botUAKeywords.some((k) =>
+      ua.includes(k)
+    );
 
     if (ip === "unknown" || suspiciousUA) {
       return NextResponse.json({
         ok: true,
-        skipped: "suspicious_request",
+        skipped: "bot_filtered",
       });
     }
 
     /* ===============================
-       5️⃣ payload 검증
+       5️⃣ 데이터센터 IP 간단 차단
+    =============================== */
+
+    const datacenterPrefixes = [
+      "3.",
+      "13.",
+      "18.",
+      "34.",
+      "35.",
+      "52.",
+      "54.",
+      "104.",
+      "172.",
+    ];
+
+    const isDatacenterIP = datacenterPrefixes.some((p) =>
+      ip.startsWith(p)
+    );
+
+    if (isDatacenterIP) {
+      return NextResponse.json({
+        ok: true,
+        skipped: "datacenter_ip",
+      });
+    }
+
+    /* ===============================
+       6️⃣ payload 검증
     =============================== */
 
     if (
@@ -92,7 +139,7 @@ export async function POST(req: NextRequest) {
     }
 
     /* ===============================
-       6️⃣ DB 저장
+       7️⃣ DB 저장
     =============================== */
 
     const { error } = await supabase
@@ -109,6 +156,7 @@ export async function POST(req: NextRequest) {
 
     if (error) {
       console.error("visit_logs insert error", error);
+
       return NextResponse.json(
         { error: "DB error" },
         { status: 500 }
@@ -119,6 +167,7 @@ export async function POST(req: NextRequest) {
 
   } catch (e) {
     console.error("visit log error", e);
+
     return NextResponse.json(
       { error: "Bad request" },
       { status: 400 }

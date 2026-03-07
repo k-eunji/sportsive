@@ -54,6 +54,18 @@ export async function GET(req: NextRequest) {
     return true;
   });
 
+  const ip =
+    req.headers
+      .get("x-vercel-forwarded-for")
+      ?.split(",")[0]
+      ?.trim() ??
+    req.headers
+      .get("x-forwarded-for")
+      ?.split(",")[0]
+      ?.trim() ??
+    req.headers.get("x-real-ip") ??
+    null;
+
   /* ================= LOG ================= */
 
   await supabase.from("download_events").insert({
@@ -66,7 +78,8 @@ export async function GET(req: NextRequest) {
     result_count: filtered.length,
 
     referrer: req.headers.get("referer"),
-    user_agent: req.headers.get("user-agent")
+    user_agent: req.headers.get("user-agent"),
+    ip_address: ip
   });
   /* ================= ICS ================= */
 

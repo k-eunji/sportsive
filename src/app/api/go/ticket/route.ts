@@ -21,12 +21,17 @@ type TicketClickLog = {
   referrer: string | null;
 };
 
+
 async function logTicketClick(log: TicketClickLog) {
   await supabase.from("ticket_clicks").insert({
     event_id: log.eventId,
     sport: log.sport,
     city: log.city,
     source: log.source,
+    clicked_at: log.ts,
+    ip_address: log.ip,
+    user_agent: log.userAgent,
+    referrer: log.referrer,
   });
 }
 

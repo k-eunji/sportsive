@@ -28,21 +28,108 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ✅ IP 추출 (Vercel 대응)
-    const forwardedFor = req.headers.get("x-forwarded-for");
+    /* ===============================
+       1️⃣ IP 추출 (Vercel 안전 버전)
+    =============================== */
+
     const ip =
-      forwardedFor?.split(",")[0]?.trim() ??
+      req.headers
+        .get("x-vercel-forwarded-for")
+        ?.split(",")[0]
+        ?.trim() ??
+      req.headers
+        .get("x-forwarded-for")
+        ?.split(",")[0]
+        ?.trim() ??
       req.headers.get("x-real-ip") ??
       "unknown";
 
-    // ✅ User-Agent 추출
+    /* ===============================
+       2️⃣ User-Agent 추출
+    =============================== */
+
     const user_agent =
       req.headers.get("user-agent") ?? "unknown";
 
-    // ⛔️ 차단된 client → 조용히 무시
+    const ua = user_agent.toLowerCase();
+
+    /* ===============================
+       3️⃣ 개발자 client 차단
+    =============================== */
+
     if (BLOCKED_CLIENT_IDS.has(clientId)) {
-      return NextResponse.json({ ok: true, skipped: "blocked_client" });
+      return NextResponse.json({
+        ok: true,
+        skipped: "blocked_client",
+      });
     }
+
+    /* ===============================
+       4️⃣ 봇 / 스크래퍼 필터
+    =============================== */
+
+    const botUAKeywords = [
+      "bot",
+      "crawler",
+      "spider",
+      "headless",
+      "curl",
+      "python",
+      "wget",
+      "axios",
+      "node-fetch",
+      "httpclient",
+      "postman",
+      "insomnia",
+      "scrapy",
+      "phantom",
+      "playwright",
+      "puppeteer",
+    ];
+
+    const suspiciousUA = botUAKeywords.some((k) =>
+      ua.includes(k)
+    );
+
+    if (ip === "unknown" || suspiciousUA) {
+      return NextResponse.json({
+        ok: true,
+        skipped: "bot_filtered",
+      });
+    }
+
+    /* ===============================
+       5️⃣ 데이터센터 IP 간단 차단
+    =============================== */
+
+    const datacenterPrefixes = [
+      "3.",
+      "13.",
+      "18.",
+      "34.",
+      "35.",
+      "52.",
+      "54.",
+      "104.",
+      "172.",
+    ];
+
+    const isDatacenterIP = datacenterPrefixes.some((p) =>
+      ip.startsWith(p)
+    );
+
+    if (isDatacenterIP) {
+      return NextResponse.json({
+        ok: true,
+        skipped: "datacenter_ip",
+      });
+    }
+
+    /* ===============================
+       6️⃣ DB 저장
+    =============================== */
+
+    const view_bucket = Math.floor(Date.now() / 600000);
 
     const { error } = await supabase
       .from("event_page_views")
@@ -51,15 +138,14 @@ export async function POST(req: NextRequest) {
         client_id: clientId,
         sport,
         city,
-
-        // 👇 추가
         ip_address: ip,
         user_agent,
-        viewed_at: new Date().toISOString(), // 시간도 기록 추천
+        view_bucket,
+        viewed_at: new Date().toISOString(),
       });
-
     if (error) {
       console.error("event_page_views insert error", error);
+
       return NextResponse.json(
         { error: "DB error" },
         { status: 500 }
@@ -67,8 +153,10 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ ok: true });
+
   } catch (e) {
     console.error("event_page_view log error", e);
+
     return NextResponse.json(
       { error: "Bad request" },
       { status: 400 }
