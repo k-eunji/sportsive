@@ -1,7 +1,5 @@
 //src/app/components/SportDistributionChart.tsx
 
-//src/app/components/SportDistributionChart.tsx
-
 "use client";
 
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";

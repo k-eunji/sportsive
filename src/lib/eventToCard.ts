@@ -43,6 +43,10 @@ export function eventToCard(e: Event): EventCardModel {
     subtitle = e.awayTeam;
   }
 
+  if (e.sport === "fight" && e.payload?.mainEvent) {
+    subtitle = e.payload.mainEvent;
+  }
+
   return {
     id: e.id,
     dateKey,

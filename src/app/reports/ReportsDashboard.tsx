@@ -761,7 +761,7 @@ export default function ReportsDashboard({
         </section>    
       )}
 
-      {sport !== "all" && sport !== "horse racing" && (
+      {sport !== "all" && sport !== "horse-racing" && (
         <section>
           <h2 className="text-xl font-semibold mb-4">
             Top Stadium Utilisation

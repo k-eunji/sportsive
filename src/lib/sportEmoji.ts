@@ -1,4 +1,5 @@
 // src/lib/sportEmoji.ts
+
 export const sportEmoji: Record<string, string> = {
   football: "⚽️",
   rugby: "🏉",
@@ -6,7 +7,8 @@ export const sportEmoji: Record<string, string> = {
   cricket: "🏏",
   golf: "⛳️",
   f1: "🏎️",
-  "horse-racing":  "🐎",
+  "horse-racing": "🐎",
   darts: "🎯",
-  basketball: "🏀", 
+  basketball: "🏀",
+  fight: "🥊",
 };

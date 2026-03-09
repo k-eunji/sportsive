@@ -189,8 +189,11 @@ END:VEVENT
       }
     }
 
-    return `"${d}","${time}","${e.sport ?? ""}","${e.homeTeam ?? ""}","${e.awayTeam ?? ""}","${e.venue ?? ""}","${e.competition ?? ""}"`;
+    const home = e.homeTeam ?? e.title ?? "";
+    const away = e.awayTeam ?? "";
 
+    return `"${d}","${time}","${e.sport ?? ""}","${home}","${away}","${e.venue ?? ""}","${e.competition ?? ""}"`;
+    
   }).join("\n");
   return new Response(header + rows, {
     headers: {

@@ -7,8 +7,7 @@ import { GET as getHorseRacingEvents } from "@/app/api/events/england/horseRacin
 import { GET as getBasketballEvents } from "@/app/api/events/england/basketball/route";
 import { GET as getDartEvents } from "@/app/api/events/england/dart/route";
 import { GET as getCricketEvents } from "@/app/api/events/england/cricket/route";
-
-import { buildAreaIndex } from "@/lib/events/buildAreaIndex";
+import { GET as getFightEvents } from "@/app/api/events/england/fight/route";
 import { isEventActiveInWindow } from "@/lib/events/lifecycle";
 
 /* =========================
@@ -35,6 +34,7 @@ export async function getAllEvents(window: string = "7d") {
     basketballRes,
     dartRes,
     cricketRes,
+    fightRes, // ✅ 추가
   ] = await Promise.all([
     getFootballEvents(),
     getRugbyEvents(),
@@ -43,8 +43,8 @@ export async function getAllEvents(window: string = "7d") {
     getBasketballEvents(),
     getDartEvents(),
     getCricketEvents(),
+    getFightEvents(), // ✅ 추가
   ]);
-
   const footballData = await footballRes.json();
   const rugbyData = await rugbyRes.json();
   const tennisData = await tennisRes.json();
@@ -52,6 +52,7 @@ export async function getAllEvents(window: string = "7d") {
   const basketballData = await basketballRes.json();
   const dartData = await dartRes.json();
   const cricketData = await cricketRes.json();
+  const fightData = await fightRes.json();
 
   /* =========================
      1️⃣ RAW MERGE
@@ -64,8 +65,8 @@ export async function getAllEvents(window: string = "7d") {
     ...(basketballData.events ?? []),
     ...(dartData.matches ?? dartData.events ?? []),
     ...(cricketData.events ?? []),
+    ...(fightData.matches ?? []), // ✅ 추가
   ];
-
   const merged = dedupeById(mergedRaw);
 
   /* =========================

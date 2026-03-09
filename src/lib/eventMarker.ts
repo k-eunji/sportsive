@@ -4,7 +4,8 @@ import { normalizeSportKey } from "@/lib/normalizeSport";
 
 export function getEventMarker(
   sport?: string,
-  kind?: string
+  kind?: string,
+  payload?: any
 ): string | null {
   const key = normalizeSportKey(sport);
 
@@ -16,6 +17,17 @@ export function getEventMarker(
     return "S";
   }
 
+  // 🥊 fight sports
+  if (key === "fight") {
+    const d = payload?.discipline;
+
+    if (d === "mma") return "M";
+    if (d === "boxing") return "X";
+    if (d === "bareknuckle") return "K";
+
+    return "F";
+  }
+
   // ⚽️ 팀 스포츠
   switch (key) {
     case "football":
@@ -25,7 +37,7 @@ export function getEventMarker(
     case "basketball":
       return "B";
     case "cricket":
-      return "C";      
+      return "C";
     default:
       return null;
   }

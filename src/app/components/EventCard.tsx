@@ -16,12 +16,10 @@ export function EventCard({ card }: { card: EventCardModel }) {
   const emoji = sportEmoji[sportKey];
   const marker = getEventMarker(
     card.event.sport,
-    card.event.kind
+    card.event.kind,
+    card.event.payload
   );
-
   
-
-
   /* =========================
      TIME LABEL
   ========================= */
@@ -29,29 +27,36 @@ export function EventCard({ card }: { card: EventCardModel }) {
   let timeLabel = "";
 
   if (sportKey === "horseracing") {
-    // 경마: 세션 라벨 자체가 시간 의미
     timeLabel = card.event.payload?.sessionTime ?? "";
 
+  } else if (sportKey === "fight") {
+    const main = card.event.payload?.mainEvent;
+    const t = formatEventTimeShort(card.event.date);
+    timeLabel = main ? `${t} · ${main}` : t;
+
   } else if (card.event.kind === "session") {
-    // 🎯 테니스 / 다트: 시작 시각만 표시
     const t = card.event.payload?.typicalStartTime;
     timeLabel = t ? `Starts ~${t}` : "";
 
   } else {
-    // 일반 경기
     timeLabel = formatEventTimeShort(card.event.date);
   }
-
   /* =========================
      META (도시 우선)
   ========================= */
+  const discipline =
+    sportKey === "fight"
+      ? card.event.payload?.discipline
+      : null;
+
   const meta = [
+    discipline,
     card.event.city,
     timeLabel,
   ]
     .filter(Boolean)
     .join(" · ");
-
+    
   return (
     <Link
       href={`/event/${card.event.id}`}

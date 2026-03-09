@@ -17,7 +17,8 @@ export interface Event {
     | 'tennis'
     | 'darts'
     | 'horse-racing'
-    | 'cricket';
+    | 'cricket'
+    | 'fight';
 
   kind:
     | 'match'

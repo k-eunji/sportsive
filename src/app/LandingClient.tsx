@@ -14,7 +14,6 @@ import { getClientId } from "@/lib/clientId";
 import { detectEntryReason } from "@/lib/entryReason";
 
 // location
-import { useLocationMode } from "@/app/ops/components/home/useLocationMode";
 import {
   useUserLocation,
   haversineKm,
@@ -466,6 +465,9 @@ export default function LandingClient({
             <span><strong>H</strong> Horse racing</span>
             <span><strong>T</strong> Tennis</span>
             <span><strong>D</strong> Darts</span>
+            <span><strong>M</strong> MMA</span>
+            <span><strong>X</strong> Boxing</span>
+            <span><strong>K</strong> Bare knuckle</span>
           </div>
         </div>
 

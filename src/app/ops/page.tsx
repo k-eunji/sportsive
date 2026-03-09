@@ -595,6 +595,7 @@ export default function HomePage() {
       sevenDayTrend,
     ]
   );  
+  
 
   /* =====================
      Render
@@ -703,6 +704,7 @@ export default function HomePage() {
               )}
 
               {timelineEvents.map((e: any) => {
+                const sportKey = (e.sport ?? "").toLowerCase().trim();
                 const start = getStartDate(e);
                 const hour = start?.getHours();
                 const timeState = getEventTimeState(e);
@@ -762,7 +764,7 @@ export default function HomePage() {
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
                       <span>{getTimelineTimeLabel(e)}</span>
                       <span>
-                        {sportEmoji[e.sport?.toLowerCase()] ?? "🏟️"} {e.sport}
+                        {sportEmoji[sportKey] ?? "🏟️"} {e.sport}
                       </span>
                     </div>
                   </div>

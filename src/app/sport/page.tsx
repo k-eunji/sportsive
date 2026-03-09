@@ -107,10 +107,10 @@ export default async function SportIndexPage() {
                       {sport}
                     </p>
 
-                    <p className="text-sm text-muted-foreground">
-                      {count} fixtures
+                    <p className="text-lg font-semibold">
+                      {sport.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase())}
                     </p>
-
+                    
                     <p className="text-xs text-muted-foreground">
                       {sportCityMap[sport]?.size ?? 0} cities ·{" "}
                       {sportVenueMap[sport]?.size ?? 0} venues

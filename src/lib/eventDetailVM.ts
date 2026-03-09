@@ -1,7 +1,7 @@
 ///src/lib/eventDetailVM.ts
 
 import type { Event } from "@/types";
-import { getEventTimeState } from "@/lib/eventTime";
+import { getEventTimeState, parseEventDate } from "@/lib/eventTime";
 
 export type EventDetailStatus = "LIVE" | "SOON" | "UPCOMING";
 
@@ -40,7 +40,7 @@ export function buildEventDetailVM(e: Event): EventDetailVM {
       : e.title ?? "Event";
 
   // DATE / TIME
-  const start = new Date(e.date);
+  const start = parseEventDate(e.date) ?? new Date();
   const dateText = start.toLocaleDateString("en-GB", {
     weekday: "short",
     day: "numeric",

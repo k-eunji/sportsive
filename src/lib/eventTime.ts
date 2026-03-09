@@ -2,6 +2,31 @@
 
 import { resolveEventBehavior } from "@/lib/resolveEventBehavior";
 
+export function parseEventDate(raw: any): Date | null {
+  if (!raw) return null;
+
+  let value = raw;
+
+  if (typeof value === "string") {
+    value = value.trim();
+
+    // "YYYY-MM-DD HH:mm:ss" → ISO 변환
+    if (value.includes(" ") && !value.includes("T")) {
+      value = value.replace(" ", "T");
+    }
+
+    // timezone 없으면 UTC로 고정
+    if (!value.endsWith("Z") && !value.includes("+")) {
+      value += "Z";
+    }
+  }
+
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return null;
+
+  return d;
+}
+
 export type EventTimeState =
   | "LIVE"
   | "SOON"
@@ -21,9 +46,8 @@ function deriveCricketFirstClassWindow(e: any): {
   const raw = e.date ?? e.startDate;
   if (!raw) return null;
 
-  const base = new Date(raw);
-  if (isNaN(base.getTime())) return null;
-
+  const base = parseEventDate(raw);
+  if (!base) return null;
   const start = new Date(
     base.getFullYear(),
     base.getMonth(),
@@ -79,6 +103,9 @@ export function getDefaultDurationMs(e: {
       }
       return 7 * 60 * 60 * 1000;
 
+    case "fight":                // ✅ 추가
+      return 5 * 60 * 60 * 1000; // 5시간
+  
     default:
       return 2 * 60 * 60 * 1000;
   }
@@ -98,6 +125,10 @@ export function getSoonWindowMs(e: {
       return 60 * 60 * 1000;
     case "cricket":
       return 3 * 60 * 60 * 1000;  
+
+    case "fight":
+      return 3 * 60 * 60 * 1000;
+
     default:
       return 2 * 60 * 60 * 1000;
   }
@@ -110,15 +141,17 @@ function deriveSessionWindow(e: any): { start: Date; end: Date } | null {
   if (e.kind !== "session") return null;
   if (!e.startDate) return null;
 
-  const start = new Date(e.startDate);
-  const end = new Date(e.endDate ?? e.startDate);
+  const start = parseEventDate(e.startDate);
+  const end = parseEventDate(e.endDate ?? e.startDate);
 
-  if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
-
-  if (e.startDate.length === 10) {
+  if (!start || !end) return null;
+  if (typeof e.startDate === "string" && e.startDate.length === 10) {
     start.setHours(0, 0, 0, 0);
   }
-  if ((e.endDate ?? e.startDate).length === 10) {
+
+  const rawEnd = e.endDate ?? e.startDate;
+
+  if (typeof rawEnd === "string" && rawEnd.length === 10) {
     end.setHours(23, 59, 59, 999);
   }
 
@@ -142,13 +175,9 @@ function deriveHorseRacingSessionWindow(e: any): {
   let baseRaw = e.date ?? e.startDate;
   if (!baseRaw) return null;
 
-  if (typeof baseRaw === "string" && baseRaw.includes(" ") && !baseRaw.includes("T")) {
-    baseRaw = baseRaw.replace(" ", "T");
-  }
-
-  const base = new Date(baseRaw);
-  if (isNaN(base.getTime())) return null;
-
+  const base = parseEventDate(baseRaw);
+  if (!base) return null;
+  
   const day = new Date(
     base.getFullYear(),
     base.getMonth(),
@@ -240,11 +269,12 @@ export function getEventTimeState(
     raw = raw.replace(" ", "T");
   }
 
-  const start = new Date(raw);
-  if (isNaN(start.getTime())) return "ENDED";
+  const start = parseEventDate(raw);
+  if (!start) return "ENDED";
 
-  const end = new Date(start.getTime() + getDefaultDurationMs(e));
-  const diffMs = start.getTime() - now.getTime();
+  const startMs = start.getTime();
+  const end = new Date(startMs + getDefaultDurationMs(e));
+  const diffMs = startMs - now.getTime();
 
   if (now >= start && now <= end) return "LIVE";
   if (diffMs > 0 && diffMs <= getSoonWindowMs(e)) return "SOON";

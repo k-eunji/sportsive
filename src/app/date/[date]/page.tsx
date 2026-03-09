@@ -6,6 +6,7 @@ import { getAllEvents } from "@/lib/events/getAllEvents";
 import SportDistributionChart from "@/app/components/SportDistributionChart";
 import { EventList } from "@/app/components/EventList";
 import DateFilterBar from "../components/DateFilterBar";
+import { parseEventDate } from "@/lib/eventTime";
 
 function isValidDate(date: string) {
   return /^\d{4}-\d{2}-\d{2}$/.test(date);
@@ -174,10 +175,8 @@ export default async function DatePage({
 
   finalEvents.forEach((e: any) => {
     const raw = e.startDate ?? e.date ?? e.utcDate;
-    if (!raw) return;
-
-    const d = new Date(raw);
-    if (isNaN(d.getTime())) return;
+    const d = parseEventDate(raw);
+    if (!d) return;
 
     const hours = d.getHours().toString().padStart(2, "0");
     const minutes = d.getMinutes().toString().padStart(2, "0");
@@ -232,7 +231,8 @@ export default async function DatePage({
   const liveCount = isToday
     ? finalEvents.filter((e: any) => {
         const now = new Date();
-        const start = new Date(e.startDate ?? e.date ?? e.utcDate);
+        const start = parseEventDate(e.startDate ?? e.date ?? e.utcDate);
+        if (!start) return false;
         const diff = (now.getTime() - start.getTime()) / (1000 * 60);
         return diff >= 0 && diff <= 120; // 시작 후 2시간 이내
       }).length
@@ -240,7 +240,8 @@ export default async function DatePage({
 
   const upcoming24h = isToday
     ? finalEvents.filter((e: any) => {
-        const start = new Date(e.startDate ?? e.date ?? e.utcDate);
+        const start = parseEventDate(e.startDate ?? e.date ?? e.utcDate);
+        if (!start) return false;
         const now = new Date();
         const diff = (start.getTime() - now.getTime()) / (1000 * 60 * 60);
         return diff > 0 && diff <= 24;
