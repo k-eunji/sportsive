@@ -11,8 +11,9 @@ export async function GET() {
         kind: "session",
 
         title: "ATP Lexus Glasgow Challenger",
+        name: "ATP Lexus Glasgow Challenger",
 
-        date: "2026-0-12T11:00:00Z",
+        date: "2026-01-12T11:00:00Z",
         startDate: "2026-01-12",
         endDate: "2026-01-17",
 
@@ -36,6 +37,8 @@ export async function GET() {
         sport: "tennis",
         kind: "session",
         title: "Lexus Birmingham Open Centre Court 2026",
+        name: "Lexus Birmingham Open Centre Court 2026",
+
         date: "2026-06-01T10:00:00Z",
         startDate: "2026-06-01",
         endDate: "2026-06-07",
@@ -57,6 +60,8 @@ export async function GET() {
         sport: "tennis",
         kind: "session",
         title: "Lexus Ilkley Trophy 2026",
+        name: "Lexus Ilkley Trophy 2026",
+
         date: "2026-06-09T10:00:00Z",
         startDate: "2026-06-09",
         endDate: "2026-06-14",
@@ -79,6 +84,7 @@ export async function GET() {
         kind: "session",
 
         title: "HSBC Championships – WTA 500 2026",
+        name: "HSBC Championships – WTA 500 2026",
 
         date: "2026-06-08T10:00:00Z",
         startDate: "2026-06-08",
@@ -105,6 +111,7 @@ export async function GET() {
         kind: "session",
 
         title: "HSBC Championships – ATP 500 2026",
+        name: "HSBC Championships – ATP 500 2026",
 
         date: "2026-06-15T10:00:00Z",
         startDate: "2026-06-15",
@@ -130,6 +137,8 @@ export async function GET() {
         sport: "tennis",
         kind: "session",
         title: "Birmingham Classic 2026",
+        name: "Birmingham Classic 2026",
+
         date: "2026-06-15T11:00:00Z",
         startDate: "2026-06-15",
         endDate: "2026-06-21",
@@ -151,6 +160,8 @@ export async function GET() {
         sport: "tennis",
         kind: "session",
         title: "Lexus Nottingham Open 2026",
+        name: "Lexus Nottingham Open 2026",
+
         date: "2026-06-13T10:00:00Z",
         startDate: "2026-06-13",
         endDate: "2026-06-21",
@@ -172,6 +183,8 @@ export async function GET() {
         sport: "tennis",
         kind: "session",
         title: "Lexus Eastbourne Open 2026",
+        name: "Lexus Eastbourne Open 2026",
+
         date: "2026-06-22T10:00:00Z",
         startDate: "2026-06-22",
         endDate: "2026-06-27",
@@ -192,6 +205,8 @@ export async function GET() {
         sport: "tennis",
         kind: "session",
         title: "Lexus British Open Roehampton 2026",
+        name: "Lexus British Open Roehampton 2026",
+
         date: "2026-06-28T10:00:00Z",
         startDate: "2026-06-28",
         endDate: "2026-07-03",
@@ -213,6 +228,8 @@ export async function GET() {
         sport: "tennis",
         kind: "session",
         title: "The Championships, Wimbledon 2026",
+        name: "The Championships, Wimbledon 2026",
+
         date: "2026-06-29T10:00:00Z",
         startDate: "2026-06-29",
         endDate: "2026-07-12",
@@ -234,6 +251,7 @@ export async function GET() {
         kind: "session",
 
         title: "Laver Cup 2026",
+        name: "Laver Cup 2026",
 
         date: "2026-09-25T12:00:00Z",
         startDate: "2026-09-25",

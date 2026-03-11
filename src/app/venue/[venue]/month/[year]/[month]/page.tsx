@@ -1,4 +1,4 @@
-// src/app/uk/london/football/month/[year]/[month]/page.tsx
+// src/app/venue/[venue]/month/[year]/[month]/page.tsx
 
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
@@ -9,8 +9,19 @@ function isValidYearMonth(year: string, month: string) {
   return /^\d{4}$/.test(year) && /^(0[1-9]|1[0-2])$/.test(month);
 }
 
+function slugify(v?: string) {
+  return v?.toLowerCase().replace(/\s+/g, "-") ?? "";
+}
+
+function formatVenueName(slug: string) {
+  return slug
+    .replace(/-/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 function formatMonthDisplay(year: string, month: string) {
   const date = new Date(Number(year), Number(month) - 1);
+
   return date.toLocaleDateString("en-GB", {
     month: "long",
     year: "numeric",
@@ -23,20 +34,23 @@ function formatMonthDisplay(year: string, month: string) {
 export async function generateMetadata({
   params,
 }: {
-  params: { year: string; month: string };
+  params: Promise<{ venue: string; year: string; month: string }>;
 }): Promise<Metadata> {
 
-  const { year, month } = params;
+  const { venue, year, month } = await params;
 
   if (!isValidYearMonth(year, month)) return {};
 
+  const venueName = formatVenueName(venue);
   const displayMonth = formatMonthDisplay(year, month);
 
   return {
-    title: `London Football Fixtures & Match Schedule – ${displayMonth} | London Football Games`,
-    description: `Complete London football fixtures and match schedule for ${displayMonth}. Browse Premier League, EFL and cup matches taking place across London stadiums including Arsenal, Chelsea, Tottenham and West Ham home games.`,
+    title: `${venueName} Venue Events – ${displayMonth} | Stadium Schedule`,
+    description:
+      `Explore matches, fights and sporting events taking place at ${venueName}. 
+       View stadium events, arena fights, racecourse meetings and competitions during ${displayMonth}.`,
     alternates: {
-      canonical: `https://venuescope.io/uk/london/football/month/${year}/${month}`,
+      canonical: `https://venuescope.io/venue/${venue}/month/${year}/${month}`,
     },
     robots: {
       index: true,
@@ -50,10 +64,10 @@ export async function generateMetadata({
 export default async function Page({
   params,
 }: {
-  params: Promise<{ year: string; month: string }>;
+  params: Promise<{ venue: string; year: string; month: string }>;
 }) {
 
-  const { year, month } = await params;
+  const { venue, year, month } = await params;
 
   if (!isValidYearMonth(year, month)) {
     notFound();
@@ -77,35 +91,29 @@ export default async function Page({
     notFound();
   }
 
+  const venueName = formatVenueName(venue);
   const displayMonth = formatMonthDisplay(year, month);
+
   const prefix = `${year}-${month}`;
 
   /* ================= DATA FETCH ================= */
 
   const events = await getAllEventsRaw("180d");
 
-  /* ================= FILTER LONDON FOOTBALL ================= */
+  /* ================= FILTER ================= */
 
-  const FOOTBALL_TYPES = ["football", "soccer"];
-
-  const londonFootballEvents = events.filter((e: any) => {
+  const venueEvents = events.filter((e: any) => {
 
     const eventMonth =
       (e.startDate ?? e.date ?? e.utcDate)?.slice(0, 7);
 
-    const city = e.city?.toLowerCase() ?? "";
-
     return (
-      FOOTBALL_TYPES.includes(e.sport?.toLowerCase()) &&
-      city.includes("london") &&
+      slugify(e.venue) === venue &&
       eventMonth === prefix
     );
-
   });
 
-  /* ================= 404 IF NO DATA ================= */
-
-  if (londonFootballEvents.length === 0) {
+  if (venueEvents.length === 0) {
     notFound();
   }
 
@@ -118,38 +126,26 @@ export default async function Page({
       {
         "@type": "ListItem",
         position: 1,
-        name: "UK Football",
-        item: "https://venuescope.io/uk/football",
+        name: venueName,
+        item: `https://venuescope.io/venue/${venue}`,
       },
       {
         "@type": "ListItem",
         position: 2,
-        name: "London Football",
-        item: "https://venuescope.io/uk/london/football",
-      },
-      {
-        "@type": "ListItem",
-        position: 3,
         name: displayMonth,
-        item: `https://venuescope.io/uk/london/football/month/${year}/${month}`,
+        item: `https://venuescope.io/venue/${venue}/month/${year}/${month}`,
       },
     ],
   };
 
   const pageSchema = {
     "@context": "https://schema.org",
-    "@type": "CollectionPage",
-    name: `London Football Fixtures ${displayMonth}`,
-    description: `Monthly London football fixture schedule for ${displayMonth}.`,
-    url: `https://venuescope.io/uk/london/football/month/${year}/${month}`,
-    keywords: [
-      "London football fixtures",
-      "London football matches",
-      "football games in London",
-      "London Premier League matches"
-    ]
+    "@type": "WebPage",
+    name: `${venueName} Venue Events ${displayMonth}`,
+    description:
+      `Matches, fights and sporting events taking place at ${venueName} during ${displayMonth}.`,
+    url: `https://venuescope.io/venue/${venue}/month/${year}/${month}`,
   };
-  /* ================= PAGE ================= */
 
   return (
     <>
@@ -158,22 +154,14 @@ export default async function Page({
       <section className="max-w-6xl mx-auto px-4 pt-12 pb-10 space-y-6">
 
         <h1 className="text-3xl font-bold">
-          London Football Fixtures & Matches – {displayMonth}
+          Events at {venueName} – {displayMonth}
         </h1>
 
-        <h2 className="text-xl font-semibold mt-10">
-        London Football Match Schedule – {displayMonth}
-        </h2>
-
         <p className="text-sm text-muted-foreground max-w-2xl">
-          This page provides a complete overview of football fixtures
-          taking place in London during {displayMonth}. The schedule
-          includes Premier League and EFL matches hosted across
-          stadiums throughout the capital.
-
-          Fans searching for the London football schedule,
-          football fixtures in London or the full match list
-          for {displayMonth} can explore all games below.
+          {venueName} is a sporting venue hosting professional matches,
+          competitions and events. This page provides a full overview of
+          stadium fixtures, arena fights, tennis matches and racecourse
+          meetings taking place at this location during {displayMonth}.
         </p>
 
       </section>
@@ -181,10 +169,7 @@ export default async function Page({
       {/* DASHBOARD */}
 
       <ReportsDashboard
-        events={londonFootballEvents}
-        countryScope="uk"
-        initialCity="London"
-        initialSport="football"
+        events={venueEvents}
         initialYear={year}
         initialMonth={month}
       />

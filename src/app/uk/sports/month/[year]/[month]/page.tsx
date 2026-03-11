@@ -32,8 +32,18 @@ export async function generateMetadata({
   });
 
   return {
-    title: `UK Sports Fixtures ${displayMonth} | VenueScope`,
-    description: `Complete sports fixture schedule across England, Scotland, Wales and Northern Ireland in ${displayMonth}. Includes football, rugby, horse racing and major competitions.`,
+    title: `UK Sports Fixtures & Match Schedule ${displayMonth} | UK Sports Calendar`,
+    description: `Complete UK sports fixtures and match schedule for ${displayMonth}. Browse football fixtures, rugby matches, horse racing events and major UK sporting competitions across England, Scotland, Wales and Northern Ireland.`,
+    keywords: [
+      "UK sports fixtures",
+      "UK sports schedule",
+      "UK sports calendar",
+      "UK sports this month",
+      "football fixtures UK",
+      "rugby fixtures UK",
+      "UK match schedule",
+      "sports events UK",
+    ],
     alternates: {
       canonical: `https://venuescope.io/uk/sports/month/${year}/${month}`,
     },
@@ -88,6 +98,18 @@ export default async function Page({
     name: `UK Sports Fixtures ${displayMonth}`,
     description: `Monthly sports fixtures across the UK in ${displayMonth}.`,
     url: `https://venuescope.io/uk/sports/month/${year}/${month}`,
+    about: [
+      { "@type": "Thing", name: "UK Sports Fixtures" },
+      { "@type": "Thing", name: "UK Sports Schedule" },
+      { "@type": "Thing", name: "Football Fixtures UK" },
+      { "@type": "Thing", name: "Rugby Fixtures UK" },
+    ],
+    keywords: [
+      "UK sports fixtures",
+      "UK sports schedule",
+      "UK sports calendar",
+      "sports events UK",
+    ],
   };
 
   /* =============================
@@ -128,7 +150,7 @@ export default async function Page({
       <section className="max-w-6xl mx-auto px-4 pt-12 pb-10 space-y-6">
 
         <h1 className="text-3xl font-bold">
-          UK Sports Fixtures & Match Schedule – {displayMonth}
+          UK Sports Fixtures, Match Schedule & Sporting Events – {displayMonth}
         </h1>
         
         <p className="text-sm text-muted-foreground max-w-2xl">

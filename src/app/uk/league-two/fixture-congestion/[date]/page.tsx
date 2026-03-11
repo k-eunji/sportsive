@@ -1,11 +1,10 @@
-// src/app/uk/league-two/fixture-congestion/[date]/page.tsx
+// src/app/uk/football/league-two/fixture-congestion/[date]/page.tsx
 
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import DatePage from "@/app/date/[date]/page";
 import { getAllEventsRaw } from "@/lib/events/getAllEventsRaw";
 import { isWithinAllowedRange } from "@/utils/dateRangeGuard";
-import { DateNav } from "@/app/components/DateNav";
-import Link from "next/link";
 
 type Props = {
   params: Promise<{ date: string }>;
@@ -16,7 +15,8 @@ function isValidDate(date: string) {
 }
 
 function formatDisplayDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString("en-GB", {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString("en-GB", {
     weekday: "long",
     day: "2-digit",
     month: "long",
@@ -25,36 +25,55 @@ function formatDisplayDate(dateStr: string) {
   });
 }
 
-function formatTime(raw: string) {
-  return new Date(raw).toLocaleTimeString("en-GB", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-    timeZone: "Europe/London",
-  });
-}
+/* ================= METADATA ================= */
 
 export async function generateMetadata(
   { params }: Props
 ): Promise<Metadata> {
+
   const { date } = await params;
 
   if (!isValidDate(date) || !isWithinAllowedRange(date)) {
     return {};
   }
 
+  const shortDate = new Date(date).toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    timeZone: "Europe/London",
+  });
+
   const displayDate = formatDisplayDate(date);
 
   return {
-    title: `League Two Fixtures on ${displayDate} – Kickoff Times & Overlap Analysis`,
-    description: `Full EFL League Two fixture list on ${displayDate}, including kickoff times and match congestion analysis.`,
+    title: `League Two Fixtures – ${shortDate} (Kickoff Times & Stadiums)`,
+
+    description: `Full list of EFL League Two matches on ${shortDate}. Kickoff times, stadium locations and complete fixture schedule.`,
+
     alternates: {
-      canonical: `https://venuescope.io/uk/league-two/fixture-congestion/${date}`,
+      canonical: `https://venuescope.io/uk/football/league-two/fixture-congestion/${date}`,
+    },
+
+    robots: {
+      index: true,
+      follow: true,
+    },
+
+    openGraph: {
+      title: `League Two Fixtures – ${displayDate}`,
+      description: `Kickoff times and stadium information for EFL League Two matches on ${displayDate}.`,
+      url: `https://venuescope.io/uk/football/league-two/fixture-congestion/${date}`,
+      siteName: "VenueScope",
+      type: "website",
     },
   };
 }
 
+/* ================= PAGE ================= */
+
 export default async function Page({ params }: Props) {
+
   const { date } = await params;
 
   if (!isValidDate(date) || !isWithinAllowedRange(date)) {
@@ -63,247 +82,139 @@ export default async function Page({ params }: Props) {
 
   const events = await getAllEventsRaw("180d");
 
-  const leagueEvents = events
-    .filter((e: any) => {
-      const raw = e.startDate ?? e.date ?? e.utcDate;
-      if (!raw) return false;
+  const leagueEvents = events.filter((e: any) => {
 
-      const competition = (e.competition ?? "").toLowerCase();
+    const eventKey =
+      (e.startDate ?? e.date ?? e.utcDate)?.slice(0, 10);
 
-      return (
-        (competition.includes("league two") ||
-          competition.includes("efl league 2")) &&
-        raw.slice(0, 10) === date
-      );
-    })
-    .sort(
-      (a: any, b: any) =>
-        new Date(a.startDate ?? a.date ?? a.utcDate).getTime() -
-        new Date(b.startDate ?? b.date ?? b.utcDate).getTime()
+    const competition =
+      (e.competition ?? "").toLowerCase();
+
+    const isLeagueTwo =
+      competition.includes("league two") ||
+      competition.includes("league 2") ||
+      competition.includes("efl league two") ||
+      competition.includes("efl league 2") ||
+      competition.includes("efl 2") ||
+      competition.includes("efl two");
+
+    return (
+      isLeagueTwo &&
+      eventKey === date
     );
+  });
 
   if (leagueEvents.length === 0) {
     notFound();
-  }  
-
-  const availableDates = new Set<string>();
-
-  events.forEach((e: any) => {
-    const raw = e.startDate ?? e.date ?? e.utcDate;
-    if (!raw) return;
-
-    const competition = (e.competition ?? "").toLowerCase();
-
-    if (
-      competition.includes("league two") ||
-      competition.includes("efl league 2")
-    ) {
-      availableDates.add(raw.slice(0, 10));
-    }
-  });
-
-  const sortedDates = Array.from(availableDates).sort();
-
-  const currentIndex = sortedDates.indexOf(date);
-
-  const previousDate =
-    currentIndex > 0 ? sortedDates[currentIndex - 1] : null;
-
-  const nextDate =
-    currentIndex !== -1 && currentIndex < sortedDates.length - 1
-      ? sortedDates[currentIndex + 1]
-      : null;
+  }
 
   const displayDate = formatDisplayDate(date);
 
-  const hourMap = new Map<number, number>();
+  /* ================= STRUCTURED DATA ================= */
 
-  leagueEvents.forEach((e: any) => {
-    const raw = e.startDate ?? e.date ?? e.utcDate;
-    if (!raw) return;
+  const eventSchema = leagueEvents.map((event: any) => ({
+    "@type": "SportsEvent",
 
-    const hour = Number(
-      new Date(raw).toLocaleString("en-GB", {
-        hour: "2-digit",
-        hour12: false,
-        timeZone: "Europe/London",
-      })
-    );
+    name:
+      event.homeTeam && event.awayTeam
+        ? `${event.homeTeam} vs ${event.awayTeam}`
+        : event.title ?? "League Two Match",
 
-    hourMap.set(hour, (hourMap.get(hour) ?? 0) + 1);
-  });
+    startDate: event.startDate ?? event.date ?? event.utcDate,
 
-  const sortedHours = [...hourMap.entries()].sort(
-    (a, b) => b[1] - a[1]
-  );
+    url: `https://venuescope.io/uk/football/league-two/fixture-congestion/${date}`,
 
-  const peak = sortedHours[0];
-  const peakRatio =
-    peak && leagueEvents.length > 0
-      ? Math.round((peak[1] / leagueEvents.length) * 100)
-      : 0;
+    eventAttendanceMode:
+      "https://schema.org/OfflineEventAttendanceMode",
+
+    eventStatus:
+      "https://schema.org/EventScheduled",
+
+    location: {
+      "@type": "Place",
+      name: event.venue ?? "Football Stadium",
+      address: {
+        "@type": "PostalAddress",
+        addressLocality: event.city ?? "",
+        addressCountry: "GB",
+      },
+    },
+
+    sport: "Football",
+
+    organizer: {
+      "@type": "Organization",
+      name: "VenueScope",
+      url: "https://venuescope.io",
+    },
+  }));
+
+  const breadcrumbSchema = {
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "League Two Fixtures",
+        item: "https://venuescope.io/uk/football/league-two/fixture-congestion",
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: displayDate,
+        item: `https://venuescope.io/uk/football/league-two/fixture-congestion/${date}`,
+      },
+    ],
+  };
+
+  const faqSchema = {
+    "@type": "FAQPage",
+    mainEntity: [
+      {
+        "@type": "Question",
+        name: `How many League Two matches are on ${displayDate}?`,
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: `There are ${leagueEvents.length} League Two fixtures scheduled on ${displayDate}.`
+        }
+      },
+      {
+        "@type": "Question",
+        name: `What time do League Two matches kick off?`,
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: `Kickoff times vary depending on the match schedule and broadcasting arrangements.`
+        }
+      }
+    ]
+  };
+
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@graph": [
+      ...eventSchema,
+      breadcrumbSchema,
+      faqSchema
+    ]
+  };
 
   return (
-    <main className="max-w-3xl mx-auto px-6 py-16 space-y-10">
+    <>
+      <DatePage
+        params={Promise.resolve({ date })}
+        searchParams={Promise.resolve({
+          country: "uk",
+          sport: "football",
+          competition: "league-two",
+        })}
+      />
 
-      {/* HEADER */}
-      <header className="space-y-4">
-        <h1 className="text-4xl font-bold">
-          League Two Fixtures on {displayDate}
-        </h1>
-
-        <p className="text-muted-foreground">
-          {leagueEvents.length} League Two fixture
-          {leagueEvents.length !== 1 ? "s" : ""} scheduled on {displayDate}.
-        </p>
-
-        <Link
-          href={`/uk/football/${date}`}
-          className="underline text-sm"
-        >
-          View all UK football fixtures →
-        </Link>
-      </header>
-
-      {/* FIXTURE LIST */}
-      {leagueEvents.length > 0 && (
-        <section className="space-y-4">
-          <h2 className="text-xl font-semibold">
-            League Two kickoff times — {displayDate}
-          </h2>
-
-          <p className="text-sm text-muted-foreground">
-            Below is the complete League Two fixture list including confirmed kickoff times.
-          </p>
-
-          <ul className="space-y-3 text-muted-foreground">
-            {leagueEvents.map((e: any) => {
-              const raw = e.startDate ?? e.date ?? e.utcDate;
-
-              return (
-                <li key={e.id} className="flex justify-between border-b pb-2">
-                  <span>
-                    {e.homeTeam ?? "Home"} vs {e.awayTeam ?? "Away"}
-                  </span>
-
-                  {raw && (
-                    <span className="text-sm">
-                      {formatTime(raw)}
-                    </span>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      )}
-
-      {/* OVERLAP ANALYSIS */}
-      {leagueEvents.length > 1 && peak && (
-        <section className="space-y-4">
-          <h2 className="text-xl font-semibold">
-            Kickoff overlap analysis
-          </h2>
-
-          <p className="text-muted-foreground">
-            The busiest kickoff window occurs at {peak[0]}:00,
-            representing {peakRatio}% of fixtures.
-          </p>
-        </section>
-      )}
-
-      {/* FAQ */}
-      <section className="space-y-4">
-        <h2 className="text-xl font-semibold">
-          FAQs – League Two on {displayDate}
-        </h2>
-
-        <div className="space-y-3 text-sm">
-          <p>
-            <strong>How many fixtures are scheduled?</strong><br />
-            There are {leagueEvents.length} confirmed League Two matches.
-          </p>
-
-          <p>
-            <strong>Do matches kick off at the same time?</strong><br />
-            Some fixtures may begin simultaneously depending on matchday scheduling.
-          </p>
-
-          <p>
-            <strong>Where are the matches played?</strong><br />
-            Fixtures take place across multiple stadiums in England.
-          </p>
-        </div>
-      </section>
-
-      {/* SportsEvent Structured Data */}
-      {leagueEvents.length > 0 && (
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify(
-              leagueEvents.map((event: any) => ({
-                "@context": "https://schema.org",
-                "@type": "SportsEvent",
-                name: `${event.homeTeam} vs ${event.awayTeam}`,
-                startDate: event.startDate ?? event.date ?? event.utcDate,
-                eventStatus: "https://schema.org/EventScheduled",
-                eventAttendanceMode:
-                  "https://schema.org/OfflineEventAttendanceMode",
-                location: {
-                  "@type": "Place",
-                  name: event.venue ?? "Football Stadium",
-                },
-                organizer: {
-                  "@type": "Organization",
-                  name: "VenueScope",
-                  url: "https://venuescope.io",
-                },
-              }))
-            ),
-          }}
-        />
-      )}
-
-      <section className="flex justify-between border-t pt-6 text-sm">
-
-        {previousDate ? (
-          <Link
-            href={`/uk/league-two/fixture-congestion/${previousDate}`}
-            className="underline"
-          >
-            ← Previous matchday
-          </Link>
-        ) : <span />}
-
-        {nextDate ? (
-          <Link
-            href={`/uk/league-two/fixture-congestion/${nextDate}`}
-            className="underline"
-          >
-            Next matchday →
-          </Link>
-        ) : <span />}
-
-      </section>
-      
-      {/* BOTTOM LINKS */}
-      <section className="mt-6 space-y-2 text-sm">
-        <Link
-          href={`/uk/league-two/fixture-congestion`}
-          className="underline block"
-        >
-          Live League Two congestion overview
-        </Link>
-
-        <Link
-          href={`/uk/premier-league/fixture-congestion/${date}`}
-          className="underline block"
-        >
-          Premier League fixtures on {displayDate}
-        </Link>
-      </section>
-
-    </main>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(structuredData),
+        }}
+      />
+    </>
   );
 }

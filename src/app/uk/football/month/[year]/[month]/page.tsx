@@ -40,8 +40,8 @@ export async function generateMetadata({
   const displayMonth = formatMonthDisplay(year, month);
 
   return {
-    title: `UK Football Fixtures – ${displayMonth} | VenueScope`,
-    description: `Professional football fixtures across England, Scotland, Wales and Northern Ireland during ${displayMonth}.`,
+    title: `UK Football Fixtures & Soccer Match Schedule – ${displayMonth} | VenueScope`,
+    description: `Professional football and soccer fixtures across England, Scotland, Wales and Northern Ireland during ${displayMonth}. Browse match schedules, league fixtures and cup competitions across the UK.`,
     alternates: {
       canonical: `https://venuescope.io/uk/football/month/${year}/${month}`,
     },
@@ -93,12 +93,14 @@ export default async function Page({
 
   /* ================= FILTER ================= */
 
+  const FOOTBALL_TYPES = ["football", "soccer"];
+
   const ukFootballEvents = events.filter((e: any) => {
     const eventMonth =
       (e.startDate ?? e.date ?? e.utcDate)?.slice(0, 7);
 
     return (
-      e.sport?.toLowerCase() === "football" &&
+      FOOTBALL_TYPES.includes(e.sport?.toLowerCase()) &&
       UK_REGIONS.includes(e.region?.toLowerCase()) &&
       eventMonth === prefix
     );
@@ -134,11 +136,17 @@ export default async function Page({
   const pageSchema = {
     "@context": "https://schema.org",
     "@type": "WebPage",
-    name: `UK Football Fixtures ${displayMonth}`,
-    description: `Monthly football fixtures across the United Kingdom during ${displayMonth}.`,
+    name: `UK Football & Soccer Fixtures ${displayMonth}`,
+    description: `Monthly football and soccer fixtures across the United Kingdom during ${displayMonth}.`,
     url: `https://venuescope.io/uk/football/month/${year}/${month}`,
+    keywords: [
+      "UK football fixtures",
+      "UK soccer fixtures",
+      "UK football schedule",
+      "UK soccer matches",
+      "football fixtures UK",
+    ],
   };
-
   /* ================= PAGE ================= */
 
   return (
@@ -148,7 +156,7 @@ export default async function Page({
       <section className="max-w-6xl mx-auto px-4 pt-12 pb-10 space-y-6">
 
         <h1 className="text-3xl font-bold">
-          UK Football Fixtures & Match Schedule – {displayMonth}
+          UK Football & Soccer Fixtures – Match Schedule {displayMonth}
         </h1>
 
         <p className="text-sm text-muted-foreground max-w-2xl">

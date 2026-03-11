@@ -26,6 +26,7 @@ export default function DateFilterBar({
     rawParams?.toString() ?? ""
   );
 
+
   const normalize = (v?: string) =>
     v?.toLowerCase().trim() ?? "";
 
@@ -33,6 +34,8 @@ export default function DateFilterBar({
   const region = params.get("region") ?? "";
   const city = params.get("city") ?? "";
   const sport = params.get("sport") ?? "all";
+  const competition = params.get("competition") ?? "all";
+  const venue = params.get("venue") ?? "";
 
   const UK_SET = new Set([
     "england",
@@ -86,6 +89,61 @@ export default function DateFilterBar({
       )
     ).sort();
   }, [filteredByCountry]);
+
+  const competitions = useMemo(() => {
+    return Array.from(
+      new Set(
+        filteredByCountry
+          .filter((e) =>
+            region
+              ? normalize(e.region) === normalize(region)
+              : true
+          )
+          .filter((e) =>
+            city
+              ? normalize(e.city) === normalize(city)
+              : true
+          )
+          .filter((e) =>
+            sport !== "all"
+              ? normalize(e.sport) === normalize(sport)
+              : true
+          )
+          .map((e) => e.league || e.competition)
+          .filter(Boolean)
+      )
+    ).sort();
+  }, [filteredByCountry, region, city, sport]);
+
+  const venues = useMemo(() => {
+    return Array.from(
+      new Set(
+        filteredByCountry
+          .filter((e) =>
+            region
+              ? normalize(e.region) === normalize(region)
+              : true
+          )
+          .filter((e) =>
+            city
+              ? normalize(e.city) === normalize(city)
+              : true
+          )
+          .filter((e) =>
+            sport !== "all"
+              ? normalize(e.sport) === normalize(sport)
+              : true
+          )
+          .filter((e) =>
+            competition !== "all"
+              ? (e.league || e.competition) === competition
+              : true
+          )
+          .map((e) => e.venue)
+          .filter(Boolean)
+      )
+    ).sort();
+  }, [filteredByCountry, region, city, sport, competition]);
 
   const searchString = rawParams?.toString() ?? "";
 
@@ -196,6 +254,43 @@ export default function DateFilterBar({
         ))}
 
       </select>
+
+      {/* Competition */}
+      <select
+        value={competition}
+        onChange={(e) =>
+          updateParam("competition", e.target.value)
+        }
+        className="bg-white border border-zinc-200 rounded-md px-3 py-1.5 text-sm text-zinc-700 hover:border-zinc-300 focus:outline-none focus:ring-1 focus:ring-zinc-300 transition"
+      >
+        <option value="all">All Competitions</option>
+
+        {competitions.map((c) => (
+          <option key={c} value={c}>
+            {c}
+          </option>
+        ))}
+
+      </select>
+
+      {/* Venue */}
+      <select
+        value={venue}
+        onChange={(e) =>
+          updateParam("venue", e.target.value)
+        }
+        className="bg-white border border-zinc-200 rounded-md px-3 py-1.5 text-sm text-zinc-700 hover:border-zinc-300 focus:outline-none focus:ring-1 focus:ring-zinc-300 transition"
+      >
+        <option value="">All Venues</option>
+
+        {venues.map((v) => (
+          <option key={v} value={v}>
+            {v}
+          </option>
+        ))}
+
+      </select>
+
       {/* Date picker */}
       <input
         type="date"

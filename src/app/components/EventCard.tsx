@@ -35,11 +35,26 @@ export function EventCard({ card }: { card: EventCardModel }) {
     timeLabel = main ? `${t} · ${main}` : t;
 
   } else if (card.event.kind === "session") {
-    const t = card.event.payload?.typicalStartTime;
-    timeLabel = t ? `Starts ~${t}` : "";
 
-  } else {
-    timeLabel = formatEventTimeShort(card.event.date);
+    if (card.event.startDate && card.event.endDate) {
+
+      const start = new Date(card.event.startDate).toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+      });
+
+      const end = new Date(card.event.endDate).toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+      });
+
+      timeLabel = `${start} – ${end}`;
+
+    } else {
+      const t = card.event.payload?.typicalStartTime;
+      timeLabel = t ? `Starts ~${t}` : "";
+    }
+
   }
   /* =========================
      META (도시 우선)

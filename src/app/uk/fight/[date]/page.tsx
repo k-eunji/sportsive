@@ -1,4 +1,4 @@
-// src/app/uk/championship/fixture-congestion/[date]/page.tsx
+//src/app/uk/fight/[date]/page.tsx
 
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -16,8 +16,20 @@ function isValidDate(date: string) {
 
 function formatDisplayDate(dateStr: string) {
   const date = new Date(dateStr);
+
   return date.toLocaleDateString("en-GB", {
     weekday: "long",
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    timeZone: "Europe/London",
+  });
+}
+
+function formatShortDate(dateStr: string) {
+  const date = new Date(dateStr);
+
+  return date.toLocaleDateString("en-GB", {
     day: "2-digit",
     month: "long",
     year: "numeric",
@@ -37,21 +49,15 @@ export async function generateMetadata(
     return {};
   }
 
-  const shortDate = new Date(date).toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-    timeZone: "Europe/London",
-  });
-
-  const displayDate = formatDisplayDate(date);
+  const shortDate = formatShortDate(date);
 
   return {
-    title: `EFL Championship Fixtures – ${shortDate} (Kickoff Times & Stadiums)`,
-    description: `Complete list of EFL Championship matches on ${shortDate}. Kickoff times, stadium locations and full Championship fixture schedule.`,
+    title: `Fight Events – ${shortDate} | MMA & Boxing Cards`,
+    description:
+      `Full list of fight events including MMA, UFC and boxing fight cards on ${shortDate}. View venues and event details.`,
 
     alternates: {
-      canonical: `https://venuescope.io/uk/championship/fixture-congestion/${date}`,
+      canonical: `https://venuescope.io/uk/fight/${date}`,
     },
 
     robots: {
@@ -60,9 +66,10 @@ export async function generateMetadata(
     },
 
     openGraph: {
-      title: `EFL Championship Fixtures – ${displayDate}`,
-      description: `Kickoff times and stadium information for EFL Championship matches on ${displayDate}.`,
-      url: `https://venuescope.io/uk/championship/fixture-congestion/${date}`,
+      title: `Fight Events – ${shortDate}`,
+      description:
+        `MMA and boxing fight events taking place on ${shortDate}.`,
+      url: `https://venuescope.io/uk/fight/${date}`,
       siteName: "VenueScope",
       type: "website",
     },
@@ -81,21 +88,20 @@ export default async function Page({ params }: Props) {
 
   const events = await getAllEventsRaw("180d");
 
-  const leagueEvents = events.filter((e: any) => {
+  /* ================= FILTER ================= */
 
-    const eventKey =
+  const fightEvents = events.filter((e: any) => {
+
+    const key =
       (e.startDate ?? e.date ?? e.utcDate)?.slice(0, 10);
 
-    const competition =
-      (e.competition ?? "").toLowerCase();
-
     return (
-      competition.includes("championship") &&
-      eventKey === date
+      e.sport?.toLowerCase() === "fight" &&
+      key === date
     );
   });
 
-  if (leagueEvents.length === 0) {
+  if (fightEvents.length === 0) {
     notFound();
   }
 
@@ -103,16 +109,19 @@ export default async function Page({ params }: Props) {
 
   /* ================= STRUCTURED DATA ================= */
 
-  const eventSchema = leagueEvents.map((event: any) => ({
+  const eventSchema = fightEvents.map((event: any) => ({
+
     "@type": "SportsEvent",
+
     name:
       event.homeTeam && event.awayTeam
         ? `${event.homeTeam} vs ${event.awayTeam}`
-        : event.title ?? "EFL Championship Match",
+        : event.title ?? "Fight Event",
 
-    startDate: event.startDate ?? event.date ?? event.utcDate,
+    startDate:
+      event.startDate ?? event.date ?? event.utcDate,
 
-    url: `https://venuescope.io/uk/championship/fixture-congestion/${date}`,
+    url: `https://venuescope.io/uk/fight/${date}`,
 
     eventAttendanceMode:
       "https://schema.org/OfflineEventAttendanceMode",
@@ -122,15 +131,15 @@ export default async function Page({ params }: Props) {
 
     location: {
       "@type": "Place",
-      name: event.venue ?? "Football Stadium",
+      name: event.venue ?? "Fight Arena",
       address: {
         "@type": "PostalAddress",
         addressLocality: event.city ?? "",
-        addressCountry: "GB",
+        addressCountry: event.countryCode ?? "GB",
       },
     },
 
-    sport: "Football",
+    sport: "Combat Sports",
 
     organizer: {
       "@type": "Organization",
@@ -140,43 +149,23 @@ export default async function Page({ params }: Props) {
   }));
 
   const breadcrumbSchema = {
+
     "@type": "BreadcrumbList",
+
     itemListElement: [
       {
         "@type": "ListItem",
         position: 1,
-        name: "Championship Fixtures",
-        item: "https://venuescope.io/uk/championship/fixture-congestion",
+        name: "Fight Events",
+        item: "https://venuescope.io/uk/fight",
       },
       {
         "@type": "ListItem",
         position: 2,
         name: displayDate,
-        item: `https://venuescope.io/uk/championship/fixture-congestion/${date}`,
+        item: `https://venuescope.io/uk/fight/${date}`,
       },
     ],
-  };
-
-  const faqSchema = {
-    "@type": "FAQPage",
-    mainEntity: [
-      {
-        "@type": "Question",
-        name: `How many EFL Championship matches are on ${displayDate}?`,
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: `There are ${leagueEvents.length} EFL Championship fixtures scheduled on ${displayDate}.`
-        }
-      },
-      {
-        "@type": "Question",
-        name: `What time do EFL Championship matches kick off?`,
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: `Kickoff times vary depending on matchday scheduling and broadcaster selections in the EFL Championship.`
-        }
-      }
-    ]
   };
 
   const structuredData = {
@@ -184,9 +173,10 @@ export default async function Page({ params }: Props) {
     "@graph": [
       ...eventSchema,
       breadcrumbSchema,
-      faqSchema
-    ]
+    ],
   };
+
+  /* ================= PAGE ================= */
 
   return (
     <>
@@ -194,8 +184,7 @@ export default async function Page({ params }: Props) {
         params={Promise.resolve({ date })}
         searchParams={Promise.resolve({
           country: "uk",
-          sport: "football",
-          competition: "championship",
+          sport: "fight",
         })}
       />
 

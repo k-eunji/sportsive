@@ -11,6 +11,7 @@ const internationalMatches = [
     competition: "International Match Friendlies",
     status: "scheduled",
     date: "2026-03-27 19:45",
+    name: "England",  
 
     homeTeam: "England",
     awayTeam: "Uruguay",
@@ -25,8 +26,6 @@ const internationalMatches = [
     location: { lat: 51.556663281575105, lng: -0.27953205701577144 },
 
     isPaid: true,
-    teams: ["England", "Uruguay"],
-    title: "England vs Uruguay",
     homepageUrl:
       "https://www.englandfootball.com/england/mens-senior-team/fixtures-results",
   },
@@ -37,6 +36,8 @@ const internationalMatches = [
     competition: "International Match Friendlies",
     status: "scheduled",
     date: "2026-03-31 19:45",
+
+    name: "England",
 
     homeTeam: "England",
     awayTeam: "Japan",
@@ -51,8 +52,6 @@ const internationalMatches = [
     location: { lat: 51.556663281575105, lng: -0.27953205701577144 },
 
     isPaid: true,
-    teams: ["England", "Japan"],
-    title: "England vs Japan",
     homepageUrl:
       "https://www.englandfootball.com/england/mens-senior-team/fixtures-results",
   },
@@ -63,6 +62,8 @@ const internationalMatches = [
     competition: "FIFA 2027 World Cup European",
     status: "scheduled",
     date: "2026-03-07 12:30",
+
+    name: "England W",
 
     homeTeam: "England W",
     awayTeam: "Iceland W",
@@ -77,8 +78,6 @@ const internationalMatches = [
     location: { lat: 52.9401050106301, lng: -1.1329043865910777},
 
     isPaid: true,
-    teams: ["England", "Iceland"],
-    title: "England vs Iceland",
     homepageUrl:
       "https://www.englandfootball.com/england/womens-senior-team/fixtures-results",
   },
@@ -89,6 +88,8 @@ const internationalMatches = [
     competition: "FIFA 2027 World Cup European",
     status: "scheduled",
     date: "2026-04-14 19:00",
+
+    name: "England W",
 
     homeTeam: "England W",
     awayTeam: "Spain W",
@@ -103,12 +104,9 @@ const internationalMatches = [
     location: { lat: 51.556663281575105, lng: -0.27953205701577144 },
 
     isPaid: true,
-    teams: ["England", "Spain"],
-    title: "England vs Spain",
     homepageUrl:
       "https://www.englandfootball.com/england/womens-senior-team/fixtures-results",
   },
-
 ];
 
 const cleanTeamName = (name?: string | null) =>

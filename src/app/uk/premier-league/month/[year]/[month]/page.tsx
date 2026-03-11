@@ -1,4 +1,4 @@
-// src/app/uk/london/football/month/[year]/[month]/page.tsx
+//src/app/uk/premier-league/month/[year]/[month]/page.tsx
 
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
@@ -33,10 +33,10 @@ export async function generateMetadata({
   const displayMonth = formatMonthDisplay(year, month);
 
   return {
-    title: `London Football Fixtures & Match Schedule – ${displayMonth} | London Football Games`,
-    description: `Complete London football fixtures and match schedule for ${displayMonth}. Browse Premier League, EFL and cup matches taking place across London stadiums including Arsenal, Chelsea, Tottenham and West Ham home games.`,
+    title: `Premier League Fixtures & EPL Match Schedule – ${displayMonth} | English Premier League`,
+    description: `Complete Premier League fixtures and EPL match schedule for ${displayMonth}. Browse the full English Premier League games list, matchdays, kickoff times and stadium locations.`,
     alternates: {
-      canonical: `https://venuescope.io/uk/london/football/month/${year}/${month}`,
+      canonical: `https://venuescope.io/uk/football/premier-league/month/${year}/${month}`,
     },
     robots: {
       index: true,
@@ -80,32 +80,38 @@ export default async function Page({
   const displayMonth = formatMonthDisplay(year, month);
   const prefix = `${year}-${month}`;
 
-  /* ================= DATA FETCH ================= */
+  /* ================= DATA ================= */
 
   const events = await getAllEventsRaw("180d");
 
-  /* ================= FILTER LONDON FOOTBALL ================= */
+  /* ================= FILTER ================= */
 
   const FOOTBALL_TYPES = ["football", "soccer"];
 
-  const londonFootballEvents = events.filter((e: any) => {
+  const PREMIER_TERMS = [
+    "premier league",
+    "english premier league",
+    "epl"
+  ];
 
+  const premierLeagueEvents = events.filter((e: any) => {
     const eventMonth =
       (e.startDate ?? e.date ?? e.utcDate)?.slice(0, 7);
 
-    const city = e.city?.toLowerCase() ?? "";
+    const league =
+      (e.league ?? e.competition ?? "").toLowerCase();
+
+    const isPremierLeague = PREMIER_TERMS.some(term =>
+      league.includes(term)
+    );
 
     return (
       FOOTBALL_TYPES.includes(e.sport?.toLowerCase()) &&
-      city.includes("london") &&
+      isPremierLeague &&
       eventMonth === prefix
     );
-
   });
-
-  /* ================= 404 IF NO DATA ================= */
-
-  if (londonFootballEvents.length === 0) {
+  if (premierLeagueEvents.length === 0) {
     notFound();
   }
 
@@ -118,20 +124,14 @@ export default async function Page({
       {
         "@type": "ListItem",
         position: 1,
-        name: "UK Football",
-        item: "https://venuescope.io/uk/football",
+        name: "Premier League",
+        item: "https://venuescope.io/uk/football/premier-league",
       },
       {
         "@type": "ListItem",
         position: 2,
-        name: "London Football",
-        item: "https://venuescope.io/uk/london/football",
-      },
-      {
-        "@type": "ListItem",
-        position: 3,
         name: displayMonth,
-        item: `https://venuescope.io/uk/london/football/month/${year}/${month}`,
+        item: `https://venuescope.io/uk/football/premier-league/month/${year}/${month}`,
       },
     ],
   };
@@ -139,58 +139,46 @@ export default async function Page({
   const pageSchema = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
-    name: `London Football Fixtures ${displayMonth}`,
-    description: `Monthly London football fixture schedule for ${displayMonth}.`,
-    url: `https://venuescope.io/uk/london/football/month/${year}/${month}`,
+    name: `Premier League Fixtures ${displayMonth}`,
+    description: `Full Premier League football fixture schedule and match list for ${displayMonth}.`,
+    url: `https://venuescope.io/uk/football/premier-league/month/${year}/${month}`,
     keywords: [
-      "London football fixtures",
-      "London football matches",
-      "football games in London",
-      "London Premier League matches"
+      "Premier League fixtures",
+      "EPL fixtures",
+      "Premier League schedule",
+      "English Premier League matches",
+      "EPL games list"
     ]
   };
   /* ================= PAGE ================= */
 
   return (
     <>
-      {/* SEO TEXT */}
-
       <section className="max-w-6xl mx-auto px-4 pt-12 pb-10 space-y-6">
 
         <h1 className="text-3xl font-bold">
-          London Football Fixtures & Matches – {displayMonth}
+          Premier League Fixtures & EPL Match Schedule – {displayMonth}
         </h1>
 
-        <h2 className="text-xl font-semibold mt-10">
-        London Football Match Schedule – {displayMonth}
-        </h2>
-
         <p className="text-sm text-muted-foreground max-w-2xl">
-          This page provides a complete overview of football fixtures
-          taking place in London during {displayMonth}. The schedule
-          includes Premier League and EFL matches hosted across
-          stadiums throughout the capital.
+        Explore the complete Premier League fixture schedule for {displayMonth}.
+        This page lists every EPL match taking place this month including
+        kickoff times, stadium locations and matchdays across England.
 
-          Fans searching for the London football schedule,
-          football fixtures in London or the full match list
-          for {displayMonth} can explore all games below.
+        Fans searching for the Premier League schedule, football fixtures
+        or EPL match list for {displayMonth} can view the full schedule below.
         </p>
 
       </section>
 
-      {/* DASHBOARD */}
-
       <ReportsDashboard
-        events={londonFootballEvents}
+        events={premierLeagueEvents}
         countryScope="uk"
-        initialCity="London"
         initialSport="football"
+        initialCompetition="Premier League"
         initialYear={year}
         initialMonth={month}
       />
-
-      {/* STRUCTURED DATA */}
-
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -204,6 +192,10 @@ export default async function Page({
           __html: JSON.stringify(pageSchema),
         }}
       />
+
+      <h2 className="text-xl font-semibold mt-10">
+      Premier League Match Schedule – {displayMonth}
+      </h2>
     </>
   );
 }

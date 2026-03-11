@@ -33,8 +33,8 @@ export async function generateMetadata({
   const displayMonth = formatMonthDisplay(year, month);
 
   return {
-    title: `Sports Fixtures in London – ${displayMonth} | VenueScope`,
-    description: `Professional sports fixtures taking place in London during ${displayMonth}.`,
+    title: `London Sports Fixtures & Event Schedule – ${displayMonth} | VenueScope`,
+    description: `Complete London sports fixtures and event schedule for ${displayMonth}. Browse football, rugby, cricket, tennis and major sporting events taking place across stadiums and venues in London.`,
     alternates: {
       canonical: `https://venuescope.io/uk/london/sports/month/${year}/${month}`,
     },
@@ -91,13 +91,14 @@ export default async function Page({
     const eventMonth =
       (e.startDate ?? e.date ?? e.utcDate)?.slice(0, 7);
 
+    const city = e.city?.toLowerCase() ?? "";
+
     return (
-      e.city?.toLowerCase() === "london" &&
+      city.includes("london") &&
       eventMonth === prefix
     );
 
   });
-
   /* ================= 404 IF NO DATA ================= */
 
   if (londonEvents.length === 0) {
@@ -127,12 +128,18 @@ export default async function Page({
 
   const pageSchema = {
     "@context": "https://schema.org",
-    "@type": "WebPage",
-    name: `Sports Fixtures in London ${displayMonth}`,
+    "@type": "CollectionPage",
+    name: `London Sports Fixtures ${displayMonth}`,
     description: `Monthly sports fixture schedule for London during ${displayMonth}.`,
     url: `https://venuescope.io/uk/london/sports/month/${year}/${month}`,
+    keywords: [
+      "London sports fixtures",
+      "London sports events",
+      "sports schedule London",
+      "sport events in London",
+      "London sporting events"
+    ]
   };
-
   /* ================= PAGE ================= */
 
   return (
@@ -142,8 +149,12 @@ export default async function Page({
       <section className="max-w-6xl mx-auto px-4 pt-12 pb-10 space-y-6">
 
         <h1 className="text-3xl font-bold">
-          Sports Fixtures in London – {displayMonth}
+          London Sports Fixtures & Event Schedule – {displayMonth}
         </h1>
+
+        <h2 className="text-xl font-semibold mt-10">
+        London Sports Event Schedule – {displayMonth}
+        </h2>
 
         <p className="text-sm text-muted-foreground max-w-2xl">
           This page provides a complete overview of professional sports
@@ -170,14 +181,13 @@ export default async function Page({
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(breadcrumbSchema),
-        }}
-      />
-
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(pageSchema),
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@graph": [
+              pageSchema,
+              breadcrumbSchema
+            ]
+          }),
         }}
       />
     </>

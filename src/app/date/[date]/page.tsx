@@ -33,6 +33,8 @@ export default async function DatePage({
     region?: string;
     city?: string;
     sport?: string;
+    competition?: string;
+    venue?: string;
   }>;
 }) {
   const { date } = await params;
@@ -56,6 +58,9 @@ export default async function DatePage({
     resolvedSearchParams?.sport === "all"
       ? undefined
       : resolvedSearchParams?.sport;
+
+  const competition = resolvedSearchParams?.competition;
+  const venue = resolvedSearchParams?.venue;    
       
   const UK_SET = new Set([
     "england",
@@ -67,8 +72,12 @@ export default async function DatePage({
   const { events } = await getAllEvents("180d");
 
   const dateBaseEvents = events.filter((e: any) => {
-    const key = (e.startDate ?? e.date ?? e.utcDate)?.slice(0, 10);
-    return key === date;
+    const start = (e.startDate ?? e.date ?? e.utcDate)?.slice(0, 10);
+    const end = (e.endDate ?? start)?.slice(0, 10);
+
+    if (!start) return false;
+
+    return start <= date && date <= end;
   });
 
   const dateEvents = dateBaseEvents.filter((e: any) => {
@@ -76,12 +85,25 @@ export default async function DatePage({
 
     if (country === "uk" && !UK_SET.has(regionLower)) return false;
     if (country === "ireland" && regionLower !== "ireland") return false;
+
     if (region && regionLower !== normalize(region)) return false;
+
     if (city && normalize(e.city) !== normalize(city)) return false;
+
     if (sport && normalize(e.sport) !== normalize(sport)) return false;
+
+    if (competition) {
+      const comp = normalize(e.league || e.competition);
+      const target = normalize(competition).replace("-", " ");
+      if (!comp.includes(target)) return false;
+    }
+
+    if (venue && normalize(e.venue) !== normalize(venue))
+      return false;
 
     return true;
   });
+
   let finalEvents = dateEvents;
 
   // 필터 때문에 결과가 0이면 → all 데이터 사용
@@ -187,7 +209,10 @@ export default async function DatePage({
   });
 
   const timeDistribution = Object.entries(timeCounts)
-    .sort((a, b) => b[1] - a[1])
+    .sort((a, b) => {
+      if (b[1] !== a[1]) return b[1] - a[1];   // 경기 수
+      return b[0].localeCompare(a[0]);         // 같은 경기 수면 더 늦은 시간
+    })
     .map(([time, count]) => ({
       time,
       count,
@@ -197,7 +222,7 @@ export default async function DatePage({
   const peakTime = timeDistribution[0] ?? null;
   /* ================= PREV / NEXT ================= */
 
-  const filteredEventsForDates = dateBaseEvents.filter((e: any) => {
+  const filteredEventsForDates = events.filter((e: any) => {
     const regionLower = normalize(e.region);
 
     if (country === "uk" && !UK_SET.has(regionLower))
@@ -213,6 +238,12 @@ export default async function DatePage({
       return false;
 
     if (sport && normalize(e.sport) !== normalize(sport))
+      return false;
+
+    if (competition && (e.league || e.competition) !== competition)
+      return false;
+
+    if (venue && normalize(e.venue) !== normalize(venue))
       return false;
 
     return true;
@@ -253,9 +284,14 @@ export default async function DatePage({
 
   const monthKey = date.slice(0, 7);
 
-  const monthEvents = filteredEventsForDates.filter((e: any) =>
-    (e.startDate ?? e.date ?? e.utcDate)?.slice(0, 7) === monthKey
-  );
+  const monthEvents = filteredEventsForDates.filter((e: any) => {
+    const start = (e.startDate ?? e.date ?? e.utcDate)?.slice(0, 7);
+    const end = (e.endDate ?? start)?.slice(0, 7);
+
+    if (!start) return false;
+
+    return start === monthKey || end === monthKey;
+  });
 
   const monthDailyCounts: Record<string, number> = {};
 
@@ -301,8 +337,10 @@ export default async function DatePage({
       ? availableDates[currentIndex + 1]
       : null;
 
-  const hasCountry = !!country;
-  const hasRegion = !!region;
+  const kickoffSlots = Object.keys(timeCounts).length;
+
+  const overlaps = Object.values(timeCounts);
+  const maxOverlap = overlaps.length ? Math.max(...overlaps) : 0;
   const hasCity = !!city;
   const hasSport = !!sport;  
   
@@ -310,7 +348,23 @@ export default async function DatePage({
   const showSportStats = !hasSport;
   const showCityStats = !hasCity;
 
-  const showCityMetric = !hasCity;
+  const eventsBySport: Record<string, any[]> = {};
+
+  finalEvents.forEach((e: any) => {
+    const s = normalize(e.sport) || "other";
+    if (!eventsBySport[s]) eventsBySport[s] = [];
+    eventsBySport[s].push(e);
+  });
+
+  const footballCompetitions: Record<string, any[]> = {};
+
+  if (eventsBySport["football"]) {
+    eventsBySport["football"].forEach((e: any) => {
+      const comp = normalize(e.league || e.competition || "other");
+      if (!footballCompetitions[comp]) footballCompetitions[comp] = [];
+      footballCompetitions[comp].push(e);
+    });
+  }
 
   return (
     <main className="max-w-6xl mx-auto px-4 py-12 space-y-12">
@@ -328,7 +382,7 @@ export default async function DatePage({
           identify peak activity across venues.
         </p>
         <h1 className="text-3xl font-bold">
-          All Fixtures — {displayDate}
+          Sports Event Congestion — {displayDate}
         </h1>
 
         <p className="text-muted-foreground">
@@ -390,15 +444,19 @@ export default async function DatePage({
           </p>
         </section>
       )}
-      
-      {/* ================= SNAPSHOT ================= */}
 
-      <section className="rounded-2xl p-6 bg-background shadow-sm border border-border/30">
+      {/* ================= CONGESTION OVERVIEW ================= */}
+
+      <section className="rounded-2xl p-6 bg-red-50 border border-red-200">
+
+        <h2 className="text-lg font-semibold mb-4">
+          Event Congestion Overview
+        </h2>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
 
           <div>
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">
+            <p className="text-xs uppercase text-muted-foreground">
               Total fixtures
             </p>
             <p className="text-2xl font-semibold">
@@ -406,41 +464,43 @@ export default async function DatePage({
             </p>
           </div>
 
-          {showCityMetric && (
+          <div>
+            <p className="text-xs uppercase text-muted-foreground">
+              Kickoff slots
+            </p>
+            <p className="text-2xl font-semibold">
+              {kickoffSlots}
+            </p>
+          </div>
+
+          <div>
+            <p className="text-xs uppercase text-muted-foreground">
+              Peak overlap
+            </p>
+            <p className="text-2xl font-semibold">
+              {maxOverlap}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              matches starting together
+            </p>
+          </div>
+
+          {peakTime && (
             <div>
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                Active cities
+              <p className="text-xs uppercase text-muted-foreground">
+                Peak kickoff
               </p>
               <p className="text-2xl font-semibold">
-                {uniqueCities}
+                {peakTime.time}
               </p>
             </div>
-            )}
-          <div>
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">
-              Active venues
-            </p>
-            <p className="text-2xl font-semibold">
-              {uniqueVenues}
-            </p>
-          </div>
-
-          <div>
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">
-              Avg fixtures / venue
-            </p>
-            <p className="text-2xl font-semibold">
-              {density}
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Average number of fixtures hosted per active venue.
-            </p>
-          </div>
+          )}
 
         </div>
-      </section>
 
+      </section>
       
+
       {/* ================= REGION DISTRIBUTION ================= */}
 
       {showRegionStats && regionDistribution.length > 0 && (
@@ -546,6 +606,7 @@ export default async function DatePage({
           )}
         </section>
       )}
+
       {/* ================= FULL LIST ================= */}
 
       <section>
@@ -553,12 +614,54 @@ export default async function DatePage({
           Full fixture list — {displayDate}
         </h2>
 
-        <EventList
-          events={finalEvents}
-          fixedStartDate={date}
-        />
-      </section>
+        {Object.entries(eventsBySport).map(([sportName, sportEvents]) => {
 
+          if (sportName === "football") {
+            return (
+              <div key="football" className="space-y-8">
+
+                <h3 className="text-lg font-semibold capitalize">
+                  Football
+                </h3>
+
+                {Object.entries(footballCompetitions).map(([comp, compEvents]) => (
+
+                  <div key={comp} className="space-y-4">
+
+                    <h4 className="text-md font-medium capitalize">
+                      {comp}
+                    </h4>
+
+                    <EventList
+                      events={compEvents} 
+                      fixedStartDate={date}
+                      singleDay
+                    />
+                  </div>
+
+                ))}
+
+              </div>
+            );
+          }
+
+          return (
+            <div key={sportName} className="space-y-4">
+
+              <h3 className="text-lg font-semibold capitalize">
+                {sportName}
+              </h3>
+
+              <EventList
+                events={sportEvents}
+                fixedStartDate={date}
+                singleDay
+              />
+            </div>
+          );
+
+        })}
+      </section>
       {/* ================= DATE NAV ================= */}
 
       <section className="pt-8 border-t flex justify-between text-sm">
@@ -598,6 +701,7 @@ export default async function DatePage({
                       ? `${event.homeTeam} vs ${event.awayTeam}`
                       : event.title ?? "Sports Event",
                   startDate: event.startDate ?? event.date ?? event.utcDate,
+                  endDate: event.endDate ?? undefined,
                   eventAttendanceMode:
                     "https://schema.org/OfflineEventAttendanceMode",
                   eventStatus:

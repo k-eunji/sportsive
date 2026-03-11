@@ -1,4 +1,4 @@
-// src/app/uk/championship/fixture-congestion/[date]/page.tsx
+//src/app/uk/tennis/[date]/page.tsx
 
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -16,8 +16,20 @@ function isValidDate(date: string) {
 
 function formatDisplayDate(dateStr: string) {
   const date = new Date(dateStr);
+
   return date.toLocaleDateString("en-GB", {
     weekday: "long",
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    timeZone: "Europe/London",
+  });
+}
+
+function formatShortDate(dateStr: string) {
+  const date = new Date(dateStr);
+
+  return date.toLocaleDateString("en-GB", {
     day: "2-digit",
     month: "long",
     year: "numeric",
@@ -37,21 +49,15 @@ export async function generateMetadata(
     return {};
   }
 
-  const shortDate = new Date(date).toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-    timeZone: "Europe/London",
-  });
-
-  const displayDate = formatDisplayDate(date);
+  const shortDate = formatShortDate(date);
 
   return {
-    title: `EFL Championship Fixtures – ${shortDate} (Kickoff Times & Stadiums)`,
-    description: `Complete list of EFL Championship matches on ${shortDate}. Kickoff times, stadium locations and full Championship fixture schedule.`,
+    title: `Tennis Matches – ${shortDate} | UK Tennis Schedule`,
+    description:
+      `Professional tennis matches and tournament sessions taking place in the UK on ${shortDate}. Includes ATP, WTA and Challenger events.`,
 
     alternates: {
-      canonical: `https://venuescope.io/uk/championship/fixture-congestion/${date}`,
+      canonical: `https://venuescope.io/uk/tennis/${date}`,
     },
 
     robots: {
@@ -60,9 +66,10 @@ export async function generateMetadata(
     },
 
     openGraph: {
-      title: `EFL Championship Fixtures – ${displayDate}`,
-      description: `Kickoff times and stadium information for EFL Championship matches on ${displayDate}.`,
-      url: `https://venuescope.io/uk/championship/fixture-congestion/${date}`,
+      title: `UK Tennis Matches – ${shortDate}`,
+      description:
+        `Professional tennis tournament sessions and matches taking place on ${shortDate}.`,
+      url: `https://venuescope.io/uk/tennis/${date}`,
       siteName: "VenueScope",
       type: "website",
     },
@@ -79,23 +86,23 @@ export default async function Page({ params }: Props) {
     notFound();
   }
 
-  const events = await getAllEventsRaw("180d");
+  const events = await getAllEventsRaw("all");
 
-  const leagueEvents = events.filter((e: any) => {
+  const target = new Date(date);
 
-    const eventKey =
-      (e.startDate ?? e.date ?? e.utcDate)?.slice(0, 10);
+  /* ================= FILTER ================= */
 
-    const competition =
-      (e.competition ?? "").toLowerCase();
+  const tennisEvents = events.filter((e: any) => {
 
-    return (
-      competition.includes("championship") &&
-      eventKey === date
-    );
+    if (e.sport?.toLowerCase() !== "tennis") return false;
+
+    const start = new Date(e.startDate ?? e.date ?? e.utcDate);
+    const end = new Date(e.endDate ?? start);
+
+    return target >= start && target <= end;
   });
 
-  if (leagueEvents.length === 0) {
+  if (tennisEvents.length === 0) {
     notFound();
   }
 
@@ -103,16 +110,18 @@ export default async function Page({ params }: Props) {
 
   /* ================= STRUCTURED DATA ================= */
 
-  const eventSchema = leagueEvents.map((event: any) => ({
+  const eventSchema = tennisEvents.map((event: any) => ({
+
     "@type": "SportsEvent",
-    name:
-      event.homeTeam && event.awayTeam
-        ? `${event.homeTeam} vs ${event.awayTeam}`
-        : event.title ?? "EFL Championship Match",
 
-    startDate: event.startDate ?? event.date ?? event.utcDate,
+    name: event.title ?? "Tennis Match",
 
-    url: `https://venuescope.io/uk/championship/fixture-congestion/${date}`,
+    startDate:
+      event.startDate ?? event.date ?? event.utcDate,
+
+    endDate: event.endDate ?? undefined,
+
+    url: `https://venuescope.io/uk/tennis/${date}`,
 
     eventAttendanceMode:
       "https://schema.org/OfflineEventAttendanceMode",
@@ -122,7 +131,7 @@ export default async function Page({ params }: Props) {
 
     location: {
       "@type": "Place",
-      name: event.venue ?? "Football Stadium",
+      name: event.venue ?? "Tennis Venue",
       address: {
         "@type": "PostalAddress",
         addressLocality: event.city ?? "",
@@ -130,7 +139,7 @@ export default async function Page({ params }: Props) {
       },
     },
 
-    sport: "Football",
+    sport: "Tennis",
 
     organizer: {
       "@type": "Organization",
@@ -140,43 +149,23 @@ export default async function Page({ params }: Props) {
   }));
 
   const breadcrumbSchema = {
+
     "@type": "BreadcrumbList",
+
     itemListElement: [
       {
         "@type": "ListItem",
         position: 1,
-        name: "Championship Fixtures",
-        item: "https://venuescope.io/uk/championship/fixture-congestion",
+        name: "Tennis Events",
+        item: "https://venuescope.io/uk/tennis",
       },
       {
         "@type": "ListItem",
         position: 2,
         name: displayDate,
-        item: `https://venuescope.io/uk/championship/fixture-congestion/${date}`,
+        item: `https://venuescope.io/uk/tennis/${date}`,
       },
     ],
-  };
-
-  const faqSchema = {
-    "@type": "FAQPage",
-    mainEntity: [
-      {
-        "@type": "Question",
-        name: `How many EFL Championship matches are on ${displayDate}?`,
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: `There are ${leagueEvents.length} EFL Championship fixtures scheduled on ${displayDate}.`
-        }
-      },
-      {
-        "@type": "Question",
-        name: `What time do EFL Championship matches kick off?`,
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: `Kickoff times vary depending on matchday scheduling and broadcaster selections in the EFL Championship.`
-        }
-      }
-    ]
   };
 
   const structuredData = {
@@ -184,9 +173,10 @@ export default async function Page({ params }: Props) {
     "@graph": [
       ...eventSchema,
       breadcrumbSchema,
-      faqSchema
-    ]
+    ],
   };
+
+  /* ================= PAGE ================= */
 
   return (
     <>
@@ -194,8 +184,7 @@ export default async function Page({ params }: Props) {
         params={Promise.resolve({ date })}
         searchParams={Promise.resolve({
           country: "uk",
-          sport: "football",
-          competition: "championship",
+          sport: "tennis",
         })}
       />
 

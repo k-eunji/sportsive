@@ -45,6 +45,7 @@ export default function ReportsDashboard({
   initialRegion,
   initialCity,
   initialSport,
+  initialCompetition,
   initialYear,
   initialMonth,
   countryScope,
@@ -53,6 +54,7 @@ export default function ReportsDashboard({
   initialRegion?: string | null;
   initialCity?: string | null;
   initialSport?: string;
+  initialCompetition?: string;
   initialYear?: string;
   initialMonth?: string;
   countryScope?: "uk" | "ireland" | null;
@@ -70,6 +72,11 @@ export default function ReportsDashboard({
   const [city, setCity] = useState<string | null>(
     initialCity ?? null
   );
+
+  const [competition, setCompetition] = useState<string>(
+    initialCompetition ?? "all"
+  );
+  const [venue, setVenue] = useState<string>("all");
 
   const [sport, setSport] = useState<string>(
     initialSport ?? "all"
@@ -227,7 +234,28 @@ export default function ReportsDashboard({
     ).sort();
   }, [events, country, region, city, prefix]);
   
+  const competitions = useMemo(() => {
+    return Array.from(
+      new Set(
+        events
+          .filter((e) => {
+            const eventMonth =
+              (e.startDate ?? e.date ?? e.utcDate)?.slice(0, 7);
 
+            return (
+              eventMonth === prefix &&
+              (sport === "all" ||
+                e.sport?.toLowerCase() === sport) &&
+              (!region ||
+                normalize(e.region) === normalize(region)) &&
+              (!city || e.city === city)
+            );
+          })
+          .map((e) => e.league || e.competition)
+          .filter(Boolean)
+      )
+    ).sort();
+  }, [events, sport, region, city, prefix]);
   /* =========================
      CITY LIST (region 기반)
   ========================= */
@@ -254,6 +282,32 @@ export default function ReportsDashboard({
       )
     ).sort();
   }, [events, region, sport, prefix]);
+
+  const venues = useMemo(() => {
+    return Array.from(
+      new Set(
+        events
+          .filter((e) => {
+            const eventMonth =
+              (e.startDate ?? e.date ?? e.utcDate)?.slice(0, 7);
+
+            return (
+              eventMonth === prefix &&
+              (sport === "all" ||
+                e.sport?.toLowerCase() === sport) &&
+              (!region ||
+                normalize(e.region) === normalize(region)) &&
+              (!city || e.city === city) &&
+              (competition === "all" ||
+                (e.league || e.competition) === competition)
+            );
+          })
+          .map((e) => e.venue)
+          .filter(Boolean)
+      )
+    ).sort();
+  }, [events, sport, region, city, competition, prefix]);
+
   /* =========================
      FILTER EVENTS
   ========================= */
@@ -265,7 +319,6 @@ export default function ReportsDashboard({
 
       const regionLower = normalize(e.region);
 
-      // 🔥 UK 정의
       const isInScope =
         country === "uk"
           ? UK_SET.has(regionLower)
@@ -273,17 +326,19 @@ export default function ReportsDashboard({
           ? regionLower === "ireland"
           : true;
 
+      const eventCompetition = e.league || e.competition;
+
       return (
         isInScope &&
-        (!region ||
-          normalize(e.region) === normalize(region)) &&
+        (!region || normalize(e.region) === normalize(region)) &&
         (!city || e.city === city) &&
-        (sport === "all" ||
-          e.sport?.toLowerCase() === sport) &&
+        (sport === "all" || e.sport?.toLowerCase() === sport) &&
+        (competition === "all" || eventCompetition === competition) &&
+        (venue === "all" || e.venue === venue) &&
         eventMonth === prefix
       );
     });
-  }, [events, region, city, sport, prefix, country]);
+  }, [events, region, city, sport, competition, venue, prefix, country]);
 
   const totalMatches = filtered.length;
 
@@ -420,8 +475,10 @@ export default function ReportsDashboard({
 
   const showBusiestCity =
     sport === "all" &&
-    !city;
-
+    !city &&
+    competition === "all" &&
+    venue === "all";
+    
   return (
     <div className="max-w-6xl mx-auto px-4 py-12 space-y-12">
 
@@ -540,6 +597,37 @@ export default function ReportsDashboard({
                 {s.charAt(0).toUpperCase() + s.slice(1)}
               </option>
             ))}
+        </select>
+
+        {/* COMPETITION */}
+        <select
+          value={competition}
+          onChange={(e) => {
+            setCompetition(e.target.value);
+            setVenue("all");
+          }}
+          className="bg-white border border-zinc-200 rounded-md px-3 py-1.5 text-sm"
+        >
+          <option value="all">All Competitions</option>
+          {competitions.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </select>
+
+        {/* VENUE */}
+        <select
+          value={venue}
+          onChange={(e) => setVenue(e.target.value)}
+          className="bg-white border border-zinc-200 rounded-md px-3 py-1.5 text-sm"
+        >
+          <option value="all">All Venues</option>
+          {venues.map((v) => (
+            <option key={v} value={v}>
+              {v}
+            </option>
+          ))}
         </select>
 
         {/* MONTH */}
@@ -677,7 +765,7 @@ export default function ReportsDashboard({
 
       {/* DISTRIBUTION */}
       <section>
-        {totalMatches > 0 && (
+        {totalMatches > 0 && competition === "all" && venue === "all" && (
           <>
             <h2 className="text-xl font-semibold mb-4">
               {sport === "all"
@@ -876,6 +964,8 @@ export default function ReportsDashboard({
                       ...(region && { region }),
                       ...(city && { city }),
                       ...(sport !== "all" && { sport }),
+                      ...(competition !== "all" && { competition }),
+                      ...(venue !== "all" && { venue }),
                     },
                   }}
                   className="

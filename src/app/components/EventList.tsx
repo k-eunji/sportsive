@@ -49,11 +49,13 @@ export function EventList({
   events,
   startFromFirstEvent = false,
   fixedStartDate,
+  singleDay = false,   // 추가
 }: {
   events: Event[];
   startFromFirstEvent?: boolean;
-  fixedStartDate?: string;   // 🔥 추가
-}){
+  fixedStartDate?: string;
+  singleDay?: boolean;
+}) {
   const grouped = groupEventsByDate(events);
 
   // 이벤트 자체가 하나도 없을 때 (아예 데이터 없음)
@@ -68,7 +70,7 @@ export function EventList({
   // 🔑 날짜 축은 "오늘부터 마지막 이벤트 날짜까지"
   const dates = events
     .map((e: any) => {
-      const raw = e.date ?? e.utcDate ?? e.startDate;
+      const raw = e.endDate ?? e.date ?? e.utcDate ?? e.startDate;
       if (!raw) return null;
       const d = new Date(raw);
       return isNaN(d.getTime()) ? null : d;
@@ -92,8 +94,10 @@ export function EventList({
   // 마지막 이벤트 날짜까지 포함
   const end = addDays(startOfDay(lastEventDate), 1);
 
-  const days = eachDay(start, end);
-
+  const days = singleDay
+    ? [start]
+    : eachDay(start, end);
+    
   return (
     <div>
       {days.map((day) => {

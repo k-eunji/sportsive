@@ -50,8 +50,8 @@ export async function generateMetadata(
   const shortDate = formatShortDate(date);
 
   return {
-    title: `Sports Fixtures in London – ${shortDate} | Full Match List`,
-    description: `Full list of professional sports fixtures in London on ${shortDate}. View venues, start times and download the complete schedule in CSV or calendar format.`,
+    title: `London Sports Fixtures & Events – Match Schedule | ${shortDate}`,
+    description: `Complete list of professional sports fixtures taking place in London on ${shortDate}. View venues, start times and the full event schedule across football, rugby, cricket, tennis and other sports.`,
     alternates: {
       canonical: `https://venuescope.io/uk/london/sports/${date}`,
     },
@@ -60,7 +60,7 @@ export async function generateMetadata(
       follow: true,
     },
     openGraph: {
-      title: `London Sports Fixtures – ${shortDate}`,
+      title: `London Sports Fixtures & Event Schedule – ${shortDate}`,
       description: `All professional sports fixtures taking place in London on ${shortDate}.`,
       url: `https://venuescope.io/uk/london/sports/${date}`,
       siteName: "VenueScope",
@@ -82,12 +82,18 @@ export default async function Page({ params }: Props) {
   const events = await getAllEventsRaw("180d");
 
   const londonEvents = events.filter((e: any) => {
-    const key =
-      (e.startDate ?? e.date ?? e.utcDate)?.slice(0, 10);
+    const raw = e.startDate ?? e.date ?? e.utcDate;
+    if (!raw) return false;
+
+    const d = new Date(raw);
+
+    const eventDate = d.toLocaleDateString("en-CA", {
+      timeZone: "Europe/London",
+    });
 
     return (
       e.city?.toLowerCase() === "london" &&
-      key === date
+      eventDate === date
     );
   });
 
@@ -155,14 +161,22 @@ export default async function Page({ params }: Props) {
     ],
   };
 
+  const pageSchema = {
+    "@type": "CollectionPage",
+    name: `London Sports Fixtures ${displayDate}`,
+    description: `Full list of professional sports fixtures taking place in London on ${displayDate}.`,
+    url: `https://venuescope.io/uk/london/sports/${date}`,
+  };
+
   const structuredData = {
     "@context": "https://schema.org",
     "@graph": [
+      pageSchema,
       ...eventSchema,
       breadcrumbSchema
     ],
   };
-
+  
   return (
     <>
       <DatePage
@@ -172,6 +186,53 @@ export default async function Page({ params }: Props) {
           city: "london",
         })}
       />
+
+      <section className="max-w-4xl mx-auto px-4 py-12">
+        <h2 className="text-2xl font-semibold mb-4">
+          London Sports Fixtures – {displayDate}
+        </h2>
+
+        <p className="mb-4">
+          Professional sports fixtures taking place in London on {displayDate}
+          include matches and events hosted at stadiums, arenas and sporting
+          venues across the city. London regularly hosts football, rugby,
+          cricket, tennis and other major sporting competitions throughout
+          the year.
+        </p>
+
+        <p className="mb-4">
+          Sports events in London are scheduled across a wide range of venues
+          including football stadiums, rugby grounds, cricket venues and
+          indoor arenas used for professional tournaments and league
+          competitions.
+        </p>
+
+        <p>
+          The event list above shows the full London sports schedule for
+          {displayDate}, including participating teams, venues and event
+          start times across different sports.
+        </p>
+      </section>
+
+      <section className="max-w-4xl mx-auto px-4 pb-12">
+        <h2 className="text-2xl font-semibold mb-4">
+          Major Sporting Events Hosted in London
+        </h2>
+
+        <p className="mb-4">
+          London is one of the world's leading sports cities and regularly
+          hosts professional sporting events throughout the calendar year.
+          Fixtures may include Premier League football matches, rugby
+          competitions, cricket fixtures, tennis tournaments and other
+          professional sporting events.
+        </p>
+
+        <p>
+          These events take place in major sporting venues located across
+          the capital and attract supporters from across the United Kingdom
+          and international visitors attending London sporting events.
+        </p>
+      </section>
 
       <script
         type="application/ld+json"

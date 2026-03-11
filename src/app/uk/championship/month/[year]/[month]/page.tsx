@@ -1,4 +1,4 @@
-// src/app/uk/london/football/month/[year]/[month]/page.tsx
+// src/app/uk/championship/month/[year]/[month]/page.tsx
 
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
@@ -33,10 +33,10 @@ export async function generateMetadata({
   const displayMonth = formatMonthDisplay(year, month);
 
   return {
-    title: `London Football Fixtures & Match Schedule – ${displayMonth} | London Football Games`,
-    description: `Complete London football fixtures and match schedule for ${displayMonth}. Browse Premier League, EFL and cup matches taking place across London stadiums including Arsenal, Chelsea, Tottenham and West Ham home games.`,
+    title: `EFL Championship Fixtures – ${displayMonth} | VenueScope`,
+    description: `Complete EFL Championship fixture schedule for ${displayMonth}. View all Championship matches, matchdays and kickoff times.`,
     alternates: {
-      canonical: `https://venuescope.io/uk/london/football/month/${year}/${month}`,
+      canonical: `https://venuescope.io/uk/football/championship/month/${year}/${month}`,
     },
     robots: {
       index: true,
@@ -80,32 +80,28 @@ export default async function Page({
   const displayMonth = formatMonthDisplay(year, month);
   const prefix = `${year}-${month}`;
 
-  /* ================= DATA FETCH ================= */
+  /* ================= DATA ================= */
 
   const events = await getAllEventsRaw("180d");
 
-  /* ================= FILTER LONDON FOOTBALL ================= */
+  /* ================= FILTER ================= */
 
-  const FOOTBALL_TYPES = ["football", "soccer"];
-
-  const londonFootballEvents = events.filter((e: any) => {
+  const championshipEvents = events.filter((e: any) => {
 
     const eventMonth =
       (e.startDate ?? e.date ?? e.utcDate)?.slice(0, 7);
 
-    const city = e.city?.toLowerCase() ?? "";
+    const league =
+      (e.league ?? e.competition ?? "").toLowerCase();
 
     return (
-      FOOTBALL_TYPES.includes(e.sport?.toLowerCase()) &&
-      city.includes("london") &&
+      e.sport?.toLowerCase() === "football" &&
+      league.includes("championship") &&
       eventMonth === prefix
     );
-
   });
 
-  /* ================= 404 IF NO DATA ================= */
-
-  if (londonFootballEvents.length === 0) {
+  if (championshipEvents.length === 0) {
     notFound();
   }
 
@@ -118,78 +114,52 @@ export default async function Page({
       {
         "@type": "ListItem",
         position: 1,
-        name: "UK Football",
-        item: "https://venuescope.io/uk/football",
+        name: "EFL Championship",
+        item: "https://venuescope.io/uk/football/championship",
       },
       {
         "@type": "ListItem",
         position: 2,
-        name: "London Football",
-        item: "https://venuescope.io/uk/london/football",
-      },
-      {
-        "@type": "ListItem",
-        position: 3,
         name: displayMonth,
-        item: `https://venuescope.io/uk/london/football/month/${year}/${month}`,
+        item: `https://venuescope.io/uk/football/championship/month/${year}/${month}`,
       },
     ],
   };
 
   const pageSchema = {
     "@context": "https://schema.org",
-    "@type": "CollectionPage",
-    name: `London Football Fixtures ${displayMonth}`,
-    description: `Monthly London football fixture schedule for ${displayMonth}.`,
-    url: `https://venuescope.io/uk/london/football/month/${year}/${month}`,
-    keywords: [
-      "London football fixtures",
-      "London football matches",
-      "football games in London",
-      "London Premier League matches"
-    ]
+    "@type": "WebPage",
+    name: `EFL Championship Fixtures ${displayMonth}`,
+    description: `Monthly EFL Championship fixture schedule during ${displayMonth}.`,
+    url: `https://venuescope.io/uk/football/championship/month/${year}/${month}`,
   };
+
   /* ================= PAGE ================= */
 
   return (
     <>
-      {/* SEO TEXT */}
-
       <section className="max-w-6xl mx-auto px-4 pt-12 pb-10 space-y-6">
 
         <h1 className="text-3xl font-bold">
-          London Football Fixtures & Matches – {displayMonth}
+          EFL Championship Fixtures & Match Schedule – {displayMonth}
         </h1>
 
-        <h2 className="text-xl font-semibold mt-10">
-        London Football Match Schedule – {displayMonth}
-        </h2>
-
         <p className="text-sm text-muted-foreground max-w-2xl">
-          This page provides a complete overview of football fixtures
-          taking place in London during {displayMonth}. The schedule
-          includes Premier League and EFL matches hosted across
-          stadiums throughout the capital.
-
-          Fans searching for the London football schedule,
-          football fixtures in London or the full match list
-          for {displayMonth} can explore all games below.
+          Explore the complete EFL Championship fixture schedule for {displayMonth}.
+          This page lists every Championship match taking place during the month including
+          matchdays, kickoff times and stadium locations across England.
         </p>
 
       </section>
 
-      {/* DASHBOARD */}
-
       <ReportsDashboard
-        events={londonFootballEvents}
+        events={championshipEvents}
         countryScope="uk"
-        initialCity="London"
         initialSport="football"
+        initialCompetition="Championship"
         initialYear={year}
         initialMonth={month}
       />
-
-      {/* STRUCTURED DATA */}
 
       <script
         type="application/ld+json"

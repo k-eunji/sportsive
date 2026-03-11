@@ -57,8 +57,8 @@ export async function generateMetadata(
   const shortDate = formatShortDate(date);
 
   return {
-    title: `Football Fixtures in the UK – ${shortDate} | Full Match List`,
-    description: `Full list of professional football matches taking place across the United Kingdom on ${shortDate}. View venues and kickoff times.`,
+    title: `UK Football Fixtures (${shortDate}) – Soccer Match Schedule & Kickoff Times`,
+    description: `Full list of professional football (soccer) matches taking place across the United Kingdom on ${shortDate}. View stadium venues, teams and kickoff times.`,
     alternates: {
       canonical: `https://venuescope.io/uk/football/${date}`,
     },
@@ -134,7 +134,7 @@ export default async function Page({ params }: Props) {
       },
     },
 
-    sport: "Football",
+    sport: "Association Football",
 
     organizer: {
       "@type": "Organization",
@@ -178,6 +178,34 @@ export default async function Page({ params }: Props) {
           sport: "football",
         })}
       />
+
+      <section className="max-w-4xl mx-auto px-4 py-12">
+        <h2 className="text-2xl font-semibold mb-4">
+          UK Football (Soccer) Fixtures – {displayDate}
+        </h2>
+
+        <p className="mb-4">
+          Professional football fixtures taking place across the United Kingdom
+          on {displayDate} include matches from domestic leagues and national
+          competitions. In many countries the sport is also referred to as
+          soccer, and this page lists scheduled professional football
+          (soccer) matches happening across England, Scotland, Wales and
+          Northern Ireland.
+        </p>
+
+        <p className="mb-4">
+          Fixture schedules may include matches from competitions such as
+          the Premier League, EFL Championship, League One and League Two,
+          as well as cup competitions and other professional football
+          tournaments hosted in UK stadiums.
+        </p>
+
+        <p>
+          The match list includes participating teams, stadium venues and
+          scheduled kickoff times for professional football matches taking
+          place on {displayDate}.
+        </p>
+      </section>
 
       <script
         type="application/ld+json"

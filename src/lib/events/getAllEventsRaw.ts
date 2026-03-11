@@ -1,12 +1,20 @@
-//src/lib/events/getAllEventsRaw.ts
-
 import { getAllEvents } from "./getAllEvents";
 
 export async function getAllEventsRaw(window: string = "7d") {
-  const { events } = await getAllEvents("180d");
+
+  const { events } = await getAllEvents(
+    window === "all" ? "all" : "180d"
+  );
+
+  /* =========================
+     ALL (완전 무제한)
+  ========================= */
+
+  if (window === "all") {
+    return events;
+  }
 
   if (window === "180d") {
-    // ✅ 180일 전체 그대로 반환 (날짜 페이지용)
     return events;
   }
 

@@ -93,7 +93,27 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       {
         url: `${baseUrl}/ireland/football/month/${year}/${month}`,
         lastModified: now,
-      }
+      },
+      {
+        url: `${baseUrl}/uk/tennis/month/${year}/${month}`,
+        lastModified: now,
+      },
+      {
+        url: `${baseUrl}/uk/fight/month/${year}/${month}`,
+        lastModified: now,
+      },
+      {
+        url: `${baseUrl}/uk/championship/month/${year}/${month}`,
+        lastModified: now,
+      },
+      {
+        url: `${baseUrl}/uk/league-one/month/${year}/${month}`,
+        lastModified: now,
+      },
+      {
+        url: `${baseUrl}/uk/football/league-two/month/${year}/${month}`,
+        lastModified: now,
+      },
     );
   }
 
@@ -116,9 +136,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       { url: `${baseUrl}/uk/london/football/${dateStr}`, lastModified: now },
       { url: `${baseUrl}/uk/premier-league/fixture-congestion/${dateStr}`, lastModified: now },
       { url: `${baseUrl}/uk/championship/fixture-congestion/${dateStr}`, lastModified: now },
+
+      // 추가
+      { url: `${baseUrl}/uk/tennis/${dateStr}`, lastModified: now },
+      { url: `${baseUrl}/uk/fight/${dateStr}`, lastModified: now },
+
       { url: `${baseUrl}/uk/basketball/${dateStr}`, lastModified: now },
       { url: `${baseUrl}/uk/london/basketball/${dateStr}`, lastModified: now },
-        // 🇮🇪 Ireland
+
       { url: `${baseUrl}/ireland/sports/${dateStr}`, lastModified: now },
       { url: `${baseUrl}/ireland/football/${dateStr}`, lastModified: now }
     );
