@@ -716,6 +716,11 @@ export default async function DatePage({
                     },
                   },
                   sport: event.sport ?? "Sports",
+
+                  organizer: {
+                    "@type": "Organization",
+                    name: event.league ?? event.competition ?? "Sports Organization",
+                  },
                 }))
             ),
           }}
