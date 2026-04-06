@@ -31,7 +31,9 @@ export function EventCard({ card }: { card: EventCardModel }) {
 
   } else if (sportKey === "fight") {
     const main = card.event.payload?.mainEvent;
-    const t = formatEventTimeShort(card.event.date);
+    const t = formatEventTimeShort(
+      card.event.startDate ?? card.event.date
+    );
     timeLabel = main ? `${t} · ${main}` : t;
 
   } else if (card.event.kind === "session") {
@@ -55,6 +57,11 @@ export function EventCard({ card }: { card: EventCardModel }) {
       timeLabel = t ? `Starts ~${t}` : "";
     }
 
+  } else {
+    // 🔥🔥🔥 이거 추가 (핵심)
+    timeLabel = formatEventTimeShort(
+      card.event.startDate ?? card.event.date
+    );
   }
   /* =========================
      META (도시 우선)
