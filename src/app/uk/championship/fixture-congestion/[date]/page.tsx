@@ -48,7 +48,7 @@ export async function generateMetadata(
 
   return {
     title: `EFL Championship Fixtures – ${shortDate} (Kickoff Times & Stadiums)`,
-    description: `Complete list of EFL Championship matches on ${shortDate}. Kickoff times, stadium locations and full Championship fixture schedule.`,
+    description: `EFL Championship fixtures on ${shortDate}. See kickoff times, stadium locations and use the map to explore where each match is played across the UK.`,
 
     alternates: {
       canonical: `https://venuescope.io/uk/championship/fixture-congestion/${date}`,
@@ -61,7 +61,7 @@ export async function generateMetadata(
 
     openGraph: {
       title: `EFL Championship Fixtures – ${displayDate}`,
-      description: `Kickoff times and stadium information for EFL Championship matches on ${displayDate}.`,
+      description: `Kickoff times, stadium locations and explore matches on the map for ${displayDate}.`,
       url: `https://venuescope.io/uk/championship/fixture-congestion/${date}`,
       siteName: "VenueScope",
       type: "website",

@@ -35,7 +35,7 @@ export default function DateFilterBar({
   const city = params.get("city") ?? "";
   const sport = params.get("sport") ?? "all";
   const competition = params.get("competition") ?? "all";
-  const venue = params.get("venue") ?? "";
+
 
   const UK_SET = new Set([
     "england",
@@ -268,24 +268,6 @@ export default function DateFilterBar({
         {competitions.map((c) => (
           <option key={c} value={c}>
             {c}
-          </option>
-        ))}
-
-      </select>
-
-      {/* Venue */}
-      <select
-        value={venue}
-        onChange={(e) =>
-          updateParam("venue", e.target.value)
-        }
-        className="bg-white border border-zinc-200 rounded-md px-3 py-1.5 text-sm text-zinc-700 hover:border-zinc-300 focus:outline-none focus:ring-1 focus:ring-zinc-300 transition"
-      >
-        <option value="">All Venues</option>
-
-        {venues.map((v) => (
-          <option key={v} value={v}>
-            {v}
           </option>
         ))}
 

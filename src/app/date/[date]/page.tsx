@@ -1,5 +1,6 @@
 // src/app/date/[date]/page.tsx
 
+import DateClient from "./DateClient";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getAllEvents } from "@/lib/events/getAllEvents";
@@ -60,7 +61,6 @@ export default async function DatePage({
       : resolvedSearchParams?.sport;
 
   const competition = resolvedSearchParams?.competition;
-  const venue = resolvedSearchParams?.venue;    
       
   const UK_SET = new Set([
     "england",
@@ -97,10 +97,6 @@ export default async function DatePage({
       const target = normalize(competition).replace("-", " ");
       if (!comp.includes(target)) return false;
     }
-
-    if (venue && normalize(e.venue) !== normalize(venue))
-      return false;
-
     return true;
   });
 
@@ -242,10 +238,7 @@ export default async function DatePage({
 
     if (competition && (e.league || e.competition) !== competition)
       return false;
-
-    if (venue && normalize(e.venue) !== normalize(venue))
-      return false;
-
+    
     return true;
   });
 
@@ -662,6 +655,9 @@ export default async function DatePage({
 
         })}
       </section>
+
+      <DateClient events={finalEvents} />
+
       {/* ================= DATE NAV ================= */}
 
       <section className="pt-8 border-t flex justify-between text-sm">
